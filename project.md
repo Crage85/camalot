@@ -24,7 +24,8 @@ Games in scope (genres the kids play): snake .io (Slither.io), crowd runner with
 
 1. Research a genre: feature list with each feature tagged CORE / COMMON / EXTRA, plus every ad, purchase, and retention hook marked as a school-question swap point.
 2. One builder per game works in its own `src/games/<id>/` folder; the platform and question bank have their own builders. Shared files (`package.json`, `vite.config.ts`, `contract.ts`) change only through the orchestrator.
-3. The orchestrator reviews each builder's screenshots and report, then commits.
+3. The orchestrator reviews each builder's screenshots and report, then commits on a branch and opens a PR to `main`.
+4. Publish: `npm run build`, then push the contents of `dist/` (with an empty `.nojekyll`) as the single commit of branch `gh-pages`, using the repo's noreply identity. Then run `node shots/smoke.mjs https://crage85.github.io/camalot/`.
 
 ## Decisions
 
