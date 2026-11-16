@@ -1,0 +1,2017 @@
+[
+  {
+    "prompt": "The ancient Maya civilization was centered in which region?",
+    "choices": [
+      "Southern Mexico and Central America",
+      "The Andes Mountains of South America",
+      "The Great Plains of North America",
+      "The Amazon rainforest of Brazil"
+    ],
+    "answer": 0,
+    "explain": "The Maya lived in southern Mexico (including the Yucatan Peninsula) and in Guatemala, Belize, Honduras, and El Salvador.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Maya-people"
+  },
+  {
+    "prompt": "What kind of writing did the ancient Maya use?",
+    "choices": [
+      "The Latin alphabet used in English",
+      "Hieroglyphs, picture-like signs called glyphs",
+      "Chinese characters",
+      "They had no way to record words"
+    ],
+    "answer": 1,
+    "explain": "The Maya wrote with hieroglyphic signs. Scholars can now read much of what they wrote.",
+    "standard": "SS.6.1.1",
+    "source": "https://www.britannica.com/topic/Maya-people"
+  },
+  {
+    "prompt": "Maya books written on paper made from tree bark are called what?",
+    "choices": [
+      "Quipus",
+      "Chinampas",
+      "Codices",
+      "Kivas"
+    ],
+    "answer": 2,
+    "explain": "The Maya made paper from the inner bark of wild fig trees and wrote books on it. These books are called codices.",
+    "standard": "SS.6.1.1",
+    "source": "https://www.britannica.com/topic/Maya-people"
+  },
+  {
+    "prompt": "Why do only four Maya books (codices) survive today?",
+    "choices": [
+      "The Maya never wrote books",
+      "They were all buried in pyramids on purpose",
+      "Floods washed them all away",
+      "Spanish priests destroyed most of them"
+    ],
+    "answer": 3,
+    "explain": "Maya books existed before the Spanish conquest, but Spanish priests destroyed most of them. Only four are known to survive.",
+    "standard": "SS.6.1.1",
+    "source": "https://www.britannica.com/topic/Mayan-hieroglyphic-writing"
+  },
+  {
+    "prompt": "How many days were in the sacred Maya calendar?",
+    "choices": [
+      "260",
+      "100",
+      "500",
+      "1,000"
+    ],
+    "answer": 0,
+    "explain": "The Maya sacred calendar had 260 days, made of 13 cycles of 20 named days.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Maya-people"
+  },
+  {
+    "prompt": "Which three crops were the base of Maya farming?",
+    "choices": [
+      "Wheat, rice, and barley",
+      "Corn, beans, and squash",
+      "Apples, oranges, and bananas",
+      "Coffee, sugar, and cotton"
+    ],
+    "answer": 1,
+    "explain": "By about 1500 BCE the Maya were farming corn (maize), beans, and squash.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Maya-people"
+  },
+  {
+    "prompt": "The ancient Maya city of Tikal is in which country today?",
+    "choices": [
+      "Peru",
+      "Canada",
+      "Guatemala",
+      "Brazil"
+    ],
+    "answer": 2,
+    "explain": "Tikal is in the rainforest of northern Guatemala. It was the largest city in the southern Maya lowlands.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Tikal"
+  },
+  {
+    "prompt": "The ancient city of Chichen Itza is on which peninsula?",
+    "choices": [
+      "The Florida Peninsula",
+      "The Baja California Peninsula",
+      "The Iberian Peninsula",
+      "The Yucatan Peninsula"
+    ],
+    "answer": 3,
+    "explain": "Chichen Itza is on the Yucatan Peninsula in Mexico. It is now a World Heritage site.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Chichen-Itza"
+  },
+  {
+    "prompt": "The Olmec are famous for carving what?",
+    "choices": [
+      "Giant stone heads",
+      "Totem poles from cedar trees",
+      "Statues of horses",
+      "Mountain-sized faces like Mount Rushmore"
+    ],
+    "answer": 0,
+    "explain": "The Olmec carved colossal stone heads, some as tall as 9 feet.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Olmec"
+  },
+  {
+    "prompt": "Where did the Olmec civilization develop?",
+    "choices": [
+      "The high Andes Mountains",
+      "The hot lowlands along the Gulf of Mexico",
+      "The cold forests of Canada",
+      "The islands of the Caribbean"
+    ],
+    "answer": 1,
+    "explain": "The Olmec lived in the hot, humid lowlands along the Gulf of Mexico, in what is now southern Mexico.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Olmec"
+  },
+  {
+    "prompt": "What was the name of the Aztec capital city?",
+    "choices": [
+      "Cusco",
+      "Tikal",
+      "Tenochtitlan",
+      "Quebec"
+    ],
+    "answer": 2,
+    "explain": "The Aztec built their great capital, Tenochtitlan, in central Mexico.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Aztec"
+  },
+  {
+    "prompt": "The Aztec built their capital, Tenochtitlan, on an island in what?",
+    "choices": [
+      "The Amazon River",
+      "The Pacific Ocean",
+      "Lake Titicaca",
+      "Lake Texcoco"
+    ],
+    "answer": 3,
+    "explain": "Tenochtitlan was founded around 1325 on an island in Lake Texcoco.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Aztec"
+  },
+  {
+    "prompt": "Which modern city stands where the Aztec capital Tenochtitlan once was?",
+    "choices": [
+      "Mexico City",
+      "Lima",
+      "Havana",
+      "Panama City"
+    ],
+    "answer": 0,
+    "explain": "Tenochtitlan was in the area of modern-day Mexico City.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Aztec"
+  },
+  {
+    "prompt": "What were Aztec chinampas?",
+    "choices": [
+      "Stone roads through the mountains",
+      "Small farm islands built in a lake",
+      "Knotted cords for keeping records",
+      "Large boats for trading"
+    ],
+    "answer": 1,
+    "explain": "Chinampas were artificial islands made from layers of plants, dirt, and mud. Farmers grew crops on them.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/chinampa"
+  },
+  {
+    "prompt": "What language did the Aztec speak?",
+    "choices": [
+      "Quechua",
+      "Spanish",
+      "Nahuatl",
+      "Portuguese"
+    ],
+    "answer": 2,
+    "explain": "The Aztec spoke Nahuatl.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Aztec"
+  },
+  {
+    "prompt": "Who was the Aztec emperor when Hernan Cortes arrived?",
+    "choices": [
+      "Atahualpa",
+      "Pachacuti",
+      "Pedro I",
+      "Montezuma II"
+    ],
+    "answer": 3,
+    "explain": "Montezuma II was the Aztec emperor. Cortes took him hostage in Tenochtitlan in 1519.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Montezuma-II"
+  },
+  {
+    "prompt": "In what year did Hernan Cortes and his forces conquer the Aztec capital?",
+    "choices": [
+      "1521",
+      "1492",
+      "1608",
+      "1776"
+    ],
+    "answer": 0,
+    "explain": "Cortes arrived in 1519. By 1521 his forces and their Indigenous allies had taken Tenochtitlan.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Hernan-Cortes"
+  },
+  {
+    "prompt": "Which disease, brought by Europeans, killed many Aztec people and helped the Spanish win?",
+    "choices": [
+      "Chickenpox from llamas",
+      "Smallpox",
+      "The common cold from potatoes",
+      "Malaria from horses"
+    ],
+    "answer": 1,
+    "explain": "The Aztec had no immunity to smallpox. The disease killed huge numbers of them.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Aztec"
+  },
+  {
+    "prompt": "In 1978, a large carved stone disk was found in Mexico City. Digging there uncovered which Aztec site?",
+    "choices": [
+      "Machu Picchu",
+      "Cliff Palace",
+      "The Templo Mayor, the great pyramid of Tenochtitlan",
+      "Chichen Itza"
+    ],
+    "answer": 2,
+    "explain": "The 1978 discovery of a stone disk showing the goddess Coyolxauhqui started the full dig of the Templo Mayor.",
+    "standard": "SS.6.1.1",
+    "source": "https://www.britannica.com/topic/Templo-Mayor"
+  },
+  {
+    "prompt": "What was the capital of the Inca Empire?",
+    "choices": [
+      "Tenochtitlan",
+      "Caracas",
+      "Mexico City",
+      "Cusco"
+    ],
+    "answer": 3,
+    "explain": "Cusco, in Peru, was the Inca capital. It is one of the oldest cities in the Western Hemisphere.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Cuzco"
+  },
+  {
+    "prompt": "What language did the Inca speak?",
+    "choices": [
+      "Quechua",
+      "Nahuatl",
+      "French",
+      "Latin"
+    ],
+    "answer": 0,
+    "explain": "The Inca spoke Quechua. Their descendants in the Andes still speak it today.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Inca"
+  },
+  {
+    "prompt": "The Inca Empire was built in which mountain range?",
+    "choices": [
+      "The Rocky Mountains",
+      "The Andes",
+      "The Alps",
+      "The Appalachians"
+    ],
+    "answer": 1,
+    "explain": "The Inca Empire ran along the Andes Mountains and the Pacific coast of South America.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Inca"
+  },
+  {
+    "prompt": "What was an Inca quipu?",
+    "choices": [
+      "A stone calendar",
+      "A type of boat",
+      "A set of knotted cords used to keep records",
+      "A feathered headdress"
+    ],
+    "answer": 2,
+    "explain": "Quipus were cords with knots. The knots stood for numbers.",
+    "standard": "SS.6.1.1",
+    "source": "https://www.britannica.com/topic/quipu"
+  },
+  {
+    "prompt": "Inca officials used quipus to record what kind of information?",
+    "choices": [
+      "Maps of the stars for sailors",
+      "Recipes for chocolate",
+      "Music for festivals",
+      "Taxes, census counts, and storehouse supplies"
+    ],
+    "answer": 3,
+    "explain": "Quipus recorded facts like taxes, how many people lived in a place, and what was in storehouses.",
+    "standard": "SS.6.1.1",
+    "source": "https://www.britannica.com/topic/quipu"
+  },
+  {
+    "prompt": "Machu Picchu is in which country?",
+    "choices": [
+      "Peru",
+      "Mexico",
+      "Guatemala",
+      "Chile"
+    ],
+    "answer": 0,
+    "explain": "Machu Picchu is in the Andes Mountains of Peru, about 50 miles from Cusco.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Machu-Picchu"
+  },
+  {
+    "prompt": "Which Spanish conquistador conquered the Inca Empire?",
+    "choices": [
+      "Hernan Cortes",
+      "Francisco Pizarro",
+      "Ferdinand Magellan",
+      "Samuel de Champlain"
+    ],
+    "answer": 1,
+    "explain": "Francisco Pizarro captured the Inca emperor in 1532. This let Spain take over the Inca Empire.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Francisco-Pizarro"
+  },
+  {
+    "prompt": "Which Inca emperor was captured by Francisco Pizarro in 1532?",
+    "choices": [
+      "Montezuma II",
+      "Toussaint Louverture",
+      "Atahualpa",
+      "Simon Bolivar"
+    ],
+    "answer": 2,
+    "explain": "Pizarro captured Atahualpa at Cajamarca in 1532. He was the last free-ruling Inca emperor.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Atahuallpa"
+  },
+  {
+    "prompt": "Mesa Verde National Park, with its cliff dwellings, is in which state?",
+    "choices": [
+      "Texas",
+      "Florida",
+      "Oregon",
+      "Colorado"
+    ],
+    "answer": 3,
+    "explain": "Mesa Verde is in southwestern Colorado. It protects cliff dwellings built by the Ancestral Pueblo people.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/meve/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "Which people built the cliff dwellings at Mesa Verde?",
+    "choices": [
+      "The Ancestral Pueblo people",
+      "The Aztec",
+      "The Inca",
+      "Spanish settlers"
+    ],
+    "answer": 0,
+    "explain": "The Ancestral Pueblo people built homes in the cliffs at Mesa Verde over 700 years ago.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/meve/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "In what year did Mesa Verde become a national park?",
+    "choices": [
+      "1776",
+      "1906",
+      "1850",
+      "1950"
+    ],
+    "answer": 1,
+    "explain": "President Theodore Roosevelt made Mesa Verde a national park on June 29, 1906.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/meve/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "What is the largest cliff dwelling at Mesa Verde?",
+    "choices": [
+      "Machu Picchu",
+      "Templo Mayor",
+      "Cliff Palace",
+      "El Castillo"
+    ],
+    "answer": 2,
+    "explain": "Cliff Palace is the largest cliff dwelling in the park. It is nearly 800 years old.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/meve/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "By about the year 1300, what had most of the people of Mesa Verde done?",
+    "choices": [
+      "Sailed to Europe",
+      "Moved north to Canada",
+      "Built a new city on Lake Texcoco",
+      "Moved south to what is now New Mexico and Arizona"
+    ],
+    "answer": 3,
+    "explain": "By 1300, most of the people had left Mesa Verde and moved south into what is now New Mexico and Arizona.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Mesa-Verde-National-Park"
+  },
+  {
+    "prompt": "The Ancestral Pueblo people lived where Arizona, New Mexico, Colorado, and Utah meet. What is this area called?",
+    "choices": [
+      "The Four Corners",
+      "The Great Lakes",
+      "The Gulf Coast",
+      "New England"
+    ],
+    "answer": 0,
+    "explain": "The place where four states meet is called the Four Corners. The Ancestral Pueblo culture centered there.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Ancestral-Pueblo-culture"
+  },
+  {
+    "prompt": "In what year did Christopher Columbus make his first voyage across the Atlantic?",
+    "choices": [
+      "1066",
+      "1492",
+      "1607",
+      "1776"
+    ],
+    "answer": 1,
+    "explain": "Columbus made his first voyage in 1492-93. He made four voyages in all.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Christopher-Columbus"
+  },
+  {
+    "prompt": "Which country's king and queen paid for Columbus's voyages?",
+    "choices": [
+      "England",
+      "France",
+      "Spain",
+      "Portugal"
+    ],
+    "answer": 2,
+    "explain": "King Ferdinand and Queen Isabella of Spain supported Columbus.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Christopher-Columbus"
+  },
+  {
+    "prompt": "What was Columbus trying to reach by sailing west across the Atlantic?",
+    "choices": [
+      "Antarctica",
+      "Australia",
+      "The North Pole",
+      "Asia"
+    ],
+    "answer": 3,
+    "explain": "Columbus wanted Spain to reach Asia by sailing west instead of going around Africa.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Christopher-Columbus"
+  },
+  {
+    "prompt": "Which ship was Columbus's flagship on his first voyage?",
+    "choices": [
+      "The Santa Maria",
+      "The Mayflower",
+      "The Titanic",
+      "The Golden Hind"
+    ],
+    "answer": 0,
+    "explain": "The Santa Maria was Columbus's flagship. The Nina and Pinta sailed with it.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Santa-Maria-ship"
+  },
+  {
+    "prompt": "Columbus reached the island he named Hispaniola in 1492. Which two countries share that island today?",
+    "choices": [
+      "Cuba and Jamaica",
+      "Haiti and the Dominican Republic",
+      "Mexico and Guatemala",
+      "Canada and the United States"
+    ],
+    "answer": 1,
+    "explain": "Haiti is on the western third of Hispaniola. The Dominican Republic is on the eastern two-thirds.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Hispaniola"
+  },
+  {
+    "prompt": "The Treaty of Tordesillas (1494) divided newly found lands between which two countries?",
+    "choices": [
+      "England and France",
+      "Spain and England",
+      "Spain and Portugal",
+      "France and the Netherlands"
+    ],
+    "answer": 2,
+    "explain": "The treaty drew a line on the map. Spain got lands to the west of it and Portugal got lands to the east.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/event/Treaty-of-Tordesillas"
+  },
+  {
+    "prompt": "In 1500, Pedro Alvares Cabral claimed which land for Portugal?",
+    "choices": [
+      "Mexico",
+      "Canada",
+      "Peru",
+      "Brazil"
+    ],
+    "answer": 3,
+    "explain": "Cabral, a Portuguese navigator, reached Brazil on April 22, 1500, and claimed it for Portugal. That is one reason Brazil speaks Portuguese.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Pedro-Alvares-Cabral"
+  },
+  {
+    "prompt": "Ferdinand Magellan led the first expedition to do what?",
+    "choices": [
+      "Sail all the way around the world",
+      "Reach the South Pole",
+      "Cross North America on foot",
+      "Climb the highest Andes peak"
+    ],
+    "answer": 0,
+    "explain": "Magellan led the first expedition to sail around the globe. He was killed on the way, and Juan Sebastian Elcano finished the trip in 1522.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Ferdinand-Magellan"
+  },
+  {
+    "prompt": "The Columbian Exchange began in 1492. What was it?",
+    "choices": [
+      "A trade deal that made Columbus rich",
+      "The movement of plants, animals, and diseases between the Americas and the rest of the world",
+      "A bank in Spain",
+      "A swap of land between Canada and Mexico"
+    ],
+    "answer": 1,
+    "explain": "After Columbus's voyages, crops, animals, and germs moved across the Atlantic in both directions.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/event/Columbian-exchange"
+  },
+  {
+    "prompt": "Which foods went from the Americas to the rest of the world in the Columbian Exchange?",
+    "choices": [
+      "Wheat, rice, and barley",
+      "Bananas, oranges, and lemons",
+      "Corn, potatoes, and tomatoes",
+      "Rye, oats, and coffee"
+    ],
+    "answer": 2,
+    "explain": "Corn, potatoes, tomatoes, peanuts, and chili peppers came from the Americas.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/event/Columbian-exchange"
+  },
+  {
+    "prompt": "Which animals did the Columbian Exchange bring to the Americas?",
+    "choices": [
+      "Llamas, alpacas, and guinea pigs",
+      "Turkeys and bison",
+      "Jaguars and condors",
+      "Horses, pigs, and cattle"
+    ],
+    "answer": 3,
+    "explain": "Europeans brought horses, pigs, cattle, goats, and sheep. Horses changed life for Plains Indians.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/event/Columbian-exchange"
+  },
+  {
+    "prompt": "Why did so many Indigenous people in the Americas die after Europeans arrived?",
+    "choices": [
+      "They had no immunity to diseases like smallpox and measles",
+      "They were hit by a giant earthquake",
+      "They ran out of corn",
+      "They all moved to Europe"
+    ],
+    "answer": 0,
+    "explain": "Native people had never faced diseases like smallpox, measles, and influenza. Many communities lost half or more of their people.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/event/Columbian-exchange"
+  },
+  {
+    "prompt": "Samuel de Champlain founded which city in 1608?",
+    "choices": [
+      "Mexico City",
+      "Quebec",
+      "Lima",
+      "Havana"
+    ],
+    "answer": 1,
+    "explain": "Champlain founded Quebec in 1608. He is called the Father of New France.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Samuel-de-Champlain"
+  },
+  {
+    "prompt": "Jacques Cartier explored the St. Lawrence River for which country?",
+    "choices": [
+      "Spain",
+      "Portugal",
+      "France",
+      "Italy"
+    ],
+    "answer": 2,
+    "explain": "Cartier sailed for King Francis I of France. His trips helped France claim land in North America.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Jacques-Cartier"
+  },
+  {
+    "prompt": "Before it became Haiti, the colony of Saint-Domingue belonged to which country?",
+    "choices": [
+      "Spain",
+      "England",
+      "Portugal",
+      "France"
+    ],
+    "answer": 3,
+    "explain": "Saint-Domingue was a French colony. After its people won independence, it became the country of Haiti.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/event/Haitian-Revolution"
+  },
+  {
+    "prompt": "Toussaint Louverture, a leader of the Haitian Revolution, was born into what?",
+    "choices": [
+      "Slavery",
+      "A royal family in France",
+      "A wealthy Spanish family",
+      "An Inca noble family"
+    ],
+    "answer": 0,
+    "explain": "Toussaint Louverture was born enslaved in Saint-Domingue. He became the main leader of the revolt.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Toussaint-Louverture"
+  },
+  {
+    "prompt": "In what year did Haiti declare its independence?",
+    "choices": [
+      "1492",
+      "1804",
+      "1700",
+      "1914"
+    ],
+    "answer": 1,
+    "explain": "Jean-Jacques Dessalines declared Haiti independent in 1804.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/event/Haitian-Revolution"
+  },
+  {
+    "prompt": "Haiti was the first country founded by whom?",
+    "choices": [
+      "Spanish soldiers",
+      "French kings",
+      "Formerly enslaved people",
+      "British merchants"
+    ],
+    "answer": 2,
+    "explain": "Haiti won independence from France and became the first country founded by people who had been enslaved.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/event/Haitian-Revolution"
+  },
+  {
+    "prompt": "Simon Bolivar was given what nickname?",
+    "choices": [
+      "The Navigator",
+      "The Great Explorer",
+      "The Father of New France",
+      "The Liberator"
+    ],
+    "answer": 3,
+    "explain": "Bolivar was named El Libertador, The Liberator, after he took Caracas from Spanish forces in 1813.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Simon-Bolivar"
+  },
+  {
+    "prompt": "Which South American country is named after Simon Bolivar?",
+    "choices": [
+      "Bolivia",
+      "Brazil",
+      "Argentina",
+      "Chile"
+    ],
+    "answer": 0,
+    "explain": "Bolivia is named for Simon Bolivar.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Simon-Bolivar"
+  },
+  {
+    "prompt": "Miguel Hidalgo, called the father of Mexican independence, had what job?",
+    "choices": [
+      "Ship captain",
+      "Catholic priest",
+      "Spanish king",
+      "Farmer in Peru"
+    ],
+    "answer": 1,
+    "explain": "Miguel Hidalgo was a Roman Catholic priest who led the start of Mexico's fight for independence.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Miguel-Hidalgo-y-Costilla"
+  },
+  {
+    "prompt": "Miguel Hidalgo's famous speech, the Grito de Dolores, was given on which date now celebrated as Mexican Independence Day?",
+    "choices": [
+      "July 4, 1776",
+      "May 5, 1862",
+      "September 16, 1810",
+      "July 1, 1867"
+    ],
+    "answer": 2,
+    "explain": "On September 16, 1810, Hidalgo called for an end to Spanish rule. Mexico celebrates that date as Independence Day.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Miguel-Hidalgo-y-Costilla"
+  },
+  {
+    "prompt": "Brazil declared independence in 1822 from which country?",
+    "choices": [
+      "Spain",
+      "France",
+      "England",
+      "Portugal"
+    ],
+    "answer": 3,
+    "explain": "Brazil had been ruled by Portugal. Dom Pedro declared Brazil independent on September 7, 1822.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Pedro-I"
+  },
+  {
+    "prompt": "On July 1, 1867, which new country was formed by joining Ontario, Quebec, Nova Scotia, and New Brunswick?",
+    "choices": [
+      "The Dominion of Canada",
+      "The United States",
+      "Mexico",
+      "New France"
+    ],
+    "answer": 0,
+    "explain": "Canada was formed on July 1, 1867. Canadians now celebrate that day as Canada Day.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/question/What-significant-event-happened-on-July-1-1867"
+  },
+  {
+    "prompt": "The Panama Canal connects which two oceans?",
+    "choices": [
+      "The Atlantic and the Indian",
+      "The Atlantic and the Pacific",
+      "The Pacific and the Arctic",
+      "The Indian and the Arctic"
+    ],
+    "answer": 1,
+    "explain": "The canal cuts across Panama so ships can go between the Atlantic and Pacific oceans.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Panama-Canal"
+  },
+  {
+    "prompt": "In what year was the Panama Canal completed?",
+    "choices": [
+      "1804",
+      "1867",
+      "1914",
+      "1969"
+    ],
+    "answer": 2,
+    "explain": "Work under U.S. supervision began in 1904, and the canal was completed in 1914.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Panama-Canal"
+  },
+  {
+    "prompt": "The Amazon River empties into which ocean?",
+    "choices": [
+      "The Pacific Ocean",
+      "The Indian Ocean",
+      "The Arctic Ocean",
+      "The Atlantic Ocean"
+    ],
+    "answer": 3,
+    "explain": "The Amazon starts in the Andes of Peru and flows east across South America into the Atlantic.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Amazon-River"
+  },
+  {
+    "prompt": "What is a primary source?",
+    "choices": [
+      "A first-hand record made by someone who took part in or saw an event",
+      "A book written much later about an event",
+      "A summary in a textbook",
+      "A website that explains old events"
+    ],
+    "answer": 0,
+    "explain": "Primary sources come from people who were there. Diaries, photos, and speeches are examples.",
+    "standard": "SS.6.1.1",
+    "source": "https://ask.loc.gov/faq/303148"
+  },
+  {
+    "prompt": "Which of these is a secondary source?",
+    "choices": [
+      "Lincoln's Gettysburg Address",
+      "A book written today about Abraham Lincoln",
+      "A photograph taken in 1863",
+      "A letter written by a soldier in 1863"
+    ],
+    "answer": 1,
+    "explain": "A secondary source is made after an event by someone who was not there. A modern book about Lincoln is secondary.",
+    "standard": "SS.6.1.1",
+    "source": "https://ask.loc.gov/faq/303148"
+  },
+  {
+    "prompt": "What is an artifact?",
+    "choices": [
+      "A story passed down by talking",
+      "A map drawn from a satellite",
+      "An object that people in the past made, used, or left behind",
+      "A fossil of a dinosaur"
+    ],
+    "answer": 2,
+    "explain": "Artifacts are things people made and left behind, like pottery, tools, and beads. They help us learn how people lived.",
+    "standard": "SS.6.1.1",
+    "source": "https://www.nps.gov/subjects/archeology/artifacts.htm"
+  },
+  {
+    "prompt": "What is oral tradition?",
+    "choices": [
+      "Writing history in books",
+      "Carving words into stone",
+      "Recording facts on knotted cords",
+      "Passing down knowledge and stories by speaking and listening"
+    ],
+    "answer": 3,
+    "explain": "Oral tradition passes knowledge, stories, and ideas from person to person through speech.",
+    "standard": "SS.6.1.1",
+    "source": "https://www.britannica.com/topic/oral-tradition"
+  },
+  {
+    "prompt": "What can archaeologists learn by studying artifacts?",
+    "choices": [
+      "Where people lived, what they ate, and what they wore",
+      "Exactly what people were thinking each day",
+      "The names of every person who lived there",
+      "What the weather will be next year"
+    ],
+    "answer": 0,
+    "explain": "Artifacts can tell us where people lived, what they ate, wore, and used, and how cultures changed.",
+    "standard": "SS.6.1.1",
+    "source": "https://www.nps.gov/subjects/archeology/artifacts.htm"
+  },
+  {
+    "prompt": "What did the Olmec build to carry water into their cities and fields?",
+    "choices": [
+      "Chinampas",
+      "Aqueducts",
+      "Stone roads",
+      "Terraces"
+    ],
+    "answer": 1,
+    "explain": "The Olmec built aqueducts to bring water into their cities and to water their fields.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "The Maya civilization declined by about 900 CE. Which causes does a history textbook give?",
+    "choices": [
+      "An attack by Spanish soldiers",
+      "A smallpox outbreak",
+      "Poor soil and a long drought",
+      "A war with the Inca"
+    ],
+    "answer": 2,
+    "explain": "Poor soil and a drought that lasted almost two centuries weakened the Maya. The Spanish and smallpox did not arrive until the 1500s.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "The Maya improved a calendar and a written language that which earlier people had started?",
+    "choices": [
+      "The Aztec",
+      "The Inca",
+      "The Ancestral Pueblo",
+      "The Olmec"
+    ],
+    "answer": 3,
+    "explain": "The Olmec began a calendar and writing, and the Maya perfected them.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "In what year did the Aztec begin building their capital, Tenochtitlan?",
+    "choices": [
+      "1325",
+      "1492",
+      "1521",
+      "1810"
+    ],
+    "answer": 0,
+    "explain": "The Aztec began building Tenochtitlan on an island in Lake Texcoco in 1325.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "Besides gold, what did the Aztec capital Tenochtitlan take in from surrounding peoples?",
+    "choices": [
+      "Quipus",
+      "Tribute",
+      "Beaver furs",
+      "Encomiendas"
+    ],
+    "answer": 1,
+    "explain": "Tenochtitlan was very wealthy and took in tribute, or required payments, from nearby peoples.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "How did the Inca ruler get public works like roads built?",
+    "choices": [
+      "Enslaved Africans were brought across the Atlantic",
+      "Spanish soldiers built them",
+      "Each peasant worked for the ruler some days every month",
+      "Traders from Europe built them for pay"
+    ],
+    "answer": 2,
+    "explain": "Inca peasants owed the ruler a number of days of work each month on public works projects.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "How did the Inca make farmland on steep mountain slopes?",
+    "choices": [
+      "They built floating farm islands in lakes",
+      "They burned rain forest to clear it",
+      "They drained coastal swamps",
+      "They cut terraces into the mountains"
+    ],
+    "answer": 3,
+    "explain": "The Inca farmed terraced land that they cut into the steep Andes. Floating farm islands were an Aztec method.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "By about 1050 CE, Chaco Canyon had become the center of which people's civilization?",
+    "choices": [
+      "The Ancestral Pueblo people",
+      "The Aztec",
+      "The Inuit",
+      "The Olmec"
+    ],
+    "answer": 0,
+    "explain": "Chaco Canyon became the main center of Ancestral Pueblo civilization by about 1050 CE.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "Chaco Culture National Historical Park, with its ancient great houses, is in which state?",
+    "choices": [
+      "Colorado",
+      "New Mexico",
+      "Utah",
+      "Texas"
+    ],
+    "answer": 1,
+    "explain": "Chaco Canyon is in northwestern New Mexico.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/chcu/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "What is Pueblo Bonito at Chaco Canyon?",
+    "choices": [
+      "A Spanish mission church",
+      "An earthen burial mound",
+      "A multistory stone great house with hundreds of rooms",
+      "A French fur-trading fort"
+    ],
+    "answer": 2,
+    "explain": "Pueblo Bonito is one of the great houses at Chaco: a stone building several stories tall with hundreds of rooms.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/chcu/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "In which river valley did the Hopewell culture reach its peak?",
+    "choices": [
+      "The Amazon River Valley",
+      "The St. Lawrence River Valley",
+      "The Rio Grande Valley",
+      "The Ohio River Valley"
+    ],
+    "answer": 3,
+    "explain": "The Hopewell lived in what is now the Ohio River Valley.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "The Hopewell culture flourished from about 1 to 400 CE. What did these people build?",
+    "choices": [
+      "Earthen walls and mounds, often in geometric shapes",
+      "Cliff dwellings in canyon walls",
+      "Stone pyramids with temples on top",
+      "Floating farm islands in lakes"
+    ],
+    "answer": 0,
+    "explain": "Hopewell groups built earthworks made of earthen walls and ditches, often in geometric patterns, along with mounds.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/hocu/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "Hopewell people got which of these goods through trade with faraway places?",
+    "choices": [
+      "Horses and cattle",
+      "Obsidian, copper, mica, and sea shells",
+      "Silver coins from Potosi",
+      "Steel tools from Europe"
+    ],
+    "answer": 1,
+    "explain": "Hopewell trade brought in mica, obsidian, copper, shark teeth, and sea shells. Horses, steel, and Spanish silver came over a thousand years later.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/hocu/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "The ancient city of Cahokia is in which state today?",
+    "choices": [
+      "Ohio",
+      "Colorado",
+      "Illinois",
+      "Georgia"
+    ],
+    "answer": 2,
+    "explain": "Cahokia Mounds is in southwestern Illinois, across the Mississippi River from St. Louis.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Cahokia-Mounds"
+  },
+  {
+    "prompt": "Cahokia was the main city of which culture?",
+    "choices": [
+      "The Hopewell culture",
+      "The Olmec culture",
+      "The Ancestral Pueblo culture",
+      "The Mississippian culture"
+    ],
+    "answer": 3,
+    "explain": "Cahokia was the main center of the Middle Mississippian culture, which flourished from about 950 to 1350 CE.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Cahokia-Mounds"
+  },
+  {
+    "prompt": "What is Monks Mound?",
+    "choices": [
+      "A huge earthen mound at Cahokia",
+      "A cliff dwelling at Mesa Verde",
+      "A pyramid at Teotihuacan",
+      "An Inca fort near Cusco"
+    ],
+    "answer": 0,
+    "explain": "Monks Mound at Cahokia is the largest human-made earthen structure in North America, about 100 feet high.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Cahokia-Mounds"
+  },
+  {
+    "prompt": "The ancient city of Cahokia was built on the floodplain of which river?",
+    "choices": [
+      "The Colorado River",
+      "The Mississippi River",
+      "The Amazon River",
+      "The Hudson River"
+    ],
+    "answer": 1,
+    "explain": "Cahokia Mounds sits on the Mississippi River floodplain.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Cahokia-Mounds"
+  },
+  {
+    "prompt": "Effigy Mounds National Monument in Iowa has mounds built in what shapes?",
+    "choices": [
+      "Stepped pyramids",
+      "Squares around church plazas",
+      "Animals, such as bears",
+      "Sailing ships"
+    ],
+    "answer": 2,
+    "explain": "Effigy mounds are earthen mounds shaped like animals. A bear mound can be seen along the park trail.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/efmo/index.htm"
+  },
+  {
+    "prompt": "Among the Iroquois, what role did women have in choosing a chief?",
+    "choices": [
+      "Women had no part in it",
+      "Spanish officials chose the chief",
+      "The Aztec emperor chose the chief",
+      "Women selected and advised the chief"
+    ],
+    "answer": 3,
+    "explain": "In tribes such as the Iroquois, women had power and usually selected and counseled the chief.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "How did horses change life for Plains peoples?",
+    "choices": [
+      "They made it easier to follow and hunt huge bison herds",
+      "They pulled plows on large wheat farms",
+      "They carried silver from mountain mines",
+      "They let people stop moving and build stone cities"
+    ],
+    "answer": 0,
+    "explain": "Horses let Plains peoples follow and hunt the huge bison herds more easily.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "Which Europeans first brought the horses that Plains peoples later rode?",
+    "choices": [
+      "The French",
+      "The Spanish",
+      "The Dutch",
+      "The English"
+    ],
+    "answer": 1,
+    "explain": "Horses were first brought to the Americas by the Spanish.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "Many Inuit spent the winter in houses made of snow blocks. What are these called?",
+    "choices": [
+      "Tepees",
+      "Longhouses",
+      "Igloos",
+      "Pueblos"
+    ],
+    "answer": 2,
+    "explain": "Snow-block houses are called igloos. In summer many Inuit lived in animal-skin tents.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Inuit-people"
+  },
+  {
+    "prompt": "To stay warm in the Arctic, the Inuit made clothing from what?",
+    "choices": [
+      "Cotton and silk",
+      "Llama and alpaca wool",
+      "Woven corn husks",
+      "Caribou fur and sealskin"
+    ],
+    "answer": 3,
+    "explain": "The Inuit made warm, fitted clothing from caribou fur and sealskin.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Inuit-people"
+  },
+  {
+    "prompt": "Inuit hunters often hunted seals from what kind of small boat?",
+    "choices": [
+      "A kayak",
+      "A caravel",
+      "A galleon",
+      "A dugout canoe"
+    ],
+    "answer": 0,
+    "explain": "Inuit hunters used harpoons to hunt seals on the ice or from kayaks.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/topic/Inuit-people"
+  },
+  {
+    "prompt": "The ancient city of Teotihuacan is known for which two huge pyramids?",
+    "choices": [
+      "Cliff Palace and Pueblo Bonito",
+      "The Pyramid of the Sun and the Pyramid of the Moon",
+      "Monks Mound and Serpent Mound",
+      "The Templo Mayor and Machu Picchu"
+    ],
+    "answer": 1,
+    "explain": "Teotihuacan's plazas and temples are dominated by the Pyramid of the Moon and the huge Pyramid of the Sun.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Teotihuacan"
+  },
+  {
+    "prompt": "The ruins of Teotihuacan are about 30 miles northeast of which modern city?",
+    "choices": [
+      "Lima",
+      "Cusco",
+      "Mexico City",
+      "Guatemala City"
+    ],
+    "answer": 2,
+    "explain": "Teotihuacan is about 30 miles (50 km) northeast of Mexico City.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Teotihuacan"
+  },
+  {
+    "prompt": "Prince Henry the Navigator led exploration of Africa and the Atlantic in the 1400s for which country?",
+    "choices": [
+      "Spain",
+      "France",
+      "England",
+      "Portugal"
+    ],
+    "answer": 3,
+    "explain": "Prince Henry the Navigator led Portugal's exploration in the 1400s.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-1-portuguese-exploration-and-spanish-conquest"
+  },
+  {
+    "prompt": "After crossing the Atlantic, on October 12, 1492, Columbus landed on an island in which island group?",
+    "choices": [
+      "The Bahamas",
+      "Bermuda",
+      "The Falkland Islands",
+      "Iceland"
+    ],
+    "answer": 0,
+    "explain": "On October 12, 1492, Columbus made landfall on an island in the Bahamas.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-1-portuguese-exploration-and-spanish-conquest"
+  },
+  {
+    "prompt": "Which Native people joined Hernan Cortes and helped him fight the Aztec?",
+    "choices": [
+      "The Inca",
+      "The Tlaxcalan",
+      "The Iroquois",
+      "The Inuit"
+    ],
+    "answer": 1,
+    "explain": "The Tlaxcalan sided with the Spanish and sent many fighters to the siege of Tenochtitlan.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-1-portuguese-exploration-and-spanish-conquest"
+  },
+  {
+    "prompt": "Who was Malintzin, also called La Malinche?",
+    "choices": [
+      "A Taino chief who met Columbus",
+      "A Maya ruler of Tikal",
+      "A Nahua woman who helped Cortes",
+      "A Spanish queen who paid for voyages"
+    ],
+    "answer": 2,
+    "explain": "Malintzin was a Nahua woman who aided Cortes. Her Spanish name was Dona Marina.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-1-portuguese-exploration-and-spanish-conquest"
+  },
+  {
+    "prompt": "Francisco Vazquez de Coronado led a large expedition into what area?",
+    "choices": [
+      "The Andes Mountains of Peru",
+      "The St. Lawrence River in Canada",
+      "The coast of Brazil",
+      "The lands north of Mexico City"
+    ],
+    "answer": 3,
+    "explain": "Coronado led Spaniards and Native allies into the lands north of Mexico City.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-1-portuguese-exploration-and-spanish-conquest"
+  },
+  {
+    "prompt": "From 1539 to 1542, Hernando de Soto explored the southeastern United States looking for what?",
+    "choices": [
+      "Gold",
+      "Beaver furs",
+      "A northwest passage to Asia",
+      "Land for sugar farms"
+    ],
+    "answer": 0,
+    "explain": "De Soto led expeditions through the Southeast looking for gold.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-1-portuguese-exploration-and-spanish-conquest"
+  },
+  {
+    "prompt": "Which crop did Columbus bring to Hispaniola in 1493?",
+    "choices": [
+      "Potatoes",
+      "Sugar",
+      "Corn",
+      "Tobacco"
+    ],
+    "answer": 1,
+    "explain": "Columbus brought sugar to Hispaniola in 1493. Potatoes, corn, and tobacco were already American plants.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-4-new-worlds-in-the-americas-labor-commerce-and-the-columbian-exchange"
+  },
+  {
+    "prompt": "The Aztec used the seeds of which plant as money?",
+    "choices": [
+      "Tobacco",
+      "Cotton",
+      "Cacao",
+      "Potato"
+    ],
+    "answer": 2,
+    "explain": "Chocolate is made from cacao seeds, which the Aztec used as money.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-4-new-worlds-in-the-americas-labor-commerce-and-the-columbian-exchange"
+  },
+  {
+    "prompt": "What was a Spanish encomienda?",
+    "choices": [
+      "A large Spanish warship",
+      "A Maya calendar",
+      "A French fur-trading post",
+      "A legal right to make Native people work, given to conquistadors"
+    ],
+    "answer": 3,
+    "explain": "Spain gave encomiendas, legal rights to Native labor, to conquistadors who served the crown.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-4-new-worlds-in-the-americas-labor-commerce-and-the-columbian-exchange"
+  },
+  {
+    "prompt": "Spaniards found rich veins of which metal in the mountain called Potosi?",
+    "choices": [
+      "Silver",
+      "Copper",
+      "Iron",
+      "Tin"
+    ],
+    "answer": 0,
+    "explain": "The Spanish found rich silver ore at Potosi in South America.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-4-new-worlds-in-the-americas-labor-commerce-and-the-columbian-exchange"
+  },
+  {
+    "prompt": "Which European country was the first to carry large numbers of captive Africans across the Atlantic?",
+    "choices": [
+      "England",
+      "Portugal",
+      "France",
+      "The Netherlands"
+    ],
+    "answer": 1,
+    "explain": "The Portuguese were the first to ship large numbers of enslaved Africans across the Atlantic.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-4-new-worlds-in-the-americas-labor-commerce-and-the-columbian-exchange"
+  },
+  {
+    "prompt": "What name did Jacques Cartier give to the northern North American lands he claimed?",
+    "choices": [
+      "New Spain",
+      "New Netherland",
+      "New France",
+      "New England"
+    ],
+    "answer": 2,
+    "explain": "Cartier claimed northern North America for France and named it New France.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-3-challenges-to-spains-supremacy"
+  },
+  {
+    "prompt": "Samuel de Champlain made an alliance with which Native peoples?",
+    "choices": [
+      "The Aztec and the Tlaxcalan",
+      "The Inca and the Chimu",
+      "The Maya and the Olmec",
+      "The Huron and the Algonquin"
+    ],
+    "answer": 3,
+    "explain": "Champlain allied with the Huron confederacy and the Algonquins and fought beside them.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-3-challenges-to-spains-supremacy"
+  },
+  {
+    "prompt": "The French fur trade in North America depended most on the pelts of which animal?",
+    "choices": [
+      "Beaver",
+      "Bison",
+      "Llama",
+      "Jaguar"
+    ],
+    "answer": 0,
+    "explain": "Native hunters traded furs, especially beaver pelts, for French goods.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-3-challenges-to-spains-supremacy"
+  },
+  {
+    "prompt": "The Dutch colony of New Netherland had its headquarters at New Amsterdam on which island?",
+    "choices": [
+      "Hispaniola",
+      "Manhattan",
+      "Cuba",
+      "Puerto Rico"
+    ],
+    "answer": 1,
+    "explain": "New Amsterdam was on the island of Manhattan.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-3-challenges-to-spains-supremacy"
+  },
+  {
+    "prompt": "When Henry Hudson explored the river now named for him, what was he looking for?",
+    "choices": [
+      "Cities of gold",
+      "Silver mines",
+      "A northwest passage to Asia",
+      "Land for sugar farms"
+    ],
+    "answer": 2,
+    "explain": "Hudson was searching for a northwest passage to Asia. The furs he found led the Dutch to claim the area.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-3-challenges-to-spains-supremacy"
+  },
+  {
+    "prompt": "What were English privateers?",
+    "choices": [
+      "Priests who ran Spanish missions",
+      "Governors of Spanish colonies",
+      "French fur traders",
+      "Sea captains allowed by their government to raid enemy ships"
+    ],
+    "answer": 3,
+    "explain": "Privateers had their government's permission to raid enemy ships. English privateers plundered Spanish ships in the Caribbean.",
+    "standard": "SS.6.1.2",
+    "source": "https://openstax.org/books/us-history/pages/2-3-challenges-to-spains-supremacy"
+  },
+  {
+    "prompt": "In 1542, Juan Rodriguez Cabrillo sailed into what is now San Diego Bay and claimed the land for which country?",
+    "choices": [
+      "Spain",
+      "England",
+      "France",
+      "Portugal"
+    ],
+    "answer": 0,
+    "explain": "Cabrillo led the first European expedition along the coast of the western United States and claimed the land for Spain.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/cabr/learn/historyculture/juan-rodriguez-cabrillo.htm"
+  },
+  {
+    "prompt": "Spanish missions along the San Antonio River changed local life by bringing what?",
+    "choices": [
+      "Factories and railroads",
+      "A new religion, farming, and settled communities",
+      "Trade with French fur traders",
+      "Cliff dwellings"
+    ],
+    "answer": 1,
+    "explain": "The missions brought a new religion, farming, and settled communities to the Native people there.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/saan/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "The San Antonio missions were on the northern edge of which Spanish territory?",
+    "choices": [
+      "New France",
+      "New Netherland",
+      "New Spain",
+      "Gran Colombia"
+    ],
+    "answer": 2,
+    "explain": "The five San Antonio missions, begun in 1718, were on the northern edge of New Spain.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.nps.gov/saan/learn/historyculture/index.htm"
+  },
+  {
+    "prompt": "In 1513, Vasco Nunez de Balboa became the first European to see which ocean?",
+    "choices": [
+      "The Indian Ocean",
+      "The Arctic Ocean",
+      "The Atlantic Ocean",
+      "The Pacific Ocean"
+    ],
+    "answer": 3,
+    "explain": "In 1513 Balboa became the first European to see the Pacific Ocean and claimed it for Spain.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Vasco-Nunez-de-Balboa"
+  },
+  {
+    "prompt": "The name \"America\" comes from which explorer?",
+    "choices": [
+      "Amerigo Vespucci",
+      "Christopher Columbus",
+      "Ferdinand Magellan",
+      "Jacques Cartier"
+    ],
+    "answer": 0,
+    "explain": "The word America was first used for the lands Amerigo Vespucci visited. In Latin his name is Americus Vespucius.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Amerigo-Vespucci"
+  },
+  {
+    "prompt": "Explorer Amerigo Vespucci was born in which city?",
+    "choices": [
+      "Seville",
+      "Florence",
+      "Lisbon",
+      "Genoa"
+    ],
+    "answer": 1,
+    "explain": "Vespucci was born in Florence, Italy, and later worked in Seville, Spain.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Amerigo-Vespucci"
+  },
+  {
+    "prompt": "Bartolome de Las Casas spent his life doing what?",
+    "choices": [
+      "Leading the conquest of the Inca",
+      "Exploring the Mississippi River",
+      "Protesting the mistreatment of Native peoples",
+      "Mapping the coast of Canada"
+    ],
+    "answer": 2,
+    "explain": "Las Casas, a Spanish missionary, devoted his life to protesting the mistreatment of Native peoples.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Bartolome-de-Las-Casas"
+  },
+  {
+    "prompt": "In what year did the Mexican Revolution begin?",
+    "choices": [
+      "1810",
+      "1848",
+      "1898",
+      "1910"
+    ],
+    "answer": 3,
+    "explain": "The Mexican Revolution lasted from 1910 to 1920.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Mexican-Revolution"
+  },
+  {
+    "prompt": "The Mexican Revolution began with the overthrow of which leader?",
+    "choices": [
+      "Porfirio Diaz",
+      "Montezuma II",
+      "Benito Juarez",
+      "Miguel Hidalgo"
+    ],
+    "answer": 0,
+    "explain": "The revolution began with the overthrow of Porfirio Diaz, whose policies favored a small rich group.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Mexican-Revolution"
+  },
+  {
+    "prompt": "Which of these leaders fought in the Mexican Revolution?",
+    "choices": [
+      "Miguel Hidalgo",
+      "Emiliano Zapata",
+      "Simon Bolivar",
+      "Toussaint Louverture"
+    ],
+    "answer": 1,
+    "explain": "Emiliano Zapata, Pancho Villa, and Francisco Madero all gathered supporters in the Mexican Revolution.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Mexican-Revolution"
+  },
+  {
+    "prompt": "During the Mexican Revolution, a new constitution for Mexico was written in what year?",
+    "choices": [
+      "1776",
+      "1821",
+      "1917",
+      "1867"
+    ],
+    "answer": 2,
+    "explain": "Venustiano Carranza oversaw the writing of Mexico's constitution of 1917.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Mexican-Revolution"
+  },
+  {
+    "prompt": "Simon Bolivar was born in which city?",
+    "choices": [
+      "Lima",
+      "Buenos Aires",
+      "Mexico City",
+      "Caracas"
+    ],
+    "answer": 3,
+    "explain": "Bolivar was born in Caracas in 1783.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Simon-Bolivar"
+  },
+  {
+    "prompt": "Simon Bolivar led revolutions against Spanish rule in which of these present-day countries?",
+    "choices": [
+      "Venezuela",
+      "Argentina",
+      "Mexico",
+      "Brazil"
+    ],
+    "answer": 0,
+    "explain": "Bolivar led the fight in New Granada (now Colombia, Venezuela, and Ecuador), Peru, and Bolivia.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Simon-Bolivar"
+  },
+  {
+    "prompt": "Who helped Simon Bolivar win independence for Ecuador in 1822?",
+    "choices": [
+      "Miguel Hidalgo",
+      "Antonio Jose de Sucre",
+      "Pedro I",
+      "Toussaint Louverture"
+    ],
+    "answer": 1,
+    "explain": "With the help of Antonio Sucre, Bolivar secured Ecuador's independence in 1822.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Simon-Bolivar"
+  },
+  {
+    "prompt": "Jose de San Martin is a national hero of which country?",
+    "choices": [
+      "Mexico",
+      "Haiti",
+      "Argentina",
+      "Canada"
+    ],
+    "answer": 2,
+    "explain": "San Martin is a national hero of Argentina. He also helped free Chile and Peru from Spain.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Jose-de-San-Martin"
+  },
+  {
+    "prompt": "Jose de San Martin's boldest plan was to lead his army across which mountains?",
+    "choices": [
+      "The Rocky Mountains",
+      "The Sierra Madre",
+      "The Appalachian Mountains",
+      "The Andes"
+    ],
+    "answer": 3,
+    "explain": "San Martin led an army over the Andes, a very hard march.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Jose-de-San-Martin"
+  },
+  {
+    "prompt": "After Jose de San Martin freed Chile in 1817, he turned the country over to whom?",
+    "choices": [
+      "Bernardo O'Higgins",
+      "Simon Bolivar",
+      "Antonio Jose de Sucre",
+      "Agustin de Iturbide"
+    ],
+    "answer": 0,
+    "explain": "San Martin liberated Chile in 1817 and turned it over to Bernardo O'Higgins.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Jose-de-San-Martin"
+  },
+  {
+    "prompt": "Which leader finished freeing Peru after Jose de San Martin stepped aside in 1822?",
+    "choices": [
+      "Miguel Hidalgo",
+      "Simon Bolivar",
+      "Benito Juarez",
+      "Jean-Jacques Dessalines"
+    ],
+    "answer": 1,
+    "explain": "After meeting Bolivar in 1822, San Martin went into exile and left Bolivar to finish freeing Peru.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Jose-de-San-Martin"
+  },
+  {
+    "prompt": "Benito Juarez, a national hero and president of Mexico, belonged to which Native people?",
+    "choices": [
+      "The Maya",
+      "The Aztec",
+      "The Zapotec",
+      "The Inca"
+    ],
+    "answer": 2,
+    "explain": "Juarez was a Zapotec Indian from Oaxaca, Mexico.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Benito-Juarez"
+  },
+  {
+    "prompt": "In the 1860s, which country invaded Mexico and put Maximilian of Austria in power?",
+    "choices": [
+      "Spain",
+      "The United States",
+      "Britain",
+      "France"
+    ],
+    "answer": 3,
+    "explain": "The French under Napoleon III occupied Mexico and made Maximilian ruler in 1864. Juarez later defeated him.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Benito-Juarez"
+  },
+  {
+    "prompt": "In 1791, what did Toussaint Louverture join in Saint-Domingue?",
+    "choices": [
+      "A slave rebellion",
+      "The French army in Europe",
+      "A Spanish mission",
+      "The Mexican Revolution"
+    ],
+    "answer": 0,
+    "explain": "In 1791 Toussaint joined a slave rebellion and soon built an army of his own.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Toussaint-Louverture"
+  },
+  {
+    "prompt": "Why did Toussaint Louverture switch to fight for France in 1794?",
+    "choices": [
+      "France paid him in gold",
+      "France had ended slavery, and Spain had not",
+      "Spain had already lost the war",
+      "Britain asked him to"
+    ],
+    "answer": 1,
+    "explain": "He switched sides because France, unlike Spain, had recently abolished slavery.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Toussaint-Louverture"
+  },
+  {
+    "prompt": "What happened to Toussaint Louverture in 1802?",
+    "choices": [
+      "He was crowned emperor of Haiti",
+      "He moved to the United States",
+      "The French removed him from power, and he died in custody in France",
+      "He became president of Mexico"
+    ],
+    "answer": 2,
+    "explain": "A French force deposed Toussaint in 1802, and he died in custody in France.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/summary/Toussaint-Louverture"
+  },
+  {
+    "prompt": "Who proclaimed Haiti's independence on January 1, 1804?",
+    "choices": [
+      "Toussaint Louverture",
+      "Napoleon Bonaparte",
+      "Simon Bolivar",
+      "Jean-Jacques Dessalines"
+    ],
+    "answer": 3,
+    "explain": "Dessalines proclaimed Haiti independent on January 1, 1804. Toussaint had died in France in 1803.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Jean-Jacques-Dessalines"
+  },
+  {
+    "prompt": "The name Haiti comes from the language of which Native people?",
+    "choices": [
+      "The Arawak",
+      "The Aztec",
+      "The Inca",
+      "The Maya"
+    ],
+    "answer": 0,
+    "explain": "Dessalines gave the new country the Arawak-based name Haiti.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Jean-Jacques-Dessalines"
+  },
+  {
+    "prompt": "In 1802, what did Napoleon say he planned to do in Saint-Domingue that made Dessalines rebel?",
+    "choices": [
+      "Sell the colony to Spain",
+      "Bring back slavery",
+      "Make Toussaint emperor",
+      "Move the capital to Cuba"
+    ],
+    "answer": 1,
+    "explain": "When it became clear in 1802 that Napoleon meant to bring back slavery, Dessalines and other leaders rebelled and drove out the French.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/biography/Jean-Jacques-Dessalines"
+  },
+  {
+    "prompt": "Before selling Louisiana, Napoleon wanted to take back which sugar colony from a slave rebellion?",
+    "choices": [
+      "Cuba",
+      "Jamaica",
+      "Saint-Domingue",
+      "Barbados"
+    ],
+    "answer": 2,
+    "explain": "Napoleon planned to recapture the sugar colony of Saint-Domingue (Haiti) from a slave rebellion.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1801-1829/louisiana-purchase"
+  },
+  {
+    "prompt": "In 1803, the United States bought the Louisiana Territory from which country?",
+    "choices": [
+      "Spain",
+      "Britain",
+      "Mexico",
+      "France"
+    ],
+    "answer": 3,
+    "explain": "The United States bought Louisiana from France in 1803 for $15 million.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1801-1829/louisiana-purchase"
+  },
+  {
+    "prompt": "Which country first tried to build a canal across Panama, starting in 1880?",
+    "choices": [
+      "France",
+      "Spain",
+      "Britain",
+      "Colombia"
+    ],
+    "answer": 0,
+    "explain": "The French, led by Ferdinand de Lesseps, began digging in 1880.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1899-1913/panama-canal"
+  },
+  {
+    "prompt": "Ferdinand de Lesseps, who led the French canal project in Panama, had earlier built which canal?",
+    "choices": [
+      "The Erie Canal in New York",
+      "The Suez Canal in Egypt",
+      "The Grand Canal in China",
+      "The Kiel Canal in Germany"
+    ],
+    "answer": 1,
+    "explain": "De Lesseps was the builder of the Suez Canal in Egypt.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1899-1913/panama-canal"
+  },
+  {
+    "prompt": "What worked against the French effort to build the Panama Canal?",
+    "choices": [
+      "A long war with Mexico",
+      "Snow and ice",
+      "Tropical diseases like malaria and yellow fever",
+      "A shortage of gold coins"
+    ],
+    "answer": 2,
+    "explain": "Malaria, yellow fever, and other tropical diseases worked against the French project.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1899-1913/panama-canal"
+  },
+  {
+    "prompt": "In 1903, Panama declared independence from which country?",
+    "choices": [
+      "Spain",
+      "Mexico",
+      "The United States",
+      "Colombia"
+    ],
+    "answer": 3,
+    "explain": "Panama declared independence from Colombia on November 3, 1903.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1899-1913/panama-canal"
+  },
+  {
+    "prompt": "On what date was the Panama Canal turned over to Panama?",
+    "choices": [
+      "December 31, 1999",
+      "August 15, 1914",
+      "September 7, 1977",
+      "November 3, 1903"
+    ],
+    "answer": 0,
+    "explain": "The 1977 treaties said the canal would go to Panama on December 31, 1999.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1977-1980/panama-canal"
+  },
+  {
+    "prompt": "What did the Monroe Doctrine of 1823 tell European countries?",
+    "choices": [
+      "Spain owned all of South America",
+      "The Americas were closed to new European colonies",
+      "The United States would buy Canada",
+      "Slavery must end everywhere"
+    ],
+    "answer": 1,
+    "explain": "President Monroe said the American continents were no longer open to colonization by European powers.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1801-1829/monroe"
+  },
+  {
+    "prompt": "In 1836, Texas won a war of independence against which country?",
+    "choices": [
+      "Spain",
+      "France",
+      "Mexico",
+      "The United States"
+    ],
+    "answer": 2,
+    "explain": "Texas won its war of independence against Mexico in 1836.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1830-1860/texas-annexation"
+  },
+  {
+    "prompt": "The Spanish-American War of 1898 ended which country's colonial empire in the Western Hemisphere?",
+    "choices": [
+      "Portugal",
+      "France",
+      "Britain",
+      "Spain"
+    ],
+    "answer": 3,
+    "explain": "The war ended Spain's colonial empire in the Western Hemisphere.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1866-1898/spanish-american-war"
+  },
+  {
+    "prompt": "After the Spanish-American War, Spain gave which Caribbean island to the United States?",
+    "choices": [
+      "Puerto Rico",
+      "Jamaica",
+      "Hispaniola",
+      "Barbados"
+    ],
+    "answer": 0,
+    "explain": "The Treaty of Paris made Spain give Puerto Rico and Guam to the United States.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1866-1898/spanish-american-war"
+  },
+  {
+    "prompt": "Before the United States joined the war in 1898, Cuban rebels had been fighting for what?",
+    "choices": [
+      "Independence from France",
+      "Independence from Spain",
+      "Independence from Britain",
+      "To become part of Mexico"
+    ],
+    "answer": 1,
+    "explain": "Cuban rebels fought for about three years for independence from Spanish rule.",
+    "standard": "SS.6.1.2",
+    "source": "https://history.state.gov/milestones/1866-1898/spanish-american-war"
+  },
+  {
+    "prompt": "Which U.S. president issued the Emancipation Proclamation on January 1, 1863?",
+    "choices": [
+      "George Washington",
+      "Thomas Jefferson",
+      "Abraham Lincoln",
+      "James Monroe"
+    ],
+    "answer": 2,
+    "explain": "Lincoln's proclamation declared enslaved people in the rebelling states free.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.archives.gov/exhibits/featured-documents/emancipation-proclamation"
+  },
+  {
+    "prompt": "In 1911, which American explorer was led to Machu Picchu by a local resident and began studying it?",
+    "choices": [
+      "Henry Hudson",
+      "Juan Rodriguez Cabrillo",
+      "Hernando de Soto",
+      "Hiram Bingham"
+    ],
+    "answer": 3,
+    "explain": "A Quechua-speaking resident led Hiram Bingham to Machu Picchu in 1911, and Bingham began scientific study of the site.",
+    "standard": "SS.6.1.2",
+    "source": "https://www.britannica.com/place/Machu-Picchu"
+  },
+  {
+    "prompt": "In dates like 1200 BCE, what does BCE mean?",
+    "choices": [
+      "Before the Common Era",
+      "Before Columbus Explored",
+      "Between Classic Eras",
+      "Before Calendars Existed"
+    ],
+    "answer": 0,
+    "explain": "BCE marks dates before the Common Era. CE marks dates in our own era.",
+    "standard": "SS.6.1.1",
+    "source": "https://openstax.org/books/world-history-volume-1/pages/1-1-developing-a-global-perspective"
+  },
+  {
+    "prompt": "Which of these years came earliest?",
+    "choices": [
+      "400 BCE",
+      "1200 BCE",
+      "900 CE",
+      "1325 CE"
+    ],
+    "answer": 1,
+    "explain": "BCE years count down toward year 1, so 1200 BCE is earlier than 400 BCE. All BCE years come before CE years.",
+    "standard": "SS.6.1.1",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "Which of these events happened most recently?",
+    "choices": [
+      "Cahokia was at its height (about 1100 CE)",
+      "The Maya civilization declined (about 900 CE)",
+      "The Aztec began building Tenochtitlan (1325 CE)",
+      "The Olmec flourished (about 1200 to 400 BCE)"
+    ],
+    "answer": 2,
+    "explain": "1325 CE is the latest of these dates. The Olmec dates are BCE, so they are the oldest.",
+    "standard": "SS.6.1.1",
+    "source": "https://openstax.org/books/us-history/pages/1-1-the-americas"
+  },
+  {
+    "prompt": "Which of these is a primary source about an event?",
+    "choices": [
+      "A textbook chapter written today",
+      "An encyclopedia article written today",
+      "A documentary made 100 years later",
+      "A diary written by someone during the event"
+    ],
+    "answer": 3,
+    "explain": "Diaries and letters from the time are primary sources.",
+    "standard": "SS.6.1.1",
+    "source": "https://openstax.org/books/world-history-volume-2/pages/1-2-primary-sources"
+  },
+  {
+    "prompt": "A map made in the 1960s showing World War II battle sites is what kind of source?",
+    "choices": [
+      "A secondary source",
+      "A primary source",
+      "Oral tradition",
+      "An artifact"
+    ],
+    "answer": 0,
+    "explain": "A secondary source is made after the fact. The map was made about 20 years after the war.",
+    "standard": "SS.6.1.1",
+    "source": "https://openstax.org/books/world-history-volume-2/pages/1-2-primary-sources"
+  },
+  {
+    "prompt": "Why do historians check a source against other sources?",
+    "choices": [
+      "To find out how much it cost",
+      "To see whether other evidence supports it",
+      "To make it longer",
+      "To change what it says"
+    ],
+    "answer": 1,
+    "explain": "Historians look for corroboration, meaning other evidence that agrees with a source.",
+    "standard": "SS.6.1.1",
+    "source": "https://openstax.org/books/world-history-volume-2/pages/1-2-primary-sources"
+  },
+  {
+    "prompt": "A general wrote a letter about a battle he led. Why should a historian read it with care?",
+    "choices": [
+      "Letters are never primary sources",
+      "Generals did not know how to write",
+      "People often describe themselves in the best light",
+      "Only books can be trusted"
+    ],
+    "answer": 2,
+    "explain": "Writers often present themselves in the best light, so historians ask whether the author had an agenda.",
+    "standard": "SS.6.1.1",
+    "source": "https://openstax.org/books/world-history-volume-2/pages/1-2-primary-sources"
+  }
+]

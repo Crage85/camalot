@@ -1,0 +1,291 @@
+/* Camalot shared look: design-os "voxel" (styles/voxel/DESIGN.md), Vardheim tokens kept, cube anatomy simplified.
+   Games reuse this for HUDs: import '../../core/theme.css' (startGame already loads it) and use the
+   --cm-* tokens and .cm-* classes. Text always sits on a solid panel. Focus is gold; the main button is cream. */
+@font-face {
+  font-family: 'Cinzel';
+  src: url('./fonts/Cinzel-latin.woff2') format('woff2');
+  font-weight: 400 900;
+  font-display: swap;
+}
+
+:root {
+  --cm-ink: #f4efe6;
+  --cm-ink-dim: #f4efe6b8;
+  --cm-btn-ink: #1a140c; /* text on gold, cream and player colours */
+  --cm-gold: #e8c77a;
+  --cm-gold-hi: #ffe3a0;
+  --cm-gold-lo: #e8b45a;
+  --cm-cream: #f4efe6;
+  --cm-cream-lo: #d9cfbd;
+  --cm-panel: #0d1118;
+  --cm-panel-a: #161c26;
+  --cm-panel-b: #0d1118;
+  --cm-stage: #0b0e14;
+  --cm-line: #f4efe626;
+  --cm-good: #7fe07f;
+  --cm-bad: #ff6a5a;
+  --cm-mana: #6fc3ff;
+  --cm-mana-deep: #1f6fd1;
+  --cm-player: var(--cm-gold); /* set to the current player's colour by the platform */
+  --cm-display: 'Cinzel', Georgia, serif;
+  --cm-ui: system-ui, 'Segoe UI', sans-serif;
+
+  /* voxel shading: faces are a token mixed with white (top) or black (side), one way only */
+  --cm-steel: color-mix(in srgb, var(--cm-ink) 15%, var(--cm-panel));
+  --cm-steel-lo: color-mix(in srgb, var(--cm-ink) 7%, var(--cm-panel));
+  --cm-steel-top: color-mix(in srgb, var(--cm-ink) 48%, var(--cm-panel));
+  --cm-steel-side: color-mix(in srgb, var(--cm-panel) 55%, #000);
+  --cm-gold-top: color-mix(in srgb, var(--cm-gold-hi) 62%, #fff);
+  --cm-gold-side: color-mix(in srgb, var(--cm-gold-lo) 52%, #000);
+  --cm-cream-top: color-mix(in srgb, var(--cm-cream) 62%, #fff);
+  --cm-cream-side: color-mix(in srgb, var(--cm-cream-lo) 52%, #000);
+  --cm-glow: color-mix(in srgb, var(--cm-gold) 70%, transparent);
+  --cm-u: 8px; /* panel corner step */
+  --cm-s: 4px; /* block corner step */
+}
+
+/* ---------- panel: one flat solid panel per area, stepped corners ---------- */
+.cm-panel {
+  color: var(--cm-ink);
+  font: 500 18px/1.4 var(--cm-ui);
+  padding: 24px 28px;
+  background:
+    linear-gradient(var(--cm-steel-top) 0 0) top / 100% 3px no-repeat,
+    linear-gradient(var(--cm-steel-side) 0 0) bottom / 100% 4px no-repeat,
+    linear-gradient(var(--cm-panel-a), var(--cm-panel-b));
+  clip-path: polygon(
+    calc(var(--cm-u) * 2) 0, calc(100% - var(--cm-u) * 2) 0, calc(100% - var(--cm-u) * 2) var(--cm-u),
+    calc(100% - var(--cm-u)) var(--cm-u), calc(100% - var(--cm-u)) calc(var(--cm-u) * 2), 100% calc(var(--cm-u) * 2),
+    100% calc(100% - var(--cm-u) * 2), calc(100% - var(--cm-u)) calc(100% - var(--cm-u) * 2),
+    calc(100% - var(--cm-u)) calc(100% - var(--cm-u)), calc(100% - var(--cm-u) * 2) calc(100% - var(--cm-u)),
+    calc(100% - var(--cm-u) * 2) 100%, calc(var(--cm-u) * 2) 100%, calc(var(--cm-u) * 2) calc(100% - var(--cm-u)),
+    var(--cm-u) calc(100% - var(--cm-u)), var(--cm-u) calc(100% - var(--cm-u) * 2), 0 calc(100% - var(--cm-u) * 2),
+    0 calc(var(--cm-u) * 2), var(--cm-u) calc(var(--cm-u) * 2), var(--cm-u) var(--cm-u), calc(var(--cm-u) * 2) var(--cm-u));
+}
+
+.cm-title {
+  margin: 0;
+  font: 700 30px/1.15 var(--cm-display);
+  letter-spacing: 0.04em;
+  color: var(--cm-ink);
+}
+.cm-label {
+  font: 700 14px/1.2 var(--cm-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cm-gold);
+}
+.cm-help { font: 500 16px/1.4 var(--cm-ui); color: var(--cm-ink-dim); }
+.cm-num { font-variant-numeric: tabular-nums; }
+
+/* ---------- block button: lit top band, dark side face that presses down ---------- */
+.cm-btn {
+  --face-a: var(--cm-steel);
+  --face-b: var(--cm-steel-lo);
+  --face-top: var(--cm-steel-top);
+  --face-side: var(--cm-steel-side);
+  --d: 5px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 3px 20px calc(var(--d) + 2px);
+  border: 0;
+  margin: 0;
+  color: var(--cm-ink);
+  font: 600 18px/1.2 var(--cm-ui);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  background:
+    linear-gradient(var(--face-top) 0 0) top / 100% 3px no-repeat,
+    linear-gradient(var(--face-side) 0 0) bottom / 100% var(--d) no-repeat,
+    linear-gradient(var(--face-a), var(--face-b));
+  clip-path: polygon(
+    var(--cm-s) 0, calc(100% - var(--cm-s)) 0, calc(100% - var(--cm-s)) var(--cm-s), 100% var(--cm-s),
+    100% calc(100% - var(--cm-s)), calc(100% - var(--cm-s)) calc(100% - var(--cm-s)), calc(100% - var(--cm-s)) 100%,
+    var(--cm-s) 100%, var(--cm-s) calc(100% - var(--cm-s)), 0 calc(100% - var(--cm-s)), 0 var(--cm-s), var(--cm-s) var(--cm-s));
+}
+.cm-btn.main {
+  --face-a: var(--cm-cream);
+  --face-b: var(--cm-cream-lo);
+  --face-top: var(--cm-cream-top);
+  --face-side: var(--cm-cream-side);
+  color: var(--cm-btn-ink);
+  font-weight: 800;
+}
+/* a picked option (radio) wears the cream face */
+.cm-btn:has(input:checked) {
+  --face-a: var(--cm-cream);
+  --face-b: var(--cm-cream-lo);
+  --face-top: var(--cm-cream-top);
+  --face-side: var(--cm-cream-side);
+  color: var(--cm-btn-ink);
+}
+/* focus is gold; focus, never hover, shows what is selected */
+.cm-btn:focus { outline: none; }
+.cm-btn:focus-visible,
+.cm-btn:has(input:focus-visible) {
+  --face-a: var(--cm-gold-hi);
+  --face-b: var(--cm-gold-lo);
+  --face-top: var(--cm-gold-top);
+  --face-side: var(--cm-gold-side);
+  color: var(--cm-btn-ink);
+}
+.cm-btn:active:not(:disabled) { translate: 0 3px; --d: 2px; }
+.cm-btn:disabled { cursor: default; color: var(--cm-ink-dim); --face-a: var(--cm-steel-lo); --face-b: var(--cm-steel-lo); --face-top: var(--cm-steel); --d: 0px; }
+.cm-btn.good { --face-a: var(--cm-good); --face-b: color-mix(in srgb, var(--cm-good) 80%, #000); --face-top: color-mix(in srgb, var(--cm-good) 62%, #fff); color: var(--cm-btn-ink); }
+.cm-btn.bad { --face-a: var(--cm-bad); --face-b: color-mix(in srgb, var(--cm-bad) 85%, #000); --face-top: color-mix(in srgb, var(--cm-bad) 62%, #fff); color: var(--cm-btn-ink); }
+.cm-btn svg { width: 24px; height: 24px; flex: none; }
+
+/* key cap shown on keyboard devices; hidden on touch-only tablets */
+.cm-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 3px;
+  background: #0000002e;
+  box-shadow: inset 0 -2px 0 #0000004d;
+  font: 800 14px/1 var(--cm-ui);
+  letter-spacing: 0.04em;
+}
+.cm-btn.main .cm-key,
+.cm-btn:focus-visible .cm-key { background: #1a140c1f; }
+@media (hover: none) and (pointer: coarse) {
+  .cm-key { display: none; }
+}
+
+/* ---------- inputs ---------- */
+.cm-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 16px;
+  border: 3px solid var(--cm-steel-top);
+  border-radius: 0;
+  background: var(--cm-stage);
+  color: var(--cm-ink);
+  font: 600 24px/1.2 var(--cm-ui);
+}
+.cm-input:focus { outline: none; border-color: var(--cm-gold); }
+
+/* ---------- player colour dot ---------- */
+.cm-dot {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  background: var(--sw, var(--cm-player));
+  box-shadow: inset 0 3px 0 #ffffff59, inset 0 -3px 0 #00000052;
+}
+
+/* ---------- shared "back to Camalot" button ---------- */
+.cm-back {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 900;
+}
+
+/* ---------- speaker button and volume card ---------- */
+.cm-sound { padding-inline: 12px; }
+.cm-sound-game { position: fixed; top: 12px; left: 160px; z-index: 900; } /* left is set from the back button's width */
+.cm-volume .cm-title { margin-bottom: 20px; }
+.cm-volume .cm-actions { justify-content: space-between; }
+.cm-range { width: 100%; height: 44px; margin: 0; accent-color: var(--cm-gold); cursor: pointer; }
+.cm-range:focus-visible { outline: 3px solid var(--cm-gold); outline-offset: 2px; }
+
+/* ---------- modal card (question card, player select) ---------- */
+dialog.cm-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cm-ink);
+  overflow: visible;
+}
+dialog.cm-dialog::backdrop { background: #05070bcc; }
+dialog.cm-dialog * { box-sizing: border-box; }
+dialog.cm-dialog > .cm-panel { max-height: calc(100dvh - 32px); overflow: auto; }
+
+.cm-dialog .cm-panel:focus { outline: none; }
+.cm-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+
+/* player select */
+.cm-pick .cm-title { margin-bottom: 20px; }
+.cm-field { display: flex; flex-direction: column; gap: 8px; margin: 0 0 18px; padding: 0; border: 0; min-width: 0; }
+.cm-field legend { padding: 0; margin-bottom: 8px; }
+.cm-pick-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.cm-opt { position: relative; }
+.cm-opt input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.cm-swatch { padding-inline: 14px; }
+.cm-swatch .cm-dot { width: 28px; height: 28px; }
+.cm-pick-list { display: flex; flex-direction: column; gap: 10px; }
+.cm-pick-player { justify-content: flex-start; min-height: 60px; font-size: 22px; }
+.cm-pick-player .cm-dot { width: 28px; height: 28px; }
+.cm-pick-grade { margin-left: auto; font-size: 16px; font-weight: 500; }
+
+/* question card */
+.cm-card { position: relative; }
+.cm-card > .cm-label { margin: 0 0 4px; }
+.cm-card-reward { margin: 0 112px 12px 0; font: 700 26px/1.2 var(--cm-display); color: var(--cm-gold); }
+.cm-card-epic { box-shadow: inset 0 0 0 4px var(--cm-gold); background: linear-gradient(var(--cm-gold-top) 0 0) top / 100% 6px no-repeat, linear-gradient(var(--cm-gold-side) 0 0) bottom / 100% 6px no-repeat, linear-gradient(color-mix(in srgb, var(--cm-gold) 22%, var(--cm-panel-a)), var(--cm-panel-b)); }
+.cm-card-epic > .cm-label { color: var(--cm-gold-hi); }
+.cm-card-epic-note { margin: 0 0 12px; padding: 6px 12px; background: var(--cm-gold); color: var(--cm-btn-ink); font-weight: 700; }
+.cm-card-close { position: absolute; top: 18px; right: 18px; padding-inline: 10px; }
+.cm-card-meta { margin: 0 0 8px; color: var(--cm-ink-dim); font-size: 16px; }
+.cm-card-chip { padding: 2px 10px; background: var(--cm-steel); color: var(--cm-ink); font-weight: 700; }
+.cm-card-prompt { margin: 0 0 20px; font: 600 24px/1.35 var(--cm-ui); }
+.cm-card-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cm-card-choice { justify-content: flex-start; min-height: 64px; text-align: left; font-size: 20px; }
+.cm-card-typed { display: flex; flex-direction: column; gap: 10px; }
+.cm-card-row { display: flex; gap: 12px; }
+.cm-card-row .cm-input { flex: 1; min-width: 0; }
+.cm-card-hear { align-self: flex-start; margin-bottom: 6px; }
+.cm-input.bad:disabled { border-color: var(--cm-bad); }
+.cm-card-miss { margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--cm-line); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.cm-card-miss p { margin: 0; }
+.cm-card-missed { color: var(--cm-bad); font-weight: 700; }
+.cm-card-answer { font-size: 22px; }
+.cm-card-answer strong { color: var(--cm-good); }
+.cm-card-kind { color: var(--cm-gold); font-weight: 700; }
+.cm-card-miss .cm-btn { margin-top: 8px; align-self: flex-end; }
+.cm-card-win { min-height: 320px; display: flex; flex-direction: column; justify-content: center; text-align: center; overflow: hidden; }
+.cm-card-win .cm-card-reward { margin: 8px 0 8px; font-size: 40px; }
+.cm-card-earned { margin: 0 0 8px; font-size: 22px; }
+.cm-burst { position: absolute; inset: 0; pointer-events: none; }
+.cm-burst i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  background: var(--c);
+  box-shadow: inset 0 3px 0 #ffffff59, inset 0 -3px 0 #00000052;
+  opacity: 0;
+  animation: cm-burst 1s ease-out forwards;
+}
+@keyframes cm-burst {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(0.4); }
+  to { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r)) scale(1); }
+}
+@media (max-width: 520px) {
+  .cm-panel { padding: 20px 18px; }
+  .cm-card-choices { grid-template-columns: 1fr; }
+  .cm-card-prompt { font-size: 21px; }
+  .cm-card-row { flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-btn:active:not(:disabled) { translate: none; }
+  .cm-burst { display: none; }
+}

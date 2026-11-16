@@ -1,0 +1,127 @@
+/* Powder Trails layout. Panels, buttons, keys and type come from the shared src/core/theme.css (.cm-*). */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #cfe9ff;
+  overscroll-behavior: none;
+}
+canvas.tr-view {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  display: block;
+}
+.tr-ui { position: fixed; inset: 0; pointer-events: none; font-family: var(--cm-ui); }
+.tr-ui > * { pointer-events: auto; }
+.tr-ui [hidden] { display: none !important; }
+
+/* name tags above skiers: small solid pills */
+.tr-tags { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.tr-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 1px 8px 2px;
+  background: #0d1118d9;
+  color: var(--cm-ink);
+  font: 700 14px/1.3 var(--cm-ui);
+  white-space: nowrap;
+  border-bottom: 3px solid var(--c);
+  will-change: transform;
+}
+
+/* HUD */
+.tr-land {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  min-width: 200px;
+  padding: 14px 20px 16px;
+}
+.tr-land-num { font: 800 32px/1 var(--cm-ui); font-variant-numeric: tabular-nums; }
+.tr-bar { position: relative; height: 12px; margin-top: 8px; background: var(--cm-steel-lo); }
+.tr-bar i { position: absolute; inset: 0 auto 0 0; background: var(--c, var(--cm-gold)); }
+.tr-bar b { position: absolute; top: -4px; bottom: -4px; width: 3px; background: var(--cm-ink); }
+.tr-board {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  min-width: 190px;
+  padding: 14px 18px 16px;
+  font-size: 16px;
+}
+.tr-board ol { margin: 6px 0 0; padding: 0; list-style: none; }
+.tr-board li { display: flex; align-items: center; gap: 8px; line-height: 1.6; }
+.tr-board li.me { color: var(--cm-gold-hi); font-weight: 800; }
+.tr-board li span:last-child { margin-left: auto; font-variant-numeric: tabular-nums; }
+.tr-pause { position: fixed; right: 12px; bottom: 12px; }
+.tr-toast {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 10px 22px;
+  font-weight: 700;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* menus */
+.tr-menu {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 24px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tr-menu.side { left: max(16px, calc(50% - 560px)); translate: 0 -50%; }
+.tr-menu p { margin: 0; }
+.tr-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.tr-row > .cm-btn { flex: 1 1 0; }
+.tr-col { display: flex; flex-direction: column; gap: 10px; }
+.tr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tr-tile { flex-direction: column; align-items: flex-start; gap: 2px; min-height: 64px; text-align: left; }
+.tr-tile small { font: 600 14px/1.2 var(--cm-ui); opacity: 0.85; }
+.tr-tile.sel { box-shadow: inset 0 -5px 0 var(--c, var(--cm-gold)); }
+.tr-stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; }
+.tr-stats b { text-align: right; }
+.tr-help { min-height: 2.8em; }
+
+@media (max-width: 600px) {
+  .tr-land { min-width: 0; padding: 10px 14px 12px; }
+  .tr-land-num { font-size: 26px; }
+  .tr-board { min-width: 150px; padding: 10px 12px 12px; }
+  .tr-menu.side { left: 50%; translate: -50% -50%; }
+}
+
+/* campaign and shops */
+.tr-tag.champ { border-bottom-color: var(--cm-gold); color: var(--cm-gold-hi); }
+.tr-goal { max-width: 260px; }
+.tr-extra { margin-top: 8px; font: 600 14px/1.2 var(--cm-ui); opacity: 0.8; }
+.tr-extra.ok { color: var(--cm-good); opacity: 1; }
+.tr-list { overflow-y: auto; min-height: 0; flex: 1 1 auto; padding: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tr-list .tr-tile { min-height: 56px; }
+.tr-tile.done { opacity: 0.75; }
+.tr-tile:disabled { opacity: 0.45; }
+.tr-nav { align-items: stretch; flex-wrap: nowrap; }
+.tr-nav > .cm-btn { flex: 0 0 auto; }
+.tr-peak { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; }
+.tr-peak b { font: 800 20px/1.1 var(--cm-ui); }
+.tr-peak small { font: 600 13px/1.25 var(--cm-ui); opacity: 0.85; }
+.tr-pips { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.tr-pips i { width: 9px; height: 9px; rotate: 45deg; background: var(--cm-steel-lo); }
+.tr-pips i.on { background: var(--cm-gold-hi); box-shadow: 0 0 6px var(--cm-gold); }
+.tr-stats .tr-pips { margin: 0; }
+@media (max-width: 600px) {
+  .tr-list { grid-template-columns: 1fr; }
+  .tr-board { display: none; }
+}
