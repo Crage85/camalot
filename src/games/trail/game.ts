@@ -1,9 +1,9 @@
-// Powder Trails: skiers carve tracks across the snow; close a loop back to your own land to claim what it wraps.
+// Frostclaim: skiers carve tracks across the snow; close a loop back to your own land to claim what it wraps.
 // This file is the page: views of a run, input, HUD, the campaign menus, the shops, sound, and saving.
 import * as THREE from 'three';
 import type { Camalot, LoopHandle, MusicMood, SfxName } from '../../core/contract';
 import './trail.css';
-import { Gfx, Ground, Particles, Ribbon, buildLodge, buildWorld, heightAt, makeSkier, poseSkier, type Rig, type World } from './art';
+import { Bursts, Gfx, Ground, Particles, Ribbon, buildLodge, buildWorld, heightAt, makeSkier, poseSkier, type Rig, type World } from './art';
 import { Sim, pctOf, type Pt, type SimEvent, type SimSkier } from './sim';
 import {
   ACHIEVEMENTS, BIG_START_R, CATCH_COINS, FLAKES_PER_MOUNTAIN, FLAKE_COINS, FREE_RUN, GEAR, GEAR_COST, GRID, LODGE, MOUNTAINS, PALETTE, PERK,
@@ -12,7 +12,7 @@ import {
 } from './data';
 
 const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
-const GOLD_EPIC_FLAKES = 40; // snowflakes before the Golden Dragon question opens
+const GOLD_EPIC_FLAKES = 40; // snowflakes before the Golden Drake question opens
 
 /** Everything drawn for one run. The rules live in Sim, so a View can be rebuilt (quality change) mid-run. */
 class View {
@@ -21,6 +21,7 @@ class View {
   readonly ground: Ground;
   readonly snowFx: Particles;
   readonly sparkFx: Particles;
+  readonly bursts = new Bursts();
   private rigs: Rig[] = [];
   private ribbons: Ribbon[] = [];
   private tagEls: HTMLElement[] = [];
@@ -36,13 +37,12 @@ class View {
     this.world = buildWorld(this.scene, GRID, m, th, sim.terrain, high, !!sim.human);
     const colors = sim.skiers.map((s) => s.color);
     while (colors.length < 8) colors.push(0xffffff);
-    this.ground = new Ground(GRID, th, colors, sim.terrain, this.world.lamps, high);
+    this.ground = new Ground(GRID, th, colors, sim.terrain, this.world.lamps, this.world.sunDir, high);
     this.snowFx = new Particles(high ? 700 : 260, false);
     this.sparkFx = new Particles(high ? 400 : 140, true);
-    this.scene.add(this.ground.mesh, this.snowFx.points, this.sparkFx.points);
+    this.scene.add(this.ground.mesh, this.snowFx.points, this.sparkFx.points, this.bursts.group);
     for (const s of sim.skiers) {
-      const rig = makeSkier(s.kind, s.color, s.fur, this.sand, s.gold);
-      if (s.champ) rig.lean.scale.setScalar(1.8);
+      const rig = makeSkier(s.kind, s.color, s.fur, this.sand, { gold: s.gold, champ: s.champ, ink: high });
       rig.blob.visible = !high;
       const ribbon = new Ribbon(s.color, !!th.night || s.human);
       this.scene.add(rig.root, ribbon.mesh);
@@ -63,13 +63,16 @@ class View {
     if (e.t === 'claim') this.claimFrom = { x: e.who.x, z: e.who.z };
     else if (e.t === 'jump') {
       this.airMax[e.who.id - 1] = e.who.air;
-      this.snowFx.burst(e.who.x, heightAt(e.who.x, e.who.z) + 0.3, e.who.z, 10, 2.5, 0.5, 0xffffff);
+      this.snowFx.burst(e.who.x, heightAt(e.who.x, e.who.z) + 0.3, e.who.z, 14, 3, 0.6, 0xffffff);
     } else if (e.t === 'down') {
       const s = e.who, y = heightAt(s.x, s.z);
       this.tumble[s.id - 1] = 1;
       this.snowFx.burst(s.x, y + 0.5, s.z, this.high ? 34 : 16, 4, 0.95, this.sand ? 0xf6e3b8 : 0xffffff);
       this.snowFx.burst(s.x, y + 0.5, s.z, 6, 3, 0.5, s.color);
-      for (let k = 0; k < 6; k++) this.sparkFx.emit(s.x, y + 2.2, s.z, Math.cos(k) * 1.6, 1.2, Math.sin(k) * 1.6, 1.1, 0.55, 0xffe066, 0.5);
+      // A white snow-burst flash for any wipeout; a big coloured impact star when the player catches a rival.
+      const caught = !!e.by?.human && !s.human;
+      this.bursts.fire(s.x, y + 1.4, s.z, caught ? 9 : s.human ? 7 : 4.5, caught ? e.by!.color : 0xbfdcff);
+      if (caught) for (let k = 0; k < 10; k++) this.sparkFx.emit(s.x, y + 1.4, s.z, Math.cos(k * 0.63) * 5, 2 + Math.random() * 3, Math.sin(k * 0.63) * 5, 0.9, 0.7, k % 2 ? e.by!.color : 0xffffff, 4);
     }
   }
 
@@ -79,7 +82,7 @@ class View {
       const cells = this.ground.update(sim.field.owner, this.claimFrom);
       for (const i of cells) {
         const x = (i % GRID) + 0.5, z = Math.floor(i / GRID) + 0.5;
-        if (Math.hypot(x - focus.x, z - focus.z) < 40) this.sparkFx.emit(x, heightAt(x, z) + 0.2, z, 0, 1 + Math.random() * 2, 0, 0.7 + Math.random() * 0.8, 0.5 + Math.random() * 0.4, 0xffffff, -0.5);
+        if (Math.hypot(x - focus.x, z - focus.z) < 40) this.sparkFx.emit(x, heightAt(x, z) + 0.2, z, 0, 1 + Math.random() * 2, 0, 0.7 + Math.random() * 0.8, 0.7 + Math.random() * 0.6, 0xffffff, -0.5);
       }
       this.claimFrom = null;
       sim.dirty = false;
@@ -92,10 +95,10 @@ class View {
     sim.skiers.forEach((s, i) => {
       const rig = this.rigs[i], y = heightAt(s.x, s.z);
       if (this.tumble[i] > 0) {
-        // A soft, silly somersault that shrinks into the snow puff.
-        const k = (this.tumble[i] -= dt * 1.3);
-        rig.upper.rotation.z -= dt * 13;
-        rig.root.position.y = y + Math.sin(Math.max(0, k) * Math.PI) * 1.3;
+        // A full cartwheel wipeout: skis over head, then gone in the snow burst.
+        const k = (this.tumble[i] -= dt * 1.5);
+        rig.lean.rotation.z -= dt * 15;
+        rig.root.position.y = y + 0.9 + Math.sin(Math.max(0, k) * Math.PI) * 1.2;
         rig.root.scale.setScalar(Math.max(0.01, Math.min(1, k * 1.6)));
         rig.root.visible = k > 0;
       } else if (s.alive) {
@@ -103,16 +106,18 @@ class View {
         rig.root.position.set(s.x, y + hop, s.z);
         rig.root.rotation.y = -s.heading;
         rig.root.scale.setScalar(1);
+        rig.lean.rotation.z = 0;
         rig.root.visible = s.safe <= 0 || Math.floor(t * 10) % 2 === 0;
         poseSkier(rig, t + i, dt, s.turnVel, s.air, running);
         rig.blob.position.y = 0.04 - hop;
         // Snow spray off the edges in a turn, and a little wake all the time.
         const near = Math.hypot(s.x - focus.x, s.z - focus.z) < 30;
         const carve = Math.abs(s.turnVel);
-        if (running && near && s.air <= 0 && Math.random() < dt * (carve > 1.5 ? 70 : 9)) {
+        if (running && near && s.air <= 0 && Math.random() < dt * (carve > 1.5 ? 110 : 10)) {
           const side = Math.sign(s.turnVel) || 1, px = -Math.sin(s.heading) * side, pz = Math.cos(s.heading) * side;
           const bx = s.x - Math.cos(s.heading) * 0.7, bz = s.z - Math.sin(s.heading) * 0.7;
-          this.snowFx.emit(bx, y + 0.15, bz, -px * (1.5 + carve * 0.5) + (Math.random() - 0.5), 1.2 + Math.random() * 1.8, -pz * (1.5 + carve * 0.5) + (Math.random() - 0.5), 0.5 + Math.random() * 0.3, 0.35 + Math.random() * 0.4, this.sand ? 0xf2dcae : 0xffffff, 7);
+          const fan = carve > 1.5 ? 2.2 + Math.random() * 2.2 : 1.2;
+          this.snowFx.emit(bx, y + 0.15, bz, -px * fan + (Math.random() - 0.5), 1.4 + Math.random() * (carve > 1.5 ? 3.4 : 1.6), -pz * fan + (Math.random() - 0.5), 0.45 + Math.random() * 0.35, 0.4 + Math.random() * 0.55, this.sand ? 0xf2dcae : 0xffffff, 7);
         }
       } else rig.root.visible = false;
       this.ribbons[i].sync(s.pts);
@@ -127,6 +132,7 @@ class View {
     });
     this.snowFx.update(dt, h);
     this.sparkFx.update(dt, h);
+    this.bursts.update(dt, camera);
     this.world.tick(t, focus, camera.position, h);
   }
 
@@ -172,8 +178,9 @@ export async function runTrail(camalot: Camalot): Promise<void> {
   const camAt = new THREE.Vector3(GRID / 2, 0, GRID / 2);
 
   const tags = div('tr-tags');
+  const speedLines = div('tr-speed');
   const ui = div('tr-ui');
-  document.body.append(tags, ui);
+  document.body.append(speedLines, tags, ui);
 
   let state: State = 'title';
   let mIndex = 0; // start on the newest open mountain
@@ -321,7 +328,7 @@ export async function runTrail(camalot: Camalot): Promise<void> {
       sfx('star');
       if (save.stars >= STARS_FOR_DRAGON && !save.skins.includes('dragon')) {
         save.skins.push('dragon');
-        say('Snow Dragon is yours');
+        say('Frost Drake unlocked');
         sfx('unlock');
       }
       checkAwards();
@@ -362,7 +369,7 @@ export async function runTrail(camalot: Camalot): Promise<void> {
     setPreview(null);
     const m = MOUNTAINS[mIndex], open = mountainOpen(save, mIndex), runs = runsOf(mIndex);
     openMenu('side', (el) => {
-      el.append(h1('Powder Trails'), p(wallet(), 'cm-label'));
+      el.append(h1('Frostclaim'), p(wallet(), 'cm-label'));
       const go = (d: number) => () => {
         mIndex = (mIndex + d + MOUNTAINS.length) % MOUNTAINS.length;
         sfx('tap');
@@ -474,13 +481,13 @@ export async function runTrail(camalot: Camalot): Promise<void> {
         const owned = save.skins.includes(sk.id), perk = PERK[sk.kind].text;
         const base = { label: sk.name, color: PALETTE[sk.color], skin: sk };
         if (owned) return { ...base, note: sk.id === save.skin ? 'Worn' : 'Owned', help: sk.id === save.skin ? `You wear this one. ${perk}.` : `Enter or tap again to wear it. ${perk}.`, act: () => void ((save.skin = sk.id), sfx('select')) };
-        if (sk.stars) return { ...base, note: `${sk.stars} stars`, help: `Answer school questions to earn stars. You have ${save.stars} of ${sk.stars}. ${perk}.`, act: async () => void (await bonus('A star toward the Snow Dragon')) };
+        if (sk.stars) return { ...base, note: `${sk.stars} stars`, help: `Answer school questions to earn stars. You have ${save.stars} of ${sk.stars}. ${perk}.`, act: async () => void (await bonus('A star toward the Frost Drake')) };
         if (sk.flakes) return { ...base, note: `${sk.flakes} snowflakes`, help: `A prize for ${sk.flakes} snowflakes. You have ${totalFlakes(save)}.` };
         if (sk.epic) {
           const ready = totalFlakes(save) >= GOLD_EPIC_FLAKES;
-          return { ...base, note: 'Big question', help: ready ? 'A rare glowing skin. Answer one big pencil-and-paper question to win it.' : `Collect ${GOLD_EPIC_FLAKES} snowflakes, then one big question wins it.`,
+          return { ...base, note: 'Big question', help: ready ? 'A rare glowing skin. One big pencil-and-paper question wins it.' : `Collect ${GOLD_EPIC_FLAKES} snowflakes, then one big question wins it.`,
             act: !ready ? undefined : async () => {
-              if (await bonus('The rare Golden Dragon skin', true)) {
+              if (await bonus('The rare Golden Drake skin', true)) {
                 save.skins.push(sk.id);
                 save.skin = sk.id;
                 sfx('unlock');
@@ -502,12 +509,12 @@ export async function runTrail(camalot: Camalot): Promise<void> {
 
   function lodgeMenu() {
     sfx('select');
-    lodge = buildLodge(save.lodge);
+    lodge = buildLodge(save.lodge, gfx.high);
     listMenu('Lodge', () =>
       LODGE.map((it): Item => {
         const own = save.lodge.includes(it.id);
-        return { label: it.name, note: own ? 'In your lodge' : `${it.cost} coins`, help: own ? 'Already in your lodge.' : 'Decorate your lodge.', done: own,
-          act: own ? undefined : buy(it.cost, () => (save.lodge.push(it.id), (lodge = buildLodge(save.lodge)))) };
+        return { label: it.name, note: own ? 'In your lodge' : `${it.cost} coins`, help: own ? 'Already in your lodge.' : 'Add it to your lodge.', done: own,
+          act: own ? undefined : buy(it.cost, () => (save.lodge.push(it.id), (lodge = buildLodge(save.lodge, gfx.high)))) };
       }));
   }
 
@@ -524,7 +531,7 @@ export async function runTrail(camalot: Camalot): Promise<void> {
     if (preview) view.scene.remove(preview.root);
     preview = null;
     if (!sk) return;
-    preview = makeSkier(sk.kind, PALETTE[sk.color], sk.fur, !!THEMES[view.sim.mountain.theme].beach, sk.gold);
+    preview = makeSkier(sk.kind, PALETTE[sk.color], sk.fur, !!THEMES[view.sim.mountain.theme].beach, { gold: sk.gold, ink: gfx.high });
     preview.blob.visible = !gfx.high;
     preview.root.position.set(GRID / 2, heightAt(GRID / 2, GRID / 2), GRID / 2);
     view.scene.add(preview.root);
@@ -603,12 +610,12 @@ export async function runTrail(camalot: Camalot): Promise<void> {
         dyingT = 1.2;
         sfx('thud', 0.7);
         sfx('pop', 0.5, 0.7);
-        say(e.how === 'cut' ? `${e.by!.name} crossed your track` : e.how === 'bump' ? `Bonk! You bumped ${e.by!.name}` : e.how === 'wiped' ? `${e.by!.name} looped your land` : 'Oops! Tumble!');
+        say(e.how === 'cut' ? `${e.by!.name} crossed your track` : e.how === 'bump' ? `Head-on with ${e.by!.name}` : e.how === 'wiped' ? `${e.by!.name} looped your land` : 'You hit your own track');
       } else if (e.by?.human) {
         save.stats.catches++;
         sfx('pop', 0.7);
         sfx('star', 0.6);
-        say(e.who.champ ? `You caught the champion, ${e.who.name}!` : `You caught ${e.who.name}!`);
+        say(e.who.champ ? `Champion down: ${e.who.name}` : `Caught ${e.who.name}`);
       } else if (near(e.who) > 0.2) sfx('pop', near(e.who) * 0.35, 1.3);
     }
   }
@@ -618,7 +625,7 @@ export async function runTrail(camalot: Camalot): Promise<void> {
     const sim = view.sim, h = sim.human!;
     setMood('menu');
     openMenu('', (m) => {
-      m.append(h1('Snow puff!'), p(`Your land: ${sim.landPct(h).toFixed(1)}%`));
+      m.append(h1('Wipeout'), p(`Your land: ${sim.landPct(h).toFixed(1)}%`));
       const revive = button('Revive', 'R', async () => {
         if (await bonus('Revive your skier in this run')) {
           sim.revive();
@@ -668,14 +675,14 @@ export async function runTrail(camalot: Camalot): Promise<void> {
     if (opened > 0) sfx('unlock');
     const draw = () =>
       openMenu('', (el) => {
-        el.append(h1(won ? 'You did it!' : runIndex < 0 ? 'Nice skiing' : 'So close'));
+        el.append(h1(won ? 'Run cleared' : runIndex < 0 ? 'Good run' : 'Not this time'));
         if (runIndex >= 0) el.append(p(run!.name + ' on ' + m.name, 'cm-label'));
         const stats = div('tr-stats');
         stats.innerHTML =
-          (won ? `<span>Run complete</span><b>${pips(1)}</b><span>No tumbles</span><b>${pips(sim.tumbles === 0 ? 1 : 0)}</b><span>${esc(goalText(run!.extra))}</span><b>${pips(sim.extraDone() ? 1 : 0)}</b>` : '') +
+          (won ? `<span>Run complete</span><b>${pips(1)}</b><span>No wipeouts</span><b>${pips(sim.tumbles === 0 ? 1 : 0)}</b><span>${esc(goalText(run!.extra))}</span><b>${pips(sim.extraDone() ? 1 : 0)}</b>` : '') +
           `<span>Best land</span><b>${best.toFixed(1)}%</b><span>Skiers caught</span><b>${h.kills}</b><span>Coins</span><b>+${coins + (doubled ? base : 0)}</b>`;
         el.append(stats);
-        if (opened > 0) el.append(p(`${MOUNTAINS[opened].name} is open!`, 'cm-label'));
+        if (opened > 0) el.append(p(`${MOUNTAINS[opened].name} unlocked`, 'cm-label'));
         for (const a of awards) el.append(p('Award: ' + a, 'cm-label'));
         const next = won && runIndex >= 0 && runIndex < RUNS_PER_MOUNTAIN - 1;
         const again = button(next ? 'Next run' : 'Again', 'Enter', () => startPlay(next ? runIndex + 1 : runIndex), true);
@@ -728,6 +735,7 @@ export async function runTrail(camalot: Camalot): Promise<void> {
   let last = performance.now();
   let time = 0;
   let hudT = 0;
+  let straightT = 0, flickT = 0;
   const lodgeCam = new THREE.PerspectiveCamera(40, 1, 0.5, 100);
   const resize = () => {
     gfx.resize();
@@ -762,8 +770,8 @@ export async function runTrail(camalot: Camalot): Promise<void> {
       poseSkier(preview, time, dt, Math.sin(time * 1.5) * 3, 0, true);
       const side = portrait ? 0 : 1.6, y = preview.root.position.y;
       camAt.set(GRID / 2, y, GRID / 2);
-      camera.position.set(GRID / 2 + 5.4, y + 2.6, GRID / 2 + side);
-      camera.lookAt(GRID / 2, y + 1.1, GRID / 2 + side);
+      camera.position.set(GRID / 2 + 6.4, y + 2.7, GRID / 2 + side);
+      camera.lookAt(GRID / 2, y + 1.5, GRID / 2 + side);
     } else {
       const a = time * 0.05;
       camAt.set(GRID / 2, 0, GRID / 2);
@@ -782,6 +790,14 @@ export async function runTrail(camalot: Camalot): Promise<void> {
       gfx.render(lodge, lodgeCam);
     } else gfx.render(view.scene, camera);
 
+    // Speed lines: full strength in the air, a light streak on a long straight line.
+    straightT = h && state === 'play' && Math.abs(h.turnVel) < 0.5 ? straightT + dt : 0;
+    const rush = h && state === 'play' ? (h.air > 0 ? 1 : Math.min(0.4, Math.max(0, straightT - 0.8) * 0.4)) : 0;
+    speedLines.style.opacity = String(rush);
+    if (rush > 0 && (flickT -= dt) <= 0) {
+      flickT = 0.07;
+      speedLines.style.setProperty('--a', `${Math.random() * 360}deg`);
+    }
     if ((toastT -= dt) <= 0) toast.hidden = true;
     if (h && state === 'play') {
       ski?.setLevel(h.air > 0 ? 0.05 : Math.min(0.7, 0.45 + Math.abs(h.turnVel) * 0.12));

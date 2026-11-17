@@ -111,7 +111,7 @@ export function unlockText(s: Skin): string {
   switch (u.by) {
     case 'coins': return `${u.cost} coins`;
     case 'length': return `Reach length ${u.value} in one run`;
-    case 'pops': return `Pop ${u.value} wyrms in one run`;
+    case 'pops': return `Take down ${u.value} wyrms in one run`;
     case 'boss': return `Beat ${ARENAS.find((a) => a.id === u.arena)!.boss.name}`;
     case 'level': return `Reach wyrm level ${u.value}`;
     case 'stars': return `Earn ${u.value} stars`;

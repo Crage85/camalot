@@ -1,10 +1,10 @@
-/* Powder Trails layout. Panels, buttons, keys and type come from the shared src/core/theme.css (.cm-*). */
+/* Frostclaim layout. Panels, buttons, keys and type come from the shared src/core/theme.css (.cm-*). */
 html,
 body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #cfe9ff;
+  background: var(--cm-stage);
   overscroll-behavior: none;
 }
 canvas.tr-view {
@@ -124,4 +124,16 @@ canvas.tr-view {
 @media (max-width: 600px) {
   .tr-list { grid-template-columns: 1fr; }
   .tr-board { display: none; }
+}
+
+/* anime speed lines: thin white rays from the screen edge toward the skier, redrawn at a new angle a few times a second */
+.tr-speed {
+  position: fixed;
+  inset: -25%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background: repeating-conic-gradient(from var(--a, 0deg), #fff0 0 3.2deg, #ffffffd9 3.45deg, #fff0 3.8deg 7deg, #ffffff99 7.15deg, #fff0 7.35deg 11deg);
+  -webkit-mask: radial-gradient(closest-side, #0000 50%, #000 100%);
+  mask: radial-gradient(closest-side, #0000 50%, #000 100%);
 }

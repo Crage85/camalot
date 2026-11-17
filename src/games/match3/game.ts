@@ -1,4 +1,4 @@
-// Whisker Castle: screens, input, saves, sound and bonus hooks. Gets the platform services passed in; never imports core.
+// Spellpaw: screens, input, saves, sound and bonus hooks. Gets the platform services passed in; never imports core.
 import './style.css';
 import {
   DirectionalLight, Group, HalfFloatType, HemisphereLight, Mesh, PMREMGenerator, PerspectiveCamera, Scene, Vector2,
@@ -38,10 +38,10 @@ export interface SaveData {
 interface SaveV1 { v: 1; stars: number[]; best: number[]; boosters: Record<BoosterId, number>; castle: Record<string, number> }
 
 const BOOSTER: Record<BoosterId, { name: string; bonus: string; key: string }> = {
-  hammer: { name: 'Hammer', bonus: 'One hammer', key: 'H' },
-  shuffle: { name: 'Shuffle', bonus: 'One shuffle', key: 'R' },
-  puff: { name: 'Fire puff', bonus: 'Start with a fire puff and a wand', key: '1' },
-  rainbow: { name: 'Rainbow', bonus: 'Start with a rainbow orb', key: '2' },
+  hammer: { name: 'Spell Hammer', bonus: 'One Spell Hammer', key: 'H' },
+  shuffle: { name: 'Shuffle', bonus: 'One Shuffle', key: 'R' },
+  puff: { name: 'Burst Sigil', bonus: 'Start with a Burst Sigil and a Line Spell', key: '1' },
+  rainbow: { name: 'Prism Nova', bonus: 'Start with a Prism Nova', key: '2' },
 };
 const BOOSTER_IDS = Object.keys(BOOSTER) as BoosterId[];
 /** First win of every 3rd level pays one booster, in this order. */
@@ -52,7 +52,13 @@ const catFor = (n: number): CatDef | null => (n % 5 === 4 ? CATS[Math.floor(n / 
 const HINT_AFTER = 6; // seconds idle before a hint wiggle
 const LOW_MOVES = 5; // music turns intense
 const CHEST = 2; // boosters of each kind in the epic treasure chest
-const CALLOUT = ['', '', 'Nice!', 'Purr-fect!', 'Meow-velous!', 'Cat-tastic!'];
+/** Names shown for goal icons (alt text and tooltips). */
+const GEMS = ['Flame Crystal', 'Sun Sigil', 'Star Prism', 'Leaf Rune', 'Tide Orb', 'Moon Sigil'];
+const GOAL_NAME: Record<string, string> = {
+  kitten: 'Cat mage', crate: 'Sealed Crate', vine: 'Thornvine', ice: 'Frost Seal', dust: 'Miasma', egg: 'Dragon Egg', rock: 'Runestone',
+  crab: 'Scuttler', trail: 'Frost Path', special: 'Special',
+};
+const CALLOUT = ['', '', 'Clean cast', 'Chain x3', 'Overload', 'Arcane storm'];
 
 interface Trophy { id: string; name: string; goal: number; stat: (g: Game) => number; reward: [BoosterId, number] }
 const tiers = (id: string, name: (n: number) => string, goals: number[], stat: (g: Game) => number, rewards: BoosterId[]): Trophy[] =>
@@ -61,12 +67,12 @@ const TROPHIES: Trophy[] = [
   ...tiers('lv', (n) => `Win ${n} levels`, [20, 60, 120, 180, 240], (g) => g.wonLevels(), ['hammer', 'puff']),
   ...tiers('st', (n) => `Earn ${n} stars`, [50, 150, 300, 450, 600, 720], (g) => g.totalStars(), ['shuffle', 'rainbow']),
   ...tiers('cr', (n) => `Win ${n} crown challenges`, [10, 50, 120, 240], (g) => g.totalCrowns(), ['rainbow', 'puff']),
-  ...tiers('ct', (n) => `Rescue ${n} cats`, [12, 24, 48, 52], (g) => Object.keys(g.save.cats).length, ['hammer', 'rainbow']),
-  ...tiers('it', (n) => `Build ${n} kingdom pieces`, [10, 30, 54], (g) => Object.keys(g.save.castle).length, ['puff', 'shuffle']),
-  ...tiers('sp', (n) => `Make ${n} specials`, [100, 500, 2000], (g) => g.save.stats.specials, ['hammer', 'puff']),
-  ...tiers('kt', (n) => `Carry ${n} kittens to safety`, [25, 100], (g) => g.save.stats.kittens, ['shuffle', 'rainbow']),
-  ...tiers('ch', (n) => `Make a chain of ${n}`, [4, 6], (g) => g.save.stats.chain, ['puff', 'rainbow']),
-  ...tiers('db', () => 'Swap two rainbow orbs', [1], (g) => g.save.stats.doubles, ['rainbow']),
+  ...tiers('ct', (n) => `Bring ${n} mages to the citadel`, [12, 24, 48, 52], (g) => Object.keys(g.save.cats).length, ['hammer', 'rainbow']),
+  ...tiers('it', (n) => `Build ${n} citadel pieces`, [10, 30, 54], (g) => Object.keys(g.save.castle).length, ['puff', 'shuffle']),
+  ...tiers('sp', (n) => `Forge ${n} specials`, [100, 500, 2000], (g) => g.save.stats.specials, ['hammer', 'puff']),
+  ...tiers('kt', (n) => `Rescue ${n} cat mages`, [25, 100], (g) => g.save.stats.kittens, ['shuffle', 'rainbow']),
+  ...tiers('ch', (n) => `Reach a x${n} chain`, [4, 6], (g) => g.save.stats.chain, ['puff', 'rainbow']),
+  ...tiers('db', () => 'Swap two Prism Novas', [1], (g) => g.save.stats.doubles, ['rainbow']),
 ];
 
 const STAR = '<svg class="star{c}" viewBox="0 0 24 24"><path d="M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6z"/></svg>';
@@ -350,8 +356,8 @@ class Game {
     } else if (v === this.map) this.map.update(this.t);
     else this.castle.update(this.t, dt);
     if (this.hi) {
-      this.bloom.threshold = v === this.castle ? 1.45 : 1.1; // the kingdom has large white areas
-      this.bloom.strength = v === this.castle ? 0.18 : 0.32;
+      this.bloom.threshold = v === this.castle ? 1.45 : 0.95; // only bright spell effects glow; the citadel has large white areas
+      this.bloom.strength = v === this.castle ? 0.18 : 0.3;
       this.pass.scene = v.scene;
       this.pass.camera = v.camera;
       this.composer.render(dt);
@@ -476,8 +482,8 @@ class Game {
       </div>
       <div class="m3-nodes">${nodes}</div>
       <div class="cm-panel m3-botbar">
-        <button class="cm-btn" data-act="castle">Kingdom ${key('C')}</button>
-        <button class="cm-btn" data-act="cats">Cats ${key('K')}</button>
+        <button class="cm-btn" data-act="castle">Citadel ${key('C')}</button>
+        <button class="cm-btn" data-act="cats">Mages ${key('K')}</button>
         <button class="cm-btn" data-act="trophies">Trophies ${key('T')}</button>
         <button class="cm-btn" data-act="chest">Treasure chest</button>
       </div>`, null, {
@@ -507,9 +513,9 @@ class Game {
     const rows = TROPHIES.map((tr) => {
       const have = Math.min(tr.goal, tr.stat(this));
       const done = this.save.done.includes(tr.id);
-      return `<div class="m3-trophy${done ? ' done' : ''}"><span>${tr.name}</span><span class="m3-num">${done ? CHECK : `${have}/${tr.goal}`}</span><div class="m3-meter"><i style="width:${(have / tr.goal) * 100}%"></i></div><small>Prize: ${tr.reward[1]} ${BOOSTER[tr.reward[0]].name}</small></div>`;
+      return `<div class="m3-trophy${done ? ' done' : ''}"><span>${tr.name}</span><span class="m3-num">${done ? CHECK : `${have}/${tr.goal}`}</span><div class="m3-meter"><i style="width:${(have / tr.goal) * 100}%"></i></div><small>Reward: ${tr.reward[1]} ${BOOSTER[tr.reward[0]].name}</small></div>`;
     }).join('');
-    this.overlay(`<h2 class="cm-title">Trophies</h2><div class="cm-help">${this.save.done.length} of ${TROPHIES.length} won. Each trophy pays boosters.</div>
+    this.overlay(`<h2 class="cm-title">Trophies</h2><div class="cm-help">${this.save.done.length} of ${TROPHIES.length} won. Each trophy pays out boosters.</div>
       <div class="m3-scroll" tabindex="0">${rows}</div>
       <div class="m3-row"><button class="cm-btn main" data-act="resume">Back ${key('Esc')}</button></div>`, () => this.closeOverlay());
   }
@@ -530,7 +536,8 @@ class Game {
     const num = done ? CHECK : `<span class="m3-num">${left}</span>`;
     if (g.type === 'score') return `<span class="m3-goal"><span class="cm-label">Score</span>${num}</span>`;
     const icon = g.type === 'collect' ? 'p' + g.color : g.type;
-    return `<span class="m3-goal${done ? ' done' : ''}"><img class="icon" src="${this.icons.pic[icon]}" alt="${icon}">${num}</span>`;
+    const name = g.type === 'collect' ? GEMS[g.color!] : GOAL_NAME[g.type];
+    return `<span class="m3-goal${done ? ' done' : ''}" title="${name}"><img class="icon" src="${this.icons.pic[icon]}" alt="${name}">${num}</span>`;
   }
 
   private showPre(n: number): void {
@@ -556,8 +563,8 @@ class Game {
       <div class="m3-row">${lv.goals.map((g) => this.goalHtml(g, probe.remaining(g))).join('')}</div>
       <div class="cm-label">${lv.moves} moves ${won ? stars(this.save.stars[n]) : ''}</div>
       <div class="m3-row">${boost('puff')}${boost('rainbow')}</div>
-      <p class="cm-help m3-help">${lv.tip ?? (won ? 'Win the crown challenge to earn a crown for cat outfits.' : '')}</p>
-      <div class="m3-row"><button class="cm-btn" data-act="map">Back ${key('Esc')}</button>${crownBtn}<button class="cm-btn main" data-act="play">Play ${key('Enter')}</button></div>`,
+      <p class="cm-help m3-help">${lv.tip ?? (won ? 'Beat the crown challenge to earn a crown. Crowns buy mage outfits.' : '')}</p>
+      <div class="m3-row"><button class="cm-btn" data-act="map">Back ${key('Esc')}</button>${crownBtn}<button class="cm-btn main" data-act="play">Start ${key('Enter')}</button></div>`,
     () => this.showMap(this.world), { 1: () => this.pick('puff'), 2: () => this.pick('rainbow'), w: () => won && this.start(true) });
   }
 
@@ -583,7 +590,7 @@ class Game {
   // ---------- play ----------
 
   private hudHtml(): string {
-    return `<div class="cm-panel m3-hud"></div><div class="m3-helpbar"><div class="cm-panel cm-help">Swipe, drag or click two pieces. Keys: arrows move, Enter picks.</div></div><div class="m3-pops"></div>`;
+    return `<div class="cm-panel m3-hud"></div><div class="m3-helpbar"><div class="cm-panel cm-help">Swipe, drag or click two gems to swap. Keys: arrows move, Enter selects.</div></div><div class="m3-pops"></div>`;
   }
 
   private start(crownRun = this.crownRun): void {
@@ -646,13 +653,31 @@ class Game {
     setTimeout(() => d.remove(), 1000);
   }
 
-  private async run(steps: Step[]): Promise<void> {
+  /** Anime speed lines: thin streaks from the board centre for half a second, with an optional slammed-in callout. */
+  private impact(text = ''): void {
+    const box = this.ui.querySelector('.m3-pops');
+    const b = this.board;
+    if (!box || !b || reducedMotion()) return;
+    const [x, y] = this.view.screenOf((b.w - 1) / 2, (b.h - 1) / 2);
+    box.querySelector('.m3-speed')?.remove();
+    const d = document.createElement('div');
+    d.className = 'm3-speed';
+    d.style.cssText = `--x:${x}px;--y:${y}px`;
+    box.append(d);
+    setTimeout(() => d.remove(), 520);
+    if (text) this.pop(text, x, y, 'big');
+  }
+
+  private async run(steps: Step[], combo = ''): Promise<void> {
     const b = this.board!;
     this.busy = true;
     this.view.hint = null;
     let score = steps.length ? steps[0].score : b.score;
     let chain = 1;
+    let nova = false;
+    if (combo) this.impact(combo);
     for (const s of steps) {
+      if (!combo && !nova && s.fx.some((f) => f.t === 'beam')) { nova = true; this.impact('Prism Nova'); }
       // where pieces vanish this step, for the score pop
       let n = 0, sx = 0, sy = 0;
       s.cells.forEach((c, i) => {
@@ -667,7 +692,8 @@ class Game {
         if (s.depth > chain) {
           chain = s.depth;
           const [cx, cy] = this.view.screenOf((b.w - 1) / 2, (b.h - 1) / 2);
-          if (chain >= 2) this.pop(CALLOUT[Math.min(chain, CALLOUT.length - 1)], cx, cy, 'big');
+          if (chain >= 3) this.impact(CALLOUT[Math.min(chain, CALLOUT.length - 1)]);
+          else if (chain >= 2) this.pop(CALLOUT[chain], cx, cy, 'big');
           if (chain >= 4) this.view.jolt(0.12);
         }
       }
@@ -695,8 +721,10 @@ class Game {
     this.view.selected = -1;
     const b = this.board!;
     if (b.cells[a].piece?.kind === 'rainbow' && b.cells[c].piece?.kind === 'rainbow') this.save.stats.doubles++;
+    const pa = b.cells[a].piece, pc = b.cells[c].piece;
+    const combo = isSpecial(pa) && isSpecial(pc) ? (pa!.kind === 'rainbow' || pc!.kind === 'rainbow' ? 'Prism Nova' : 'Spell fusion') : '';
     const r = b.swap(a, c);
-    if (r) await this.run(r.steps);
+    if (r) await this.run(r.steps, combo);
   }
 
   private async tap(i: number): Promise<void> {
@@ -765,11 +793,11 @@ class Game {
     this.modal = 'pause';
     const q = (id: Quality, label: string) => `<button class="cm-btn${this.save.quality === id ? ' on' : ''}" data-act="quality" data-id="${id}">${label}</button>`;
     this.overlay(`<h2 class="cm-title">Paused</h2>
-      <div class="m3-row"><button class="cm-btn main" data-act="resume">Play on ${key('Esc')}</button></div>
+      <div class="m3-row"><button class="cm-btn main" data-act="resume">Resume ${key('Esc')}</button></div>
       <div class="m3-row"><button class="cm-btn" data-act="restart">Restart</button><button class="cm-btn" data-act="map">Map</button></div>
-      <div class="cm-label">Picture quality (now ${this.hi ? 'High' : 'Low'})</div>
+      <div class="cm-label">Graphics (now ${this.hi ? 'High' : 'Low'})</div>
       <div class="m3-row">${q('auto', 'Auto')}${q('high', 'High')}${q('low', 'Low')}</div>
-      <p class="cm-help m3-help">Low is smoother on tablets and older laptops.</p>`,
+      <p class="cm-help m3-help">Low runs smoother on tablets and older laptops.</p>`,
     () => this.closeOverlay());
   }
 
@@ -791,8 +819,8 @@ class Game {
     this.overlay(`<h2 class="cm-title">Out of moves</h2>
       <div class="m3-row">${b.def.goals.map((g) => this.goalHtml(g, b.remaining(g))).join('')}</div>
       <div class="m3-row"><button class="cm-btn main" data-act="more">+5 moves ${key('Enter')}</button></div>
-      <p class="cm-help m3-help">Answer a question to keep playing.</p>
-      <div class="m3-row"><button class="cm-btn" data-act="restart">Try again</button><button class="cm-btn" data-act="map">Map ${key('Esc')}</button></div>`,
+      <p class="cm-help m3-help">Answer a question to keep going.</p>
+      <div class="m3-row"><button class="cm-btn" data-act="restart">Retry</button><button class="cm-btn" data-act="map">Map ${key('Esc')}</button></div>`,
     () => this.showMap(this.world));
   }
 
@@ -811,7 +839,7 @@ class Game {
     this.music();
     this.sfx('win');
     if (b.moves > 0) {
-      this.banner('Bonus!');
+      this.banner('Final surge');
       await new Promise((r) => setTimeout(r, reducedMotion() ? 200 : 700));
       this.ui.querySelector('.m3-banner')?.remove();
       for (const s of b.finale()) { this.stepSound(s, 1); await this.view.play(s); this.updateHud(s); }
@@ -825,11 +853,11 @@ class Game {
     this.save.best[n] = Math.max(this.save.best[n] ?? 0, b.score);
     const prizes: string[] = [];
     const prize = (img: string, text: string) => prizes.push(`<div class="m3-row m3-prize"><img class="icon" src="${img}" alt=""><span>${text}</span></div>`);
-    if (this.crownRun && !this.save.crowns[n]) { this.save.crowns[n] = 1; prize(this.icons.pic.crown, '<b>Crown won</b><br>Spend crowns on cat outfits.'); }
+    if (this.crownRun && !this.save.crowns[n]) { this.save.crowns[n] = 1; prize(this.icons.pic.crown, '<b>Crown won</b><br>Spend crowns on mage outfits.'); }
     const reward = first ? rewardFor(n) : null;
     if (reward) { this.save.boosters[reward]++; prize(this.icons.pic[reward], `<b>+1 ${BOOSTER[reward].name}</b>`); }
-    for (const c of this.grantCats()) prize(this.icons.cat(c, ''), `<b>${c.name} is safe</b><br>${c.name} moved into your kingdom.`);
-    if (this.areasOpen() > areas) prize(this.icons.pic.p5, `<b>New land: ${AREAS[this.areasOpen() - 1].name}</b><br>Build it up in your kingdom.`);
+    for (const c of this.grantCats()) prize(this.icons.cat(c, ''), `<b>${c.name} rescued</b><br>${c.name} joins Spellpaw Citadel.`);
+    if (this.areasOpen() > areas) prize(this.icons.pic.p5, `<b>New land: ${AREAS[this.areasOpen() - 1].name}</b><br>Build it up in your citadel.`);
     prizes.push(...this.trophies());
     this.store();
     this.syncKingdom();
@@ -841,7 +869,7 @@ class Game {
       <div class="m3-bigstars">${stars(got)}</div>
       <div class="m3-num m3-score">${b.score}</div>
       ${prizes.join('')}
-      <div class="m3-row"><button class="cm-btn" data-act="map">Map ${key('Esc')}</button>${hasNext ? `<button class="cm-btn main" data-act="next">Next ${key('Enter')}</button>` : `<button class="cm-btn main" data-act="castle">My kingdom</button>`}</div>`,
+      <div class="m3-row"><button class="cm-btn" data-act="map">Map ${key('Esc')}</button>${hasNext ? `<button class="cm-btn main" data-act="next">Next ${key('Enter')}</button>` : `<button class="cm-btn main" data-act="castle">Citadel</button>`}</div>`,
     () => this.showMap());
   }
 
@@ -875,7 +903,7 @@ class Game {
       <div class="m3-items m3-scroll">${rows}</div>
       <div class="m3-designs"></div>
       <p class="cm-help m3-help"></p>
-      <div class="m3-row"><button class="cm-btn" data-act="map">Map ${key('Esc')}</button><button class="cm-btn" data-act="cats">Cats ${key('K')}</button><button class="cm-btn" data-act="area" data-n="-9">Whole kingdom</button></div>
+      <div class="m3-row"><button class="cm-btn" data-act="map">Map ${key('Esc')}</button><button class="cm-btn" data-act="cats">Mages ${key('K')}</button><button class="cm-btn" data-act="area" data-n="-9">Whole citadel</button></div>
     </div>`, () => this.showMap(), {
       q: () => area > 0 && this.showCastle(area - 1),
       e: () => area + 1 < AREAS.length && this.showCastle(area + 1),
@@ -892,7 +920,7 @@ class Game {
     if (!box) return;
     box.innerHTML = it.designs.map((d, k) => `<button class="cm-btn${owned === k ? ' owned' : ''}" data-act="design" data-id="${id}" data-n="${k}">${d}<small>${owned === k ? 'Placed' : owned !== undefined ? 'Swap' : star(true) + it.cost}</small></button>`).join('');
     this.ui.querySelectorAll('.m3-items .cm-btn').forEach((b) => b.classList.toggle('sel', (b as HTMLElement).dataset.id === id));
-    this.help(owned !== undefined ? 'Pick a look. Swapping is free.' : this.freeStars() >= it.cost ? `Pick a look to build it for ${it.cost} stars.` : `Win more stars: ${it.cost - this.freeStars()} more needed.`);
+    this.help(owned !== undefined ? 'Choose a design. Swapping is free.' : this.freeStars() >= it.cost ? `Choose a design to build it for ${it.cost} stars.` : `${it.cost - this.freeStars()} more stars needed.`);
   }
 
   private help(text: string): void {
@@ -925,13 +953,13 @@ class Game {
     const owned = Object.keys(this.save.cats).length;
     const cells = CATS.map((c) => {
       const has = this.save.cats[c.id] !== undefined;
-      return `<button class="m3-cat${has ? '' : ' locked'}${c.legend ? ' legend' : ''}" data-act="cat" data-id="${c.id}" aria-label="${has ? c.name : 'Cat not rescued yet'}"><img src="${this.icons.cat(c, has ? this.save.cats[c.id] : '')}" alt=""><span>${has ? c.name : '?'}</span></button>`;
+      return `<button class="m3-cat${has ? '' : ' locked'}${c.legend ? ' legend' : ''}" data-act="cat" data-id="${c.id}" aria-label="${has ? c.name : 'Mage not rescued yet'}"><img src="${this.icons.cat(c, has ? this.save.cats[c.id] : '')}" alt=""><span>${has ? c.name : '?'}</span></button>`;
     }).join('');
     this.mount(`<div class="cm-panel m3-side">
-      <div class="m3-top"><h1 class="cm-title">My cats</h1><span class="m3-total m3-num">${owned}/${CATS.length} &nbsp;${crown()}${this.freeCrowns()}</span></div>
+      <div class="m3-top"><h1 class="cm-title">Cat mages</h1><span class="m3-total m3-num">${owned}/${CATS.length} &nbsp;${crown()}${this.freeCrowns()}</span></div>
       <div class="m3-catgrid m3-scroll">${cells}</div>
       <div class="m3-catinfo"></div>
-      <div class="m3-row"><button class="cm-btn" data-act="map">Map ${key('Esc')}</button><button class="cm-btn" data-act="castle">Kingdom ${key('C')}</button></div>
+      <div class="m3-row"><button class="cm-btn" data-act="map">Map ${key('Esc')}</button><button class="cm-btn" data-act="castle">Citadel ${key('C')}</button></div>
     </div>`, () => this.showMap(), { c: () => this.showCastle() }, id ? `[data-act="cat"][data-id="${id}"]` : '[data-act="cat"]');
     this.pickCat(id || CATS[0].id);
   }
@@ -949,9 +977,9 @@ class Game {
       const k = CATS.indexOf(c);
       info.innerHTML = c.legend
         ? this.worldDone(c.world)
-          ? `<div class="cm-help">${c.name} is a legendary cat. Answer a big question to bring ${c.name} home.</div><div class="m3-row"><button class="cm-btn main" data-act="legend" data-id="${id}">Rescue ${c.name}</button></div>`
-          : `<div class="cm-help">A legendary cat. Finish ${w.name} to meet it.</div>`
-        : `<div class="cm-help">Win level ${w.from + 5 * ((k % 4) + 1)} in ${w.name} to rescue this cat.</div>`;
+          ? `<div class="cm-help">${c.name} is a legendary mage. Answer an epic question to recruit ${c.name}.</div><div class="m3-row"><button class="cm-btn main" data-act="legend" data-id="${id}">Recruit ${c.name}</button></div>`
+          : `<div class="cm-help">A legendary mage. Clear ${w.name} to unlock.</div>`
+        : `<div class="cm-help">Win level ${w.from + 5 * ((k % 4) + 1)} in ${w.name} to rescue this mage.</div>`;
       return;
     }
     const worn = this.save.cats[id];
@@ -959,7 +987,7 @@ class Game {
       const own = !acc || this.save.acc.includes(acc);
       return `<button class="cm-btn m3-chip${worn === acc ? ' on' : ''}" data-act="wear" data-id="${acc}">${name}${own ? '' : `<small>${crown()}${cost}</small>`}</button>`;
     };
-    info.innerHTML = `<div class="m3-row"><img class="m3-portrait" src="${this.icons.cat(c, worn)}" alt=""><div><b>${c.name}</b><div class="cm-help">${c.legend ? 'Legendary cat' : 'From ' + WORLDS[c.world].name}. Pick an outfit.</div></div></div>
+    info.innerHTML = `<div class="m3-row"><img class="m3-portrait" src="${this.icons.cat(c, worn)}" alt=""><div><b>${c.name}</b><div class="cm-help">${c.legend ? 'Legendary mage' : 'From ' + WORLDS[c.world].name}. Choose an outfit.</div></div></div>
       <div class="m3-chips">${chip('', 'None', 0)}${ACCESSORIES.map((a) => chip(a.id, a.name, a.cost)).join('')}</div>`;
   }
 
@@ -968,7 +996,7 @@ class Game {
     if (a && !this.save.acc.includes(acc)) {
       if (this.freeCrowns() < a.cost) {
         this.sfx('error');
-        this.toast(`<div class="cm-help">${a.name} costs ${a.cost} crowns. Win crown challenges on levels you have beaten.</div>`);
+        this.toast(`<div class="cm-help">${a.name} costs ${a.cost} crowns. Win crown challenges on levels you have cleared.</div>`);
         return;
       }
       this.save.acc.push(acc);
@@ -984,7 +1012,7 @@ class Game {
   /** Epic question: a legendary cat. */
   private async legend(id: string): Promise<void> {
     const c = CATS.find((x) => x.id === id)!;
-    if (!(await this.bonus(`${c.name}, a legendary cat, joins your kingdom`, true))) return;
+    if (!(await this.bonus(`${c.name}, a legendary mage, joins Spellpaw Citadel`, true))) return;
     this.save.cats[id] = '';
     this.sfx('meow');
     this.sfx('cheer', { volume: 0.6 });

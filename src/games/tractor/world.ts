@@ -23,6 +23,8 @@ export interface PlotState {
 export interface Spot { x: number; z: number; r: number; h: number }
 
 export const PAD = { x: 0, z: 0, r: 4.6 };
+/** Where the sun stands, from the player: low and golden. The light, the sky and the light shafts all use it. */
+export const SUN = new THREE.Vector3(30, 30, 34);
 const BARN = { x: 0, z: 13, hw: 4.4, hd: 3.9 };
 const WATER_Y = -0.42;
 const SITE: Record<D.BuildId, [number, number, number]> = { silo: [8.6, 14, 0], market: [-12.5, 2, Math.PI / 2], windmill: [18, -9, 0.5], greenhouse: [-14.5, 15, 0], pen: [21, 12, 0] };
@@ -285,7 +287,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
   ground.receiveShadow = true;
   group.add(ground);
 
-  const waterMat = new THREE.MeshPhongMaterial({ color: L.water, shininess: 120, specular: 0xffffff, transparent: true, opacity: 0.9 });
+  const waterMat = new THREE.MeshToonMaterial({ color: L.water, gradientMap: M.GRAD, emissive: L.water, emissiveIntensity: 0.3, transparent: true, opacity: 0.9 });
   const water = new THREE.Mesh(new THREE.PlaneGeometry(G * 2, G * 2), waterMat);
   water.rotation.x = -Math.PI / 2;
   water.position.y = WATER_Y;
@@ -299,17 +301,20 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     _o.updateMatrix();
     im.setMatrixAt(i, _o.matrix);
   };
-  const instanced = (g: THREE.BufferGeometry, mat: THREE.Material, spots: number[][], shadow = true) => {
+  /** `ink` = outline thickness; clutter is only outlined on High. */
+  const instanced = (g: THREE.BufferGeometry, mat: THREE.Material, spots: number[][], shadow = true, ink = 0, sway = 0) => {
     const im = new THREE.InstancedMesh(g, mat, spots.length);
     spots.forEach(([x, z, rot, s], i) => place(im, i, x, z, rot, s));
     im.castShadow = shadow;
     im.receiveShadow = true;
     im.computeBoundingSphere();
     group.add(im);
+    if (ink && !low) group.add(M.inkInstanced(im, ink, sway));
     return im;
   };
+  const inkHi = (t: number) => (low ? 0 : t);
   for (const b of bridges) {
-    const m = M.mesh(M.bridgeGeometry(b.len));
+    const m = M.mesh(M.bridgeGeometry(b.len), M.MAT, true, inkHi(0.05));
     m.position.set(b.x, (b.hA + b.hB) / 2 + 0.12, b.z);
     m.rotation.order = 'YZX';
     m.rotation.y = -Math.atan2(b.az, b.ax);
@@ -393,7 +398,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     });
     // "For sale" sign on the side facing the barn.
     const dl = Math.hypot(def.x, def.z), sx = def.x - (def.x / dl) * (Math.min(def.w, def.d) / 2 + 2.5), sz = def.z - (def.z / dl) * (Math.min(def.w, def.d) / 2 + 2.5);
-    const sign = M.mesh(M.signGeometry());
+    const sign = M.mesh(M.signGeometry(), M.MAT, true, inkHi(0.04));
     sign.position.set(sx, groundY(sx, sz), sz);
     sign.rotation.y = Math.atan2(-def.x, -def.z);
     sign.scale.setScalar(1.3);
@@ -428,7 +433,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
   plots.forEach(drawPlot);
 
   // ---------- barnyard ----------
-  const barn = M.mesh(M.barnGeometry(farm.barn));
+  const barn = M.mesh(M.barnGeometry(farm.barn), M.MAT, true, 0.1);
   barn.position.set(BARN.x, 0, BARN.z);
   barn.receiveShadow = true;
   group.add(barn);
@@ -436,7 +441,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
   pad.position.set(PAD.x, 0.02, PAD.z);
   pad.receiveShadow = true;
   group.add(pad);
-  const coin = M.mesh(M.coinGeometry(), M.PAINT);
+  const coin = M.mesh(M.coinGeometry(), M.MAT, true, 0.05);
   group.add(coin);
 
   const built = new Map<D.BuildId, { obj: THREE.Object3D; lv: number; spot: Spot }>();
@@ -452,11 +457,11 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     const obj = new THREE.Group();
     if (id === 'windmill') {
       const [tower, bl, hubY] = M.windmillGeometry(lv);
-      obj.add(M.mesh(tower));
-      blades = M.mesh(bl);
+      obj.add(M.mesh(tower, M.MAT, true, inkHi(0.07)));
+      blades = M.mesh(bl, M.MAT, true, inkHi(0.05));
       blades.position.set(0, hubY, -1.9);
       obj.add(blades);
-    } else obj.add(M.mesh(M.buildingGeometry(id, lv)));
+    } else obj.add(M.mesh(M.buildingGeometry(id, lv), M.MAT, true, inkHi(id === 'pen' ? 0.035 : 0.07)));
     obj.position.set(x, groundY(x, z), z);
     obj.rotation.y = rot;
     group.add(obj);
@@ -469,7 +474,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
   function setDecor(count: number) {
     while (decor.length < count && decor.length < DECOR_SPOTS.length) {
       const [x, z] = DECOR_SPOTS[decor.length];
-      const m = M.mesh(M.decorGeometry(farm.decor[decor.length]));
+      const m = M.mesh(M.decorGeometry(farm.decor[decor.length]), M.MAT, true, inkHi(0.035));
       m.position.set(x, groundY(x, z), z);
       m.rotation.y = Math.atan2(-x, -z);
       m.scale.setScalar(1.15);
@@ -483,7 +488,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
   /** `growth` is 0..1 per animal: babies are small. */
   function setAnimals(growth: number[]) {
     while (animals.length < growth.length) {
-      const m = M.mesh((animalGeo ??= M.animalGeometry(farm.animal)));
+      const m = M.mesh((animalGeo ??= M.animalGeometry(farm.animal)), M.MAT, true, 0.022);
       group.add(m);
       animals.push({ m, a: animals.length * 1.9, r: 1.2 + (animals.length % 3) * 0.9 });
     }
@@ -510,7 +515,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     made++;
   }
   if (plotTrees.length) byKind.set(farm.trees[0], [...(byKind.get(farm.trees[0]) ?? []), ...plotTrees]);
-  for (const [k, spots] of byKind) instanced(M.treeGeometry(k), M.TREE_MAT, spots);
+  for (const [k, spots] of byKind) instanced(M.treeGeometry(k), M.TREE_MAT, spots, true, 0.07, 0.004);
   for (let i = 0; i < 26; i++) {
     const x = (hash(i + 4000 + farmIdx) - 0.5) * farm.radius * 2, z = (hash(i + 4100 + farmIdx) - 0.5) * farm.radius * 2;
     if (free(x, z, 3) && Math.hypot(x, z) < farm.radius) {
@@ -518,26 +523,26 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
       solid(x, z, 1.0, 'rock');
     }
   }
-  instanced(M.rockGeometry(), M.MAT, rocks);
-  if (bales.length) instanced(M.baleGeometry(), M.MAT, bales);
-  if (fencesAt.length) instanced(M.fenceGeometry(), M.MAT, fencesAt.map(([x, z, rot]) => [x, z, rot, SP]));
+  instanced(M.rockGeometry(), M.MAT, rocks, true, 0.05);
+  if (bales.length) instanced(M.baleGeometry(), M.MAT, bales, true, 0.045);
+  if (fencesAt.length) instanced(M.fenceGeometry(), M.MAT, fencesAt.map(([x, z, rot]) => [x, z, rot, SP]), true, 0.03);
   if (!low) {
     // Grass tufts and wild flowers that sway.
     const tufts: number[][] = [];
-    for (let i = 0; tufts.length < 900 && i < 6000; i++) {
+    for (let i = 0; tufts.length < 1500 && i < 9000; i++) {
       const x = (hash(i + 9000) - 0.5) * farm.radius * 2.2, z = (hash(i + 9500) - 0.5) * farm.radius * 2.2;
       if (wet(x, z) === 0 && roadDist(x, z) > 2.5 && Math.hypot(x, z) > 9 && !farm.plots.some((p) => Math.abs(x - p.x) < p.w / 2 + 1 && Math.abs(z - p.z) < p.d / 2 + 1)) tufts.push([x, z, hash(i) * 6.28, 0.6 + hash(i + 3) * 0.8]);
     }
     const tc = new THREE.Color(L.grassB).multiplyScalar(0.82).getHex();
     const tuft = (flower: number | null) => {
       const P = [0, 1, 2, 3].map((i) => {
-        const g = new THREE.ConeGeometry(0.07, 0.55, 3).toNonIndexed();
-        g.translate(0, 0.27, 0);
+        const g = new THREE.ConeGeometry(0.07, 0.8, 3).toNonIndexed();
+        g.translate(0, 0.4, 0);
         g.rotateZ((i - 1.5) * 0.35);
         g.rotateY(i * 1.7);
         return g;
       });
-      if (flower !== null) P.push(new THREE.IcosahedronGeometry(0.11, 0).translate(0.05, 0.6, 0));
+      if (flower !== null) P.push(new THREE.IcosahedronGeometry(0.11, 0).translate(0.05, 0.85, 0));
       const merged = P.map((x, i) => {
         x.deleteAttribute('uv');
         const col = new Float32Array(x.getAttribute('position').count * 3);
@@ -559,23 +564,30 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     new THREE.SphereGeometry(900, 24, 12),
     new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
-      uniforms: { top: { value: new THREE.Color(L.skyTop) }, low: { value: new THREE.Color(L.skyLow) }, sunDir: { value: new THREE.Vector3(0.45, 0.5, 0.74).normalize() }, sunCol: { value: new THREE.Color(L.sun) } },
+      uniforms: { top: { value: new THREE.Color(L.skyTop) }, low: { value: new THREE.Color(L.skyLow) }, sunDir: { value: SUN.clone().normalize() }, sunCol: { value: new THREE.Color(L.sun) } },
       vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
       fragmentShader: `uniform vec3 top; uniform vec3 low; uniform vec3 sunDir; uniform vec3 sunCol; varying vec3 vDir;
-        void main(){ vec3 d = normalize(vDir); float h = clamp(d.y * 1.6 + 0.08, 0.0, 1.0); vec3 col = mix(low, top, pow(h, 0.7));
-          float s = max(dot(d, sunDir), 0.0); col += sunCol * (pow(s, 400.0) * 1.6 + pow(s, 12.0) * 0.22);
+        void main(){ vec3 d = normalize(vDir); float h = clamp(d.y * 1.5 + 0.06, 0.0, 1.0);
+          vec3 col = mix(low, top, pow(h, 0.55));
+          col = mix(col, top * 0.5, smoothstep(0.3, 1.0, d.y));
+          col += vec3(1.0, 0.55, 0.25) * pow(1.0 - abs(d.y), 9.0) * 0.16;
+          float s = max(dot(d, sunDir), 0.0);
+          vec3 rt = normalize(cross(sunDir, vec3(0.0, 1.0, 0.0))); vec3 r = d - sunDir * s;
+          float spokes = 0.55 + 0.45 * sin(atan(dot(r, rt), dot(r, cross(rt, sunDir))) * 16.0);
+          col += sunCol * vec3(1.0, 0.74, 0.5) * pow(s, 5.0) * 0.4;
+          col += sunCol * (smoothstep(0.9982, 0.999, s) * 2.2 + pow(s, 70.0) * spokes * 0.7);
           gl_FragColor = vec4(col, 1.0); }`,
     }),
   );
   sky.renderOrder = -10;
   sky.frustumCulled = false;
   group.add(sky);
-  const far = new THREE.Color(L.rock).lerp(new THREE.Color(L.skyLow), 0.45).getHex();
-  group.add(new THREE.Mesh(M.mountainRing(22, farm.radius + 210, 95, L.rock, L.snowLine, farmIdx * 13 + 1), M.MAT));
-  group.add(new THREE.Mesh(M.mountainRing(16, farm.radius + 330, 170, far, L.snowLine + 0.08, farmIdx * 29 + 5), M.MAT));
-  const nClouds = low ? 8 : 18;
-  const clouds = new THREE.InstancedMesh(M.cloudGeometry(), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x8899aa, fog: false }), nClouds);
-  const cloudAt = Array.from({ length: nClouds }, (_, i) => [(hash(i + 300) - 0.5) * 700, 70 + hash(i + 310) * 50, (hash(i + 320) - 0.5) * 700, 4 + hash(i + 330) * 6]);
+  const far = new THREE.Color(L.rock).lerp(new THREE.Color(L.skyTop).lerp(new THREE.Color(L.skyLow), 0.5), 0.5).getHex();
+  group.add(new THREE.Mesh(M.mountainRing(22, farm.radius + 210, 62, L.rock, L.snowLine, farmIdx * 13 + 1), M.MAT));
+  group.add(new THREE.Mesh(M.mountainRing(16, farm.radius + 330, 120, far, L.snowLine + 0.08, farmIdx * 29 + 5), M.MAT));
+  const nClouds = low ? 8 : 16;
+  const clouds = new THREE.InstancedMesh(M.cloudGeometry(), M.toon({ emissive: new THREE.Color(L.skyLow).lerp(new THREE.Color(0x8a78b8), 0.5), emissiveIntensity: 0.55, fog: false }), nClouds);
+  const cloudAt = Array.from({ length: nClouds }, (_, i) => [(hash(i + 300) - 0.5) * 900, 60 + hash(i + 310) * 60, (0.5 + hash(i + 320) * 0.5) * (i % 2 ? 420 : -420), 7 + hash(i + 330) * 9]);
   clouds.frustumCulled = false;
   group.add(clouds);
 
@@ -586,9 +598,9 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     waterMat.opacity = 0.8 + Math.sin(t * 1.3) * 0.04;
     water.position.y = WATER_Y + Math.sin(t * 0.8) * 0.04;
     cloudAt.forEach(([x, y, z, s], i) => {
-      _o.position.set(((x + t * 2.2 + 350) % 700) - 350, y, z);
+      _o.position.set(((x + t * 2.2 + 450) % 900) - 450, y, z);
       _o.rotation.set(0, i, 0);
-      _o.scale.set(s * 1.4, s * 0.8, s);
+      _o.scale.set(s * 1.3, s, s);
       _o.updateMatrix();
       clouds.setMatrixAt(i, _o.matrix);
     });
@@ -604,7 +616,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     group.traverse((o) => {
       const m = o as THREE.Mesh;
       m.geometry?.dispose();
-      if (m.material && m.material !== M.MAT && m.material !== M.PAINT && m.material !== M.CROP_MAT && m.material !== M.TREE_MAT) (m.material as THREE.Material).dispose();
+      if (m.material && !M.SHARED.has(m.material as THREE.Material)) (m.material as THREE.Material).dispose();
     });
   }
   return { group, farm, plots, groundY, blocked, overlap, move, rescue, things, route, setCrop, drawPlot, setBuild, setDecor, setAnimals, update, dispose, tall, sky, water };

@@ -1,4 +1,4 @@
-/* Munch Hollow HUD and menus. Built on the shared Camalot theme (src/core/theme.css): .cm-panel, .cm-btn, .cm-key, tokens. */
+/* Riftmaw HUD and menus. Built on the shared Camalot theme (src/core/theme.css): .cm-panel, .cm-btn, .cm-key, tokens. */
 html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0e14; overscroll-behavior: none; }
 #hh { position: fixed; inset: 0; font: 500 18px/1.4 var(--cm-ui, system-ui, sans-serif); color: var(--cm-ink, #f4efe6); user-select: none; -webkit-user-select: none; }
 #hh canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
@@ -35,14 +35,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0e14; ove
 
 /* per-item score popups (positioned by game.ts each frame) */
 .hh-scores { inset: 0; overflow: hidden; }
-.hh-sc { position: absolute; left: 0; top: 0; white-space: nowrap; text-align: center; font: 700 15px/1.05 var(--cm-ui); color: #ffffffd0; text-shadow: 0 2px 0 #000b, 0 0 2px #000, 0 0 7px #0009; font-variant-numeric: tabular-nums; will-change: transform, opacity; }
-.hh-sc small { font-size: 0.7em; opacity: 0.85; }
-.hh-sc em { display: block; font-style: normal; font-size: 0.55em; letter-spacing: 0.04em; }
-.hh-sc.t1 { font-size: 19px; font-weight: 800; color: #fff; }
-.hh-sc.t2 { font-size: 25px; font-weight: 800; color: #ffe9a8; }
-.hh-sc.t3 { font-size: 32px; font-weight: 900; color: var(--cm-gold); }
-.hh-sc.t4 { font-size: 40px; font-weight: 900; color: var(--cm-gold); }
-.hh-sc.t5 { font-size: 52px; font-weight: 900; color: var(--cm-gold); text-shadow: 0 3px 0 #000c, 0 0 3px #000, 0 0 18px #ffb300aa; }
+/* anime damage numerals: heavy slanted digits with an ink stroke; gold and larger as the item gets bigger */
+.hh-sc { --ink: color-mix(in srgb, var(--cm-stage, #0b0e14) 80%, #2a0f4a); position: absolute; left: 0; top: 0; white-space: nowrap; text-align: center; font: italic 900 16px/1 var(--cm-ui); letter-spacing: -0.01em; color: var(--cm-ink); -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); font-variant-numeric: tabular-nums; will-change: transform, opacity; }
+.hh-sc small { font-size: 0.65em; }
+.hh-sc em { display: block; margin-top: 2px; font: 800 0.42em/1 var(--cm-ui); letter-spacing: 0.16em; text-transform: uppercase; -webkit-text-stroke-width: 3px; color: var(--cm-ink); }
+.hh-sc.t1 { font-size: 20px; }
+.hh-sc.t2 { font-size: 27px; color: var(--cm-gold-hi); -webkit-text-stroke-width: 5px; }
+.hh-sc.t3 { font-size: 36px; color: var(--cm-gold); -webkit-text-stroke-width: 6px; text-shadow: 0 3px 0 var(--ink); }
+.hh-sc.t4 { font-size: 46px; color: var(--cm-gold); -webkit-text-stroke-width: 7px; text-shadow: 0 4px 0 var(--ink); }
+.hh-sc.t5 { font-size: 62px; color: var(--cm-gold-hi); -webkit-text-stroke-width: 8px; text-shadow: 0 5px 0 var(--ink), 0 0 26px var(--cm-glow); }
+
+/* boost speed lines (class set on #hh by game.ts) and the landmark flash */
+.hh-speed, .hh-flash { position: absolute; pointer-events: none; opacity: 0; }
+.hh-speed { inset: -6%; background: repeating-conic-gradient(#fff0 0deg 4.6deg, #ffffffd0 5deg 5.5deg, #fff0 5.9deg 9.4deg, #ffffff80 9.6deg 9.9deg, #fff0 10.2deg 14deg); -webkit-mask-image: radial-gradient(closest-side, #0000 40%, #000 96%); mask-image: radial-gradient(closest-side, #0000 40%, #000 96%); transition: opacity 0.15s; }
+#hh.boost .hh-speed { opacity: 0.45; animation: hh-speed 0.14s steps(2) infinite; }
+@keyframes hh-speed { to { transform: rotate(2.3deg); } }
+.hh-flash { inset: 0; background: radial-gradient(circle, #fff 0%, #ffffffa0 35%, #fff0 75%); }
+.hh-flash.on { animation: hh-flash 0.5s ease-out; }
+@keyframes hh-flash { from { opacity: 0.9; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #hh.boost .hh-speed { animation: none; } .hh-flash.on { animation: none; } }
 
 
 .hh-pop { top: 84px; left: 50%; transform: translateX(-50%); font: 800 24px/1.2 var(--cm-ui); color: var(--cm-gold); white-space: nowrap; transition: opacity 0.25s; }

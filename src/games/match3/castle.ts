@@ -1,21 +1,21 @@
-// The cat kingdom: Whisker Castle in the middle and one themed island per world around it.
+// The mage realm: Spellpaw Citadel in the middle and one floating themed island per world around it.
 // Stars buy decorations; rescued cats live here and wander between the islands she has opened.
 import {
-  BoxGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, DirectionalLight, DoubleSide, Fog, Group, HemisphereLight,
-  IcosahedronGeometry, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PerspectiveCamera,
+  AdditiveBlending, BoxGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, DirectionalLight, DoubleSide, Fog, Group, HemisphereLight,
+  IcosahedronGeometry, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, OctahedronGeometry, PerspectiveCamera,
   PlaneGeometry, Quaternion, RingGeometry, Scene, SphereGeometry, SRGBColorSpace, TorusGeometry, Vector3, type BufferGeometry,
 } from 'three';
-import { merge, part, type V3 } from './art';
+import { facet, hull, inkMaterial, merge, part, toon, type V3 } from './art';
 import { CATS, catGeometry, type CatDef } from './cats';
 import { centerIn, reducedMotion, type Rect } from './util';
 
 export interface CastleItem { id: string; name: string; cost: number; designs: string[]; at: V3; area: number }
 
 export const AREAS: { id: string; name: string }[] = [
-  { id: 'castle', name: 'Whisker Castle' }, { id: 'frost', name: 'Frost Tower' }, { id: 'garden', name: 'Dragon Garden' },
-  { id: 'shore', name: 'Seashell Shore' }, { id: 'peak', name: 'Powder Peak' }, { id: 'roost', name: 'Ember Roost' },
-  { id: 'canyon', name: 'Canyon Mine' }, { id: 'ballroom', name: 'Starlight Ballroom' }, { id: 'cup', name: 'Kitten Cup' },
-  { id: 'cloud', name: 'Cloud Kingdom' }, { id: 'aurora', name: 'Aurora Lake' }, { id: 'summit', name: 'Crown Summit' },
+  { id: 'castle', name: 'Spellpaw Citadel' }, { id: 'frost', name: 'Frostspire' }, { id: 'garden', name: 'Wyrmwood' },
+  { id: 'shore', name: 'Tidebreak Coast' }, { id: 'peak', name: 'Rimepeak' }, { id: 'roost', name: 'Ember Roost' },
+  { id: 'canyon', name: 'Runestone Canyon' }, { id: 'ballroom', name: 'Astral Hall' }, { id: 'cup', name: 'Arcane Arena' },
+  { id: 'cloud', name: 'Skyhold' }, { id: 'aurora', name: 'Aurora Lake' }, { id: 'summit', name: 'Crown Summit' },
 ];
 
 // ---------- layout ----------
@@ -23,7 +23,8 @@ export const AREAS: { id: string; name: string }[] = [
 const RING = 19; // distance of the outer islands from the castle
 const R = 4.4; // outer island radius
 const R0 = 7.4; // castle island radius
-const WATER = -0.62;
+const WATER = -7; // the twilight sea far below the floating islands
+const RIM = -0.62; // height of the rune rings round each island
 const areaAngle = (k: number) => (k === 0 ? 0 : ((k - 1) / 11) * Math.PI * 2 + 0.29);
 const areaX = (k: number) => (k === 0 ? 0 : Math.sin(areaAngle(k)) * RING);
 const areaZ = (k: number) => (k === 0 ? 0 : Math.cos(areaAngle(k)) * RING);
@@ -36,41 +37,41 @@ function toWorld(k: number, p: V3): V3 {
 const SLOTS: V3[] = [[-2.0, 0, 1.3], [2.0, 0, 1.3], [-1.7, 0, -1.6], [1.7, 0, -1.6]];
 const NEW_ITEMS: [string, string, string[]][][] = [
   [],
-  [['a1_rink', 'Ice rink', ['Round rink', 'Heart rink', 'Star rink']], ['a1_snowcat', 'Snow cat', ['Scarf snow cat', 'Top hat snow cat', 'Bow snow cat']],
-    ['a1_igloo', 'Igloo', ['Snow igloo', 'Ice block igloo', 'Starry igloo']], ['a1_spire', 'Ice spire', ['Blue spire', 'Pink spire', 'Mint spire']]],
-  [['a2_pond', 'Lily pond', ['Pink lilies', 'White lilies', 'Gold lilies']], ['a2_nest', 'Dragon nest', ['Twig nest', 'Mossy nest', 'Golden nest']],
+  [['a1_rink', 'Ice rink', ['Round rink', 'Twin rink', 'Star rink']], ['a1_snowcat', 'Snow guardian', ['Scarf guardian', 'Top hat guardian', 'Ribbon guardian']],
+    ['a1_igloo', 'Igloo', ['Snow igloo', 'Ice block igloo', 'Starry igloo']], ['a1_spire', 'Ice spire', ['Azure spire', 'Rose spire', 'Jade spire']]],
+  [['a2_pond', 'Lily pond', ['Rose lilies', 'White lilies', 'Gold lilies']], ['a2_nest', 'Dragon nest', ['Twig nest', 'Mossy nest', 'Golden nest']],
     ['a2_topiary', 'Topiary', ['Cat topiary', 'Dragon topiary', 'Heart topiary']], ['a2_gate', 'Vine gate', ['Rose gate', 'Ivy gate', 'Wisteria gate']]],
-  [['a3_sand', 'Sand castle', ['Tower sand castle', 'Shell sand castle', 'Flag sand castle']], ['a3_boards', 'Surfboards', ['Sunset boards', 'Ocean boards', 'Candy boards']],
-    ['a3_hut', 'Beach hut', ['Coral hut', 'Teal hut', 'Sunny hut']], ['a3_palm', 'Palm tree', ['Coconut palm', 'Hammock palm', 'Lantern palm']]],
-  [['a4_sled', 'Sled hill', ['Wooden sleds', 'Snow tubes', 'Ski rack']], ['a4_pines', 'Snowy pines', ['Frosted pines', 'Twinkle pines', 'Blue spruce']],
-    ['a4_lodge', 'Lodge', ['Log lodge', 'Stone lodge', 'Gingerbread lodge']], ['a4_lift', 'Ski lift', ['Red lift', 'Blue lift', 'Yellow lift']]],
+  [['a3_sand', 'Sand castle', ['Tower sand castle', 'Shell sand castle', 'Flag sand castle']], ['a3_boards', 'Surfboards', ['Sunset boards', 'Ocean boards', 'Neon boards']],
+    ['a3_hut', 'Beach hut', ['Coral hut', 'Teal hut', 'Amber hut']], ['a3_palm', 'Palm tree', ['Coconut palm', 'Hammock palm', 'Lantern palm']]],
+  [['a4_sled', 'Sled hill', ['Wooden sleds', 'Snow tubes', 'Ski rack']], ['a4_pines', 'Snowy pines', ['Frosted pines', 'Lantern pines', 'Blue spruce']],
+    ['a4_lodge', 'Lodge', ['Log lodge', 'Stone lodge', 'Festival lodge']], ['a4_lift', 'Ski lift', ['Red lift', 'Blue lift', 'Yellow lift']]],
   [['a5_eggs', 'Egg nest', ['Ruby eggs', 'Jade eggs', 'Speckled eggs']], ['a5_brazier', 'Braziers', ['Flame bowls', 'Blue flames', 'Green flames']],
     ['a5_volcano', 'Volcano', ['Lava volcano', 'Violet volcano', 'Golden volcano']], ['a5_perch', 'Dragon perch', ['Red hatchling', 'Blue hatchling', 'Violet hatchling']]],
   [['a6_cart', 'Mine cart', ['Gold cart', 'Gem cart', 'Crystal cart']], ['a6_cactus', 'Cactus garden', ['Tall cactus', 'Paddle cactus', 'Flower cactus']],
     ['a6_shaft', 'Mine entrance', ['Timber entrance', 'Lantern entrance', 'Gem entrance']], ['a6_arch', 'Mesa arch', ['Red rock arch', 'Sandstone arch', 'Painted arch']]],
-  [['a7_floor', 'Dance floor', ['Checker floor', 'Rainbow floor', 'Starlight floor']], ['a7_speakers', 'Music boxes', ['Pink music boxes', 'Blue music boxes', 'Gold music boxes']],
-    ['a7_stage', 'Stage', ['Velvet stage', 'Ribbon stage', 'Star stage']], ['a7_ball', 'Mirror ball', ['Silver ball', 'Gold ball', 'Rose ball']]],
-  [['a8_trophy', 'Trophy', ['Gold cup', 'Silver cup', 'Star cup']], ['a8_goal', 'Soccer goal', ['White goal', 'Gold goal', 'Rainbow goal']],
+  [['a7_floor', 'Dance floor', ['Checker floor', 'Prism floor', 'Starlight floor']], ['a7_speakers', 'Speakers', ['Rose speakers', 'Azure speakers', 'Gold speakers']],
+    ['a7_stage', 'Stage', ['Velvet stage', 'Silk stage', 'Star stage']], ['a7_ball', 'Mirror ball', ['Silver ball', 'Gold ball', 'Rose ball']]],
+  [['a8_trophy', 'Trophy', ['Gold cup', 'Silver cup', 'Star cup']], ['a8_goal', 'Arena goal', ['White goal', 'Gold goal', 'Prism goal']],
     ['a8_stands', 'Stands', ['Blue stands', 'Red stands', 'Green stands']], ['a8_board', 'Scoreboard', ['Classic board', 'Neon board', 'Paw board']]],
-  [['a9_swing', 'Cloud swing', ['Pink swing', 'Sky swing', 'Gold swing']], ['a9_bridge', 'Rainbow bridge', ['Rainbow bridge', 'Pastel bridge', 'Sunset bridge']],
-    ['a9_palace', 'Cloud palace', ['Sky palace', 'Rose palace', 'Sun palace']], ['a9_balloon', 'Balloon', ['Candy balloon', 'Ocean balloon', 'Sunrise balloon']]],
-  [['a10_boat', 'Row boat', ['Red boat', 'Teal boat', 'Sail boat']], ['a10_lanterns', 'Lantern string', ['Gold lanterns', 'Aqua lanterns', 'Pink lanterns']],
+  [['a9_swing', 'Cloud swing', ['Rose swing', 'Sky swing', 'Gold swing']], ['a9_bridge', 'Prism bridge', ['Prism bridge', 'Dawn bridge', 'Sunset bridge']],
+    ['a9_palace', 'Sky palace', ['Azure palace', 'Rose palace', 'Sun palace']], ['a9_balloon', 'Sky balloon', ['Crimson balloon', 'Ocean balloon', 'Sunrise balloon']]],
+  [['a10_boat', 'Row boat', ['Red boat', 'Teal boat', 'Sail boat']], ['a10_lanterns', 'Lantern string', ['Gold lanterns', 'Aqua lanterns', 'Rose lanterns']],
     ['a10_cabin', 'Lake cabin', ['Pine cabin', 'Berry cabin', 'Sky cabin']], ['a10_dock', 'Lake dock', ['Lantern dock', 'Fishing dock', 'Bench dock']]],
-  [['a11_statue', 'Cat statue', ['Gold statue', 'Marble statue', 'Crystal statue']], ['a11_throne', 'Throne', ['Royal throne', 'Ruby throne', 'Sapphire throne']],
+  [['a11_statue', 'Founder statue', ['Gold statue', 'Marble statue', 'Crystal statue']], ['a11_throne', 'Throne', ['Royal throne', 'Ruby throne', 'Sapphire throne']],
     ['a11_gate', 'Royal gate', ['Violet gate', 'Rose gate', 'Sky gate']], ['a11_beacon', 'Summit beacon', ['Gold beacon', 'Star beacon', 'Rose beacon']]],
 ];
 
 export const ITEMS: CastleItem[] = [
-  { id: 'rug', name: 'Rug', cost: 2, designs: ['Rose rug', 'Sky rug', 'Fish rug'], at: [0, 0, 0.9], area: 0 },
-  { id: 'bed', name: 'Cat bed', cost: 3, designs: ['Donut bed', 'Basket bed', 'Royal bed'], at: [-3.3, 0, 1.3], area: 0 },
+  { id: 'rug', name: 'Sigil carpet', cost: 2, designs: ['Crimson sigil', 'Azure sigil', 'Koi sigil'], at: [0, 0, 0.9], area: 0 },
+  { id: 'bed', name: 'Rest nook', cost: 3, designs: ['Ring cushion', 'Woven basket', 'Canopy bed'], at: [-3.3, 0, 1.3], area: 0 },
   { id: 'garden', name: 'Garden', cost: 4, designs: ['Rose garden', 'Catnip patch', 'Moon flowers'], at: [3.4, 0, 1.2], area: 0 },
-  { id: 'fountain', name: 'Fountain', cost: 5, designs: ['Fish fountain', 'Star fountain', 'Shell fountain'], at: [0, 0, 3.3], area: 0 },
-  { id: 'banner', name: 'Banner', cost: 5, designs: ['Paw banner', 'Moon banner', 'Heart banner'], at: [0, 2.75, -0.24], area: 0 },
-  { id: 'tower', name: 'Tower', cost: 6, designs: ['Wizard tower', 'Snow tower', 'Candy tower'], at: [3.9, 0, -2.4], area: 0 },
-  { id: 'lamps', name: 'Lamps', cost: 6, designs: ['Star lamps', 'Fish lamps', 'Moon lamps'], at: [0, 0, 2.0], area: 0 },
-  { id: 'cattree', name: 'Cat tree', cost: 7, designs: ['Oak cat tree', 'Cloud cat tree', 'Candy cat tree'], at: [-3.9, 0, -2.0], area: 0 },
+  { id: 'fountain', name: 'Fountain', cost: 5, designs: ['Koi fountain', 'Star fountain', 'Shell fountain'], at: [0, 0, 3.3], area: 0 },
+  { id: 'banner', name: 'Banner', cost: 5, designs: ['Paw crest', 'Moon crest', 'Heart crest'], at: [0, 2.75, -0.24], area: 0 },
+  { id: 'tower', name: 'Tower', cost: 6, designs: ['Mage tower', 'Frost tower', 'Rose tower'], at: [3.9, 0, -2.4], area: 0 },
+  { id: 'lamps', name: 'Lamps', cost: 6, designs: ['Star lamps', 'Koi lamps', 'Moon lamps'], at: [0, 0, 2.0], area: 0 },
+  { id: 'cattree', name: 'Watch perch', cost: 7, designs: ['Oak perch', 'Cloud perch', 'Rose perch'], at: [-3.9, 0, -2.0], area: 0 },
   { id: 'dragon', name: 'Dragon', cost: 8, designs: ['Ruby dragon', 'Jade dragon', 'Gold dragon'], at: [-2.6, 0, 4.0], area: 0 },
-  { id: 'arch', name: 'Arch', cost: 9, designs: ['Rainbow arch', 'Stone arch', 'Crystal arch'], at: [3.0, 0, 4.0], area: 0 },
+  { id: 'arch', name: 'Arch', cost: 9, designs: ['Prism arch', 'Stone arch', 'Crystal arch'], at: [3.0, 0, 4.0], area: 0 },
   ...NEW_ITEMS.flatMap((list, a) => list.map(([id, name, designs], k): CastleItem => ({ id, name, designs, cost: a + 4 + k, at: toWorld(a, SLOTS[k]), area: a }))),
 ];
 
@@ -87,10 +88,33 @@ const _a = new Color(), _b = new Color();
 const mix = (a: number, b: number, t: number) => _a.set(a).lerp(_b.set(b), Math.max(0, Math.min(1, t))).getHex();
 /** Vertical gradient over the part's own height. */
 const grad = (lo: number, hi: number, y0: number, y1: number) => (y: number) => mix(lo, hi, (y - y0) / (y1 - y0));
-const RAINBOW = [0xff5c8a, 0xff9a2e, 0xffd23f, 0x4fd16b, 0x3fa2ff, 0xa56bff];
+const RAINBOW = [0xe0264e, 0xf06a14, 0xffd21a, 0x1fae5a, 0x1f7fe8, 0x8a4be8]; // the six gem colours
 const GOLD = 0xffd23f, WHITE = 0xffffff, WOOD = 0xb07a45, DARKWOOD = 0x7a4f2c, STONE = 0xcfc6e6, GLOW = 0xfff0a8;
 type Col = number | ((y: number, x: number) => number);
 type Add = (g: BufferGeometry, color: Col, p?: V3, r?: V3, s?: number | V3) => void;
+const _h = { h: 0, s: 0, l: 0 };
+/** The realm's colour grade: pastels come down to rich mid tones, every hue gains saturation. */
+function tone(c: number): number {
+  _a.set(c).getHSL(_h);
+  const l = _h.l > 0.3 ? 0.3 + (_h.l - 0.3) * 0.5 : _h.l * 0.88; // lightness is linear here, so 0.3 is already a bright mid tone
+  return _a.setHSL(_h.h, Math.min(1, _h.s * (_h.l > 0.55 ? 0.8 : 1.15)), l).getHex();
+}
+const toned = (c: Col): Col => (typeof c === 'number' ? tone(c) : (y, x) => tone(c(y, x)));
+const RUNE = 0x7af0ff, ROOF = 0x2438c0, MOON = 0xe8e2ff, SHADE = 0x4a3f96;
+/** Slender mage spire from y0: shaft, flared gallery with a gold band, tall roof, finial, lit slit windows facing +z. */
+function spire(A: Add, x: number, z: number, r: number, h: number, roofH: number, roof = ROOF, y0 = 0): void {
+  A(cyl(r * 0.82, r, h, 12), grad(SHADE, MOON, -h / 2, h / 2), [x, y0 + h / 2, z]);
+  A(cyl(r * 1.28, r * 0.84, r * 0.5, 12), MOON, [x, y0 + h, z]);
+  A(cyl(r * 1.32, r * 1.32, 0.09, 12), GOLD, [x, y0 + h + r * 0.28, z]);
+  A(cone(r * 1.2, roofH, 12), grad(mix(roof, 0x05041a, 0.5), mix(roof, 0x8fd0ff, 0.3), -roofH / 2, roofH / 2), [x, y0 + h + r * 0.3 + roofH / 2, z]);
+  A(gem(r * 0.24), GOLD, [x, y0 + h + r * 0.3 + roofH + r * 0.2, z], [0, 0, 0], [1, 2.2, 1]);
+  for (let i = 1; i * 1.5 < h; i++) A(box(r * 0.3, r * 0.8, 0.12), GLOW, [x, y0 + i * 1.5, z + r * 0.93]);
+}
+/** A drifting shard of rock with a crystal under it. */
+function shard(A: Add, p: V3, s: number, crystal: number): void {
+  A(facet(new IcosahedronGeometry(0.7 * s, 0)), grad(0x1a1238, 0x6a5a9a, -0.6 * s, 0.6 * s), p, [0.3, p[0], 0.2], [1.2, 0.75, 1]);
+  A(cone(0.2 * s, 0.9 * s, 5), grad(mix(crystal, 0xffffff, 0.5), crystal, -0.45 * s, 0.45 * s), [p[0], p[1] - 0.75 * s, p[2]], [Math.PI, 0, 0]);
+}
 
 function pine(A: Add, x: number, z: number, s: number, leaf: number, snow: boolean): void {
   A(cyl(0.1 * s, 0.14 * s, 0.5 * s, 6), DARKWOOD, [x, 0.25 * s, z]);
@@ -100,11 +124,12 @@ function pine(A: Add, x: number, z: number, s: number, leaf: number, snow: boole
 }
 function tree(A: Add, x: number, z: number, s: number, leaf = 0x58b85a): void {
   A(cyl(0.12 * s, 0.18 * s, 0.9 * s, 7), DARKWOOD, [x, 0.45 * s, z]);
-  A(sph(0.75 * s), grad(mix(leaf, 0x1a5a3a, 0.35), mix(leaf, 0xd8ff90, 0.3), -0.7 * s, 0.7 * s), [x, 1.35 * s, z]);
-  A(sph(0.5 * s), grad(leaf, mix(leaf, 0xd8ff90, 0.4), -0.5 * s, 0.5 * s), [x + 0.45 * s, 1.0 * s, z + 0.2 * s]);
+  const crown = (r: number) => facet(new IcosahedronGeometry(r * s, 1)), lf = mix(leaf, 0x0f6a6a, 0.45);
+  A(crown(0.8), grad(mix(lf, 0x0a1a4a, 0.55), mix(lf, 0xb8ffc0, 0.25), -0.7 * s, 0.7 * s), [x, 1.5 * s, z], [0, x, 0], [1, 1.25, 1]);
+  A(crown(0.5), grad(mix(lf, 0x0a1a4a, 0.4), mix(lf, 0xb8ffc0, 0.35), -0.5 * s, 0.5 * s), [x + 0.5 * s, 1.0 * s, z + 0.2 * s]);
 }
 function puffs(A: Add, x: number, y: number, z: number, s: number, col = WHITE): void {
-  const c = grad(mix(col, 0xb8c8f0, 0.45), col, -0.8 * s, 0.4 * s);
+  const c = grad(mix(col, 0x3a2f8a, 0.6), col, -0.8 * s, 0.4 * s);
   A(sph(0.8 * s), c, [x, y, z]);
   A(sph(0.6 * s), c, [x + 0.8 * s, y - 0.12 * s, z + 0.1 * s]);
   A(sph(0.55 * s), c, [x - 0.75 * s, y - 0.15 * s, z - 0.1 * s]);
@@ -136,7 +161,7 @@ function smallCat(A: Add, color: number, p: V3, ry = 0, s = 1): void {
 /** Geometry for one item design, around the item's own origin, facing +z. */
 function itemGeometry(id: string, d: number): BufferGeometry {
   const P: BufferGeometry[] = [];
-  const A: Add = (g, color, p = [0, 0, 0], r = [0, 0, 0], s = 1) => { P.push(part(g, color, p, r, s)); };
+  const A: Add = (g, color, p = [0, 0, 0], r = [0, 0, 0], s = 1) => { P.push(part(g, toned(color), p, r, s)); };
   const pick = <T,>(...v: T[]): T => v[d];
   switch (id) {
     // ---- Whisker Castle ----
@@ -226,10 +251,13 @@ function itemGeometry(id: string, d: number): BufferGeometry {
       break;
     }
     case 'arch':
-      if (d === 0) RAINBOW.forEach((c, k) => A(torus(1.7 - k * 0.14, 0.08, Math.PI, 28), c));
+      if (d === 0) { // a dark rune arch set with one crystal of each gem colour
+        A(torus(1.5, 0.1, Math.PI, 6), grad(SHADE, MOON, 0, 1.6));
+        RAINBOW.forEach((c, k) => { const a = ((k + 0.5) / 6) * Math.PI; A(gem(0.2), c, [Math.cos(a) * 1.5, Math.sin(a) * 1.5, 0], [0, 0, a - Math.PI / 2], [1, 1.7, 1]); });
+      }
       if (d === 1) { A(torus(1.4, 0.25, Math.PI, 16), grad(0x8a80a8, 0xd0c8e0, 0, 1.6)); A(box(0.6, 0.3, 0.6), 0x9a90b0, [-1.4, 0.15, 0]); A(box(0.6, 0.3, 0.6), 0x9a90b0, [1.4, 0.15, 0]); }
       if (d === 2) { A(torus(1.4, 0.16, Math.PI, 16), 0xbff0ff); for (const x of [-1, -0.4, 0.4, 1]) A(gem(0.24), 0xe0c8ff, [x, Math.sqrt(1.96 - x * x) + 0.1, 0]); }
-      if (d === 0) { puffs(A, -1.5, 0.25, 0, 0.45); puffs(A, 1.5, 0.25, 0, 0.45); }
+      if (d === 0) for (const x of [-1.35, 1.35]) A(gem(0.3), MOON, [x, 0.2, 0], [0, 0.6, 0], [1, 1.5, 1]);
       break;
 
     // ---- Frost Tower ----
@@ -701,50 +729,63 @@ const FLAG_AT: V3 = [-3.3, 2.2, 2.3]; // island-local top of the flag pole
 
 function islandGeometry(k: number): BufferGeometry {
   const P: BufferGeometry[] = [];
-  const A: Add = (g, color, p = [0, 0, 0], r = [0, 0, 0], s = 1) => { P.push(part(g, color, p, r, s)); };
+  const A: Add = (g, color, p = [0, 0, 0], r = [0, 0, 0], s = 1) => { P.push(part(g, toned(color), p, r, s)); };
+  const RAW: Add = (g, color, p = [0, 0, 0], r = [0, 0, 0], s = 1) => { P.push(part(g, color, p, r, s)); }; // light sources keep their full brightness
   const th = THEME[k];
   const rad = k === 0 ? R0 : R;
   const edge = (y: number, x: number) => mix(th.top, mix(th.top, 0x000000, 0.12), Math.abs(Math.sin(x * 1.7 + y * 3)) * 0.6);
   A(cyl(rad, rad * 0.985, 0.5, 40), edge, [0, -0.25, 0]);
-  A(cyl(rad * 0.985, rad * 0.55, 2.4, 40), grad(mix(th.side, 0x000000, 0.45), th.side, -1.2, 1.2), [0, -1.7, 0]);
-  A(cyl(rad + 0.35, rad + 0.5, 0.16, 40), mix(th.top, k === 5 || k === 7 || k === 10 ? 0x000000 : 0xfff0c8, 0.35), [0, -0.56, 0]);
+  const rockC = grad(mix(th.side, 0x0a0620, 0.75), mix(th.side, 0x2a1a4a, 0.2), -1.4, 1.4);
+  A(facet(cyl(rad * 0.985, rad * 0.5, 2.2, 11)), rockC, [0, -1.6, 0]);
+  A(facet(cone(rad * 0.5, rad, 9)), rockC, [0, -2.7 - rad * 0.5, 0], [Math.PI, 0.4, 0]);
+  for (let i = 0; i < 8; i++) {
+    const a = i * 0.83 + k, fr = 0.55 + (i % 3) * 0.14, h = 1.1 + (i % 3) * 0.8;
+    RAW(cone(0.24 + (i % 2) * 0.14, h, 5), grad(mix(th.flag, 0xffffff, 0.2), mix(th.flag, 0xffffff, 0.75), -h / 2, h / 2), [Math.sin(a) * rad * fr, -0.5 - ((0.985 - fr) / 0.485) * 2.2 - h / 2 + 0.25, Math.cos(a) * rad * fr], [Math.PI, a, 0.12]);
+  }
+  RAW(torus(rad + 0.22, 0.06, Math.PI * 2, 48), mix(th.flag, 0xffffff, 0.45), [0, -0.5, 0], [Math.PI / 2, 0, 0]);
+  // drifting shards, kept behind the island so they never block the close-up camera
+  shard(A, [rad * 0.95, 2.6 + (k % 3) * 0.6, -rad * 0.8], 0.9 + (k % 2) * 0.4, th.flag);
+  shard(A, [-rad * 1.05, -1.8, -rad * 0.6], 0.7, th.flag);
   if (k > 0) {
-    // bridge towards the castle (local -z)
-    const L = RING - R0 - R + 0.9, zc = -(R + L / 2 - 0.45);
-    A(box(1.25, 0.12, L), grad(DARKWOOD, WOOD, -0.06, 0.06), [0, 0, zc]);
-    for (let i = 0; i <= 6; i++) {
-      const z = zc - L / 2 + (i / 6) * L;
-      A(box(1.35, 0.14, 0.1), DARKWOOD, [0, 0.01, z]);
-      for (const s of [-1, 1]) { A(cyl(0.05, 0.05, 0.6, 6), WOOD, [s * 0.62, 0.3, z]); A(sph(0.075, 6, 4), th.flag, [s * 0.62, 0.62, z]); }
-      if (i % 3 === 0) for (const s of [-1, 1]) A(cyl(0.09, 0.09, 1.2, 6), DARKWOOD, [s * 0.5, -0.6, z]);
+    // bridge of light towards the citadel (local -z), entered through a rune gate
+    const L = RING - R0 - R + 0.9, zc = -(R + L / 2 - 0.45), beam = mix(th.flag, 0xffffff, 0.5), gz = -R + 0.45;
+    RAW(new BoxGeometry(0.9, 0.05, L, 2, 1, 1), (_y, x) => (Math.abs(x) > 0.36 ? th.flag : mix(beam, 0xffffff, 0.7)), [0, -0.02, zc]);
+    for (let i = 0; i <= 3; i++) {
+      const z = zc - L / 2 + 0.5 + (i / 3) * (L - 1);
+      A(torus(0.8, 0.04, Math.PI, 16), GOLD, [0, -0.05, z]);
+      for (const sd of [-1, 1]) RAW(gem(0.12), beam, [sd * 0.8, 0, z], [0, 0, 0], [1, 2, 1]);
     }
-    for (const s of [-1, 1]) A(box(0.04, 0.04, L), WOOD, [s * 0.62, 0.45, zc]);
+    for (const sd of [-1, 1]) { A(box(0.4, 2.0, 0.4), grad(SHADE, MOON, -1, 1), [sd * 1.05, 1.0, gz]); A(cone(0.3, 0.7, 4), ROOF, [sd * 1.05, 2.35, gz], [0, Math.PI / 4, 0]); }
+    A(torus(1.05, 0.12, Math.PI, 14), MOON, [0, 1.7, gz]); RAW(gem(0.2), RUNE, [0, 3.15, gz], [0, 0, 0], [1, 1.6, 1]);
+    // the island's ward crystal and its rune ring
+    RAW(gem(0.32), beam, [0, 4.7, -0.3], [0, 0.5, 0], [1, 1.7, 1]); RAW(torus(0.75, 0.035, Math.PI * 2, 28), th.flag, [0, 4.7, -0.3], [Math.PI / 2 + 0.3, 0, 0.2]);
     A(cyl(0.04, 0.05, FLAG_AT[1] + 0.3, 6), 0xe8e0f0, [FLAG_AT[0], (FLAG_AT[1] + 0.3) / 2, FLAG_AT[2]]); A(sph(0.07, 6, 4), GOLD, [FLAG_AT[0], FLAG_AT[1] + 0.32, FLAG_AT[2]]);
   }
   switch (k) {
     case 0: {
-      const stone = grad(0xbfb4dc, 0xf2ecff, -1.4, 1.4), roof = (h: number) => grad(0xe8689a, 0xffb0cc, -h / 2, h / 2), dark = 0x3a2a5a;
-      A(box(1.4, 0.05, 5.4), 0xf3e2c0, [0, 0.02, 2.5]);
-      for (let i = 0; i < 9; i++) A(cyl(0.16, 0.16, 0.06, 8), 0xe0c898, [(i % 2 ? 0.3 : -0.3), 0.04, 0.4 + i * 0.55], [0, i, 0]);
-      A(box(4.6, 2.8, 2.6), stone, [0, 1.4, -1.6]);
+      const stone = grad(SHADE, MOON, -1.4, 1.4), dark = 0x1a1238;
+      A(box(1.4, 0.05, 5.4), 0x3a3278, [0, 0.02, 2.5]);
+      for (let i = 0; i < 9; i++) RAW(cyl(0.16, 0.16, 0.06, 6), RUNE, [(i % 2 ? 0.3 : -0.3), 0.04, 0.4 + i * 0.55], [0, i, 0]);
+      // great hall with a portal of light
+      A(box(4.6, 2.8, 2.6), stone, [0, 1.4, -1.6]); A(box(4.9, 0.16, 2.9), GOLD, [0, 2.86, -1.6]);
       A(box(1.2, 1.6, 0.1), dark, [0, 0.8, -0.28]); A(cyl(0.6, 0.6, 0.1, 20), dark, [0, 1.6, -0.28], [Math.PI / 2, 0, 0]);
-      A(box(1.0, 1.5, 0.1), grad(0x7a4a2a, 0xb07a45, -0.75, 0.75), [0, 0.75, -0.24]); A(cyl(0.5, 0.5, 0.1, 20), 0xa87040, [0, 1.5, -0.24], [Math.PI / 2, 0, 0]); A(sph(0.07, 8, 6), GOLD, [0.3, 0.8, -0.17]);
-      for (const x of [-1.6, 1.6]) { A(box(0.45, 0.7, 0.08), GLOW, [x, 1.7, -0.28]); A(cyl(0.225, 0.225, 0.08, 14), GLOW, [x, 2.05, -0.28], [Math.PI / 2, 0, 0]); }
-      for (let i = -2; i <= 2; i++) A(box(0.5, 0.45, 0.5), 0xf2ecff, [i * 1.0, 3.0, -0.4]);
-      for (const x of [-2.6, 2.6]) {
-        A(cyl(0.85, 0.95, 4.0, 20), grad(0xbfb4dc, 0xf6f0ff, -2, 2), [x, 2.0, -1.6]); A(cyl(1.0, 0.86, 0.3, 20), 0xf6f0ff, [x, 4.0, -1.6]);
-        A(cone(1.15, 1.9, 20), roof(1.9), [x, 5.05, -1.6]); A(box(0.3, 0.5, 0.1), GLOW, [x, 2.8, -0.72]); A(box(0.3, 0.5, 0.1), GLOW, [x, 1.4, -0.68]);
-        A(cyl(0.03, 0.03, 0.9, 5), 0xe8e0f0, [x, 6.4, -1.6]);
-      }
-      A(box(2.4, 1.5, 2.0), stone, [0, 3.55, -2.1]); A(cone(1.8, 1.8, 4), roof(1.8), [0, 5.2, -2.1], [0, Math.PI / 4, 0]);
-      A(cyl(0.03, 0.03, 0.9, 5), 0xe8e0f0, [0, 6.5, -2.1]); A(cyl(0.3, 0.3, 0.08, 14), GLOW, [0, 3.7, -1.08], [Math.PI / 2, 0, 0]);
+      RAW(box(1.0, 1.5, 0.1), grad(0x2a2a9a, RUNE, -0.75, 0.75), [0, 0.75, -0.24]); RAW(cyl(0.5, 0.5, 0.1, 20), RUNE, [0, 1.5, -0.24], [Math.PI / 2, 0, 0]);
+      for (const x of [-1.6, 1.6]) { A(box(0.4, 1.1, 0.08), GLOW, [x, 1.6, -0.28]); A(cone(0.28, 0.5, 4), GLOW, [x, 2.38, -0.3], [0, Math.PI / 4, 0], [1, 1, 0.15]); }
+      for (const x of [-1.1, 1.1]) A(cone(0.18, 1.0, 6), GOLD, [x, 3.4, -0.5]);
+      // spires, flying arches, rune rings
+      for (const x of [-2.6, 2.6]) { spire(A, x, -1.6, 0.8, 4.6, 2.8); A(cyl(0.03, 0.03, 1.2, 5), MOON, [x, 8.4, -1.6]); A(torus(1.3, 0.09, Math.PI, 14), MOON, [x / 2, 4.3, -1.9]); }
+      for (const x of [-1.5, 1.5]) spire(A, x, -3.4, 0.5, 5.6, 2.2, 0x5a2ac8);
+      spire(A, 0, -2.1, 1.0, 3.6, 3.6, ROOF, 2.8);
+      A(cyl(0.03, 0.03, 1.3, 5), MOON, [0, 10.9, -2.1]);
+      RAW(torus(1.9, 0.05, Math.PI * 2, 40), RUNE, [0, 7.6, -2.1], [Math.PI / 2 + 0.22, 0, 0.1]);
+      RAW(torus(1.45, 0.04, Math.PI * 2, 32), GLOW, [0, 8.9, -2.1], [Math.PI / 2 - 0.25, 0, -0.15]);
       for (const [x, z, s] of [[-5.4, -3.2, 1.2], [5.6, 0.4, 0.9], [-5.9, 2.2, 1.0], [5.2, -3.8, 1.1], [-1.5, -5.6, 1.1], [1.9, -5.8, 0.9]]) tree(A, x, z, s);
       for (let i = 0; i < 14; i++) { const a = i * 0.9 + 0.3, r = 6.3 + (i % 3) * 0.3; if (Math.abs(Math.sin(a)) < 0.25 && Math.cos(a) > 0) continue; flower(A, Math.sin(a) * r, Math.cos(a) * r, [0xff7fb8, 0xfff36b, 0xb08cff, WHITE][i % 4], 0.3); }
       for (const [x, z] of [[-1.2, 5.6], [1.2, 5.6], [-4.6, 4.2], [4.7, 4.0]]) A(sph(0.4), grad(0x3a9a4a, 0x8be06b, -0.3, 0.4), [x, 0.2, z], [0, 0, 0], [1.2, 0.8, 1]);
       break;
     }
     case 1:
-      A(cyl(0.9, 1.1, 3.4, 14), grad(0x8fb8e8, 0xe8f6ff, -1.7, 1.7), [0, 1.7, -3.0]); A(cone(1.15, 1.8, 14), grad(0x5a9ae0, 0xbfe4ff, -0.9, 0.9), [0, 4.3, -3.0]); A(box(0.3, 0.5, 0.1), GLOW, [0, 2.4, -2.02]);
+      spire(A, 0, -3.0, 0.8, 3.6, 2.6, 0x2a7ad8);
       for (const [x, z, s] of [[-3.4, -1.4, 1], [3.5, -1.0, 0.8], [3.2, 2.4, 0.7]]) pine(A, x, z, s, 0x3a8f7a, true);
       for (const [x, z, s] of [[-3.6, 0.8, 1], [2.6, 3.2, 0.7], [-1.0, 3.8, 0.6]]) A(cone(0.25 * s, 1.0 * s, 6), grad(0x7fc8ff, WHITE, -0.5 * s, 0.5 * s), [x, 0.5 * s, z], [0.1, 0, 0.15]);
       puffs(A, 2.9, 0, -2.6, 0.5); puffs(A, -2.4, 0, 3.2, 0.4);
@@ -823,19 +864,19 @@ function islandGeometry(k: number): BufferGeometry {
 
 function cloudGeometry(s: number): BufferGeometry {
   const P: BufferGeometry[] = [];
-  puffs((g, c, p, r, sc) => { P.push(part(g, c, p, r, sc)); }, 0, 0, 0, s);
+  puffs((g, c, p, r, sc) => { P.push(part(g, c, p, r, sc)); }, 0, 0, 0, s, 0xc88ab0);
   return merge(P);
 }
 
 // ---------- the view ----------
 
-const MAXP = 180;
-const PCOL: V3[] = [[0.75, 1.0, 1.35], [2.4, 0.95, 0.2], [0.72, 0.72, 0.78], [2.0, 1.6, 0.6], [2.2, 1.7, 0.75]];
+const MAXP = 240;
+const PCOL: V3[] = [[0.75, 1.0, 1.35], [2.4, 0.95, 0.2], [0.72, 0.72, 0.78], [2.0, 1.6, 0.6], [2.2, 1.7, 0.75], [0.6, 1.5, 2.2]]; // last: drifting motes
 const CAT_SCALE = 0.85;
 const LOW_CATS = 12;
 
 interface Resident {
-  def: CatDef; acc: string; mesh: Mesh; sit: BufferGeometry; walk: BufferGeometry;
+  def: CatDef; acc: string; mesh: Mesh; ink: Mesh; sit: BufferGeometry; walk: BufferGeometry; sitH?: BufferGeometry; walkH?: BufferGeometry;
   x: number; z: number; rot: number; area: number; walking: boolean; wait: number; phase: number;
   path: Float32Array; n: number; i: number;
 }
@@ -845,8 +886,12 @@ export class CastleView {
   readonly camera = new PerspectiveCamera(40, 1, 0.5, 400);
   orbit = true;
 
-  private mat = new MeshStandardMaterial({ vertexColors: true, roughness: 0.62 });
-  private pale = new MeshStandardMaterial({ color: 0xdfe3f6, roughness: 0.95, transparent: true, opacity: 0.5 });
+  private mat = toon();
+  private pale = toon({ color: 0x5a528e, transparent: true, opacity: 0.5, vertexColors: false });
+  private ink = inkMaterial(); // every outline; hidden as one on Low
+  private inkN = 0; // islands outlined so far (one per frame, so loading never stalls)
+  private inkCache = new Map<string, BufferGeometry>();
+  private shafts: InstancedMesh;
   private islands: Mesh[] = [];
   private covers: Mesh[] = [];
   private flags: Mesh[] = [];
@@ -893,33 +938,34 @@ export class CastleView {
     sky.height = 256;
     const g = sky.getContext('2d')!;
     const lg = g.createLinearGradient(0, 0, 0, 256);
-    lg.addColorStop(0, '#7fa8f5');
-    lg.addColorStop(0.45, '#b9b0f7');
-    lg.addColorStop(0.75, '#f6bfe0');
-    lg.addColorStop(1, '#ffe0c0');
+    lg.addColorStop(0, '#0b0f3a');
+    lg.addColorStop(0.4, '#33248a');
+    lg.addColorStop(0.7, '#b0408c');
+    lg.addColorStop(0.9, '#ff8a55');
+    lg.addColorStop(1, '#ffd48a');
     g.fillStyle = lg;
     g.fillRect(0, 0, 4, 256);
     const tex = new CanvasTexture(sky);
     tex.colorSpace = SRGBColorSpace;
     this.scene.background = tex;
 
-    this.scene.fog = new Fog(0xc9c0f4, 55, 150);
+    this.scene.fog = new Fog(0x7a3f92, 60, 160);
     this.scene.environmentIntensity = 0.45; // the game sets scene.environment; keep whites from blowing out
-    this.scene.add(new HemisphereLight(0xfff6ff, 0x8a7ab8, 0.95));
-    const sun = new DirectionalLight(0xfff0dc, 1.55);
-    sun.position.set(-12, 20, 14);
+    this.scene.add(new HemisphereLight(0xb8c4ff, 0x3a1f6a, 0.8));
+    const sun = new DirectionalLight(0xffdcb0, 2.6);
+    sun.position.set(-14, 17, 12);
     this.scene.add(sun);
 
     // water
     const wg = new PlaneGeometry(170, 170, 56, 56);
     wg.rotateX(-Math.PI / 2);
     this.waterBase = (wg.attributes.position.array as Float32Array).slice();
-    this.water = new Mesh(wg, new MeshStandardMaterial({ color: 0x3aa6e0, roughness: 0.22, metalness: 0.1 }));
+    this.water = new Mesh(wg, toon({ color: 0x1c2488, vertexColors: false }));
     this.water.position.y = WATER;
     this.scene.add(this.water);
     const ring = new RingGeometry(1, 1.09, 48);
     ring.rotateX(-Math.PI / 2);
-    this.foam = new InstancedMesh(ring, new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false }), 24);
+    this.foam = new InstancedMesh(ring, new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, depthWrite: false, blending: AdditiveBlending }), 24);
     this.foam.frustumCulled = false;
     this.scene.add(this.foam);
 
@@ -927,7 +973,7 @@ export class CastleView {
     this.flagGeo.translate(0.475, 0, 0);
     this.flagBase = (this.flagGeo.attributes.position.array as Float32Array).slice();
     const flag = (color: number, p: V3, parent: Group | Scene) => {
-      const f = new Mesh(this.flagGeo, new MeshStandardMaterial({ color, roughness: 0.7, side: DoubleSide }));
+      const f = new Mesh(this.flagGeo, toon({ color, vertexColors: false, side: DoubleSide }));
       f.position.set(...p);
       parent.add(f);
       this.flags.push(f);
@@ -941,10 +987,11 @@ export class CastleView {
       const cover = new Mesh(cloudGeometry(k === 0 ? 1 : 2.6), this.mat);
       cover.position.y = 1.6;
       cover.scale.set(1.05, 0.6, 1.05);
+      isl.add(new Mesh(undefined, this.ink));
       grp.add(isl, cover);
       this.islands.push(isl);
       this.covers.push(cover);
-      if (k === 0) { flag(0xff5c8a, [-2.6, 6.6, -1.6], grp); flag(0xff5c8a, [2.6, 6.6, -1.6], grp); flag(0xffd23f, [0, 6.7, -2.1], grp); }
+      if (k === 0) { flag(0xc8203a, [-2.6, 8.7, -1.6], grp); flag(0xc8203a, [2.6, 8.7, -1.6], grp); flag(0xffc22e, [0, 11.2, -2.1], grp); }
       else flag(THEME[k].flag, [FLAG_AT[0], FLAG_AT[1] - 0.05, FLAG_AT[2]], grp).name = 'area';
       this.scene.add(grp);
     }
@@ -955,6 +1002,7 @@ export class CastleView {
       const c = new Mesh(cloudGeometry(1.6 + (i % 3) * 0.7), this.mat);
       const a = i * 0.7, rad = 36 + (i % 3) * 9;
       c.position.set(Math.sin(a) * rad, 9 + (i % 4) * 2.5, Math.cos(a) * rad);
+      c.scale.set(2.2, 0.45, 1.3); // long dusk cloud banks
       this.clouds.add(c);
     }
     this.scene.add(this.clouds);
@@ -964,6 +1012,7 @@ export class CastleView {
       mesh.position.set(...it.at);
       mesh.rotation.y = areaAngle(it.area);
       mesh.visible = false;
+      mesh.add(new Mesh(undefined, this.ink));
       this.items.set(it.id, mesh);
       this.scene.add(mesh);
     }
@@ -972,6 +1021,18 @@ export class CastleView {
     this.sparks.frustumCulled = false;
     this.sparks.count = 0;
     this.scene.add(this.sparks);
+
+    // light shafts: one additive instanced mesh, bright at the top and fading out towards the ground (High only)
+    const sg = part(new CylinderGeometry(0.3, 1.7, 30, 10, 4, true), (y) => mix(0x000000, 0xffc890, Math.sin(((y + 15) / 30) * Math.PI)));
+    this.shafts = new InstancedMesh(sg, new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.09, blending: AdditiveBlending, depthWrite: false, side: DoubleSide, fog: false }), 4);
+    const dir = new Vector3(-14, 17, 12).normalize();
+    this.q.setFromUnitVectors(this.v.set(0, 1, 0), dir);
+    [0, 3, 7, 10].forEach((k, i) => {
+      this.m.compose(new Vector3(areaX(k), 0, areaZ(k)).addScaledVector(dir, 14), this.q, this.s.set(k ? 1 : 2.2, 1, k ? 1 : 2.2));
+      this.shafts.setMatrixAt(i, this.m);
+    });
+    this.shafts.frustumCulled = false;
+    this.scene.add(this.shafts);
     this.refresh();
   }
 
@@ -1012,6 +1073,8 @@ export class CastleView {
 
   setQuality(hi: boolean): void {
     this.hi = hi;
+    this.ink.visible = this.shafts.visible = hi;
+    if (hi) this.refresh();
     if (!hi) {
       (this.water.geometry.attributes.position.array as Float32Array).set(this.waterBase);
       this.water.geometry.attributes.position.needsUpdate = true;
@@ -1032,10 +1095,26 @@ export class CastleView {
     return this.cache.get(k)!;
   }
 
+  /** Ink outline of a cached item geometry, made on first use. */
+  private geoInk(id: string, d: number): BufferGeometry {
+    const k = id + d;
+    if (!this.inkCache.has(k)) this.inkCache.set(k, hull(this.geo(id, d), 0.05));
+    return this.inkCache.get(k)!;
+  }
+
+  /** Puts a cat in its sitting or walking shape, with the matching outline on High. */
+  private pose(r: Resident, walk: boolean): void {
+    r.mesh.geometry = walk ? r.walk : r.sit;
+    if (!this.hi) return;
+    if (walk) r.ink.geometry = r.walkH ??= hull(r.walk, 0.022);
+    else r.ink.geometry = r.sitH ??= hull(r.sit, 0.022);
+  }
+
   private refresh(): void {
     const open = this.state.areas;
     for (let k = 0; k < AREAS.length; k++) {
       this.islands[k].material = k < open ? this.mat : this.pale;
+      this.islands[k].children[0].visible = k < open;
       this.covers[k].visible = k >= open;
     }
     for (const f of this.flags) if (f.name === 'area') f.visible = this.islands[this.flags.indexOf(f) - 2].material === this.mat;
@@ -1046,6 +1125,7 @@ export class CastleView {
       mesh.visible = d !== undefined && d >= 0 && it.area < open;
       if (!mesh.visible) continue;
       mesh.geometry = this.geo(it.id, d);
+      if (this.hi) (mesh.children[0] as Mesh).geometry = this.geoInk(it.id, d);
       const a = areaAngle(it.area), c = Math.cos(a), s = Math.sin(a);
       for (const [x, y, z, kind] of EMIT[it.id] ?? []) this.emitters.push(it.at[0] + x * c + z * s, it.at[1] + y, it.at[2] - x * s + z * c, kind);
     }
@@ -1055,6 +1135,8 @@ export class CastleView {
       this.scene.remove(r.mesh);
       r.sit.dispose();
       r.walk.dispose();
+      r.sitH?.dispose();
+      r.walkH?.dispose();
       this.residents.delete(id);
     }
     for (const def of CATS) {
@@ -1062,22 +1144,26 @@ export class CastleView {
       if (acc === undefined) continue;
       let r = this.residents.get(def.id);
       if (r && r.acc === acc) continue;
-      if (r) { r.sit.dispose(); r.walk.dispose(); }
+      if (r) { r.sit.dispose(); r.walk.dispose(); r.sitH?.dispose(); r.walkH?.dispose(); r.sitH = r.walkH = undefined; }
       const sit = catGeometry(def, acc || null, 'sit');
       const walk = catGeometry(def, acc || null, 'walk');
       if (!r) {
         const mesh = new Mesh(sit, this.mat);
         mesh.scale.setScalar(CAT_SCALE);
+        const ink = new Mesh(undefined, this.ink);
+        mesh.add(ink);
         this.scene.add(mesh);
-        r = { def, acc, mesh, sit, walk, x: 0, z: 0, rot: 0, area: Math.min(def.world, open - 1), walking: false, wait: Math.random() * 4, phase: Math.random() * 6, path: new Float32Array(48), n: 0, i: 0 };
+        r = { def, acc, mesh, ink, sit, walk, x: 0, z: 0, rot: 0, area: Math.min(def.world, open - 1), walking: false, wait: Math.random() * 4, phase: Math.random() * 6, path: new Float32Array(48), n: 0, i: 0 };
         this.spot(r.area, r.path, 0);
         r.x = r.path[0];
         r.z = r.path[1];
         r.rot = Math.random() * 6;
         this.residents.set(def.id, r);
       } else { r.acc = acc; r.sit = sit; r.walk = walk; }
-      r.mesh.geometry = r.walking ? r.walk : r.sit;
+      this.pose(r, r.walking);
     }
+    // motes drift over every open island (kind 5, High only)
+    for (let k = 0; k < open; k++) this.emitters.push(areaX(k), 0.4, areaZ(k), 5);
     if (this.catId && !this.residents.has(this.catId)) this.focusCat(null);
     this.showCats();
   }
@@ -1134,7 +1220,7 @@ export class CastleView {
       if (!r.mesh.visible) continue;
       const held = r.def.id === this.catId;
       if (held) {
-        if (r.walking) { r.walking = false; r.mesh.geometry = r.sit; }
+        if (r.walking) { r.walking = false; this.pose(r, false); }
         r.rot = this.az;
         r.wait = 2;
       } else if (!r.walking) {
@@ -1142,7 +1228,7 @@ export class CastleView {
         if (r.wait <= 0) {
           this.route(r, open > 1 && Math.random() < 0.3 ? Math.floor(Math.random() * open) : r.area);
           r.walking = true;
-          r.mesh.geometry = r.walk;
+          this.pose(r, true);
         }
       } else {
         const tx = r.path[r.i * 2], tz = r.path[r.i * 2 + 1];
@@ -1150,7 +1236,7 @@ export class CastleView {
         if (d <= step) {
           r.x = tx;
           r.z = tz;
-          if (++r.i >= r.n) { r.walking = false; r.wait = 2.5 + Math.random() * 6; r.mesh.geometry = r.sit; }
+          if (++r.i >= r.n) { r.walking = false; r.wait = 2.5 + Math.random() * 6; this.pose(r, false); }
         } else {
           r.x += (dx / d) * step;
           r.z += (dz / d) * step;
@@ -1171,7 +1257,7 @@ export class CastleView {
     for (let k = 0; k < AREAS.length; k++) for (let j = 0; j < 2; j++) {
       const ph = (t * 0.25 + j * 0.5 + k * 0.13) % 1;
       const rad = (k === 0 ? R0 : R) + 0.55 + ph * 0.9;
-      this.m.compose(this.v.set(areaX(k), WATER + 0.06 + j * 0.005, areaZ(k)), this.q.identity(), this.s.set(rad, 1, rad));
+      this.m.compose(this.v.set(areaX(k), RIM + 0.06 + j * 0.005, areaZ(k)), this.q.identity(), this.s.set(rad, 1, rad));
       this.foam.setMatrixAt(n, this.m);
       const f = Math.sin(ph * Math.PI);
       this.foam.setColorAt(n++, this.col.setRGB(0.55 + f * 0.45, 0.85 + f * 0.15, 1));
@@ -1186,11 +1272,12 @@ export class CastleView {
     const p = this.pp;
     // spawn
     const ne = this.emitters.length / 4;
-    this.spawnAcc += dt * (calm ? 4 : this.hi ? 26 : 10);
+    this.spawnAcc += dt * (calm ? 4 : this.hi ? 26 + this.state.areas * 3 : 10);
     while (this.spawnAcc >= 1 && ne > 0) {
       this.spawnAcc -= 1;
       if (this.pn >= cap) continue;
       const e = Math.floor(Math.random() * ne) * 4, kind = this.emitters[e + 3], o = this.pn * 8;
+      if (kind === 5 && (!this.hi || calm)) continue;
       const a = Math.random() * Math.PI * 2;
       p[o] = this.emitters[e]; p[o + 1] = this.emitters[e + 1]; p[o + 2] = this.emitters[e + 2];
       p[o + 3] = 0; p[o + 4] = 0; p[o + 5] = 0; p[o + 6] = 0; p[o + 7] = 1;
@@ -1199,6 +1286,7 @@ export class CastleView {
       if (kind === 2) { p[o + 3] = 0.25; p[o + 4] = 0.7; p[o + 7] = 2.6; }
       if (kind === 3) { p[o] += Math.cos(a) * 0.6; p[o + 2] += Math.sin(a) * 0.6; p[o + 1] += (Math.random() - 0.5) * 0.8; p[o + 4] = 0.25; p[o + 7] = 1.0; }
       if (kind === 4) p[o + 7] = 1.6;
+      if (kind === 5) { const rr = Math.random() * (p[o] || p[o + 2] ? R : R0); p[o] += Math.cos(a) * rr; p[o + 2] += Math.sin(a) * rr; p[o + 1] += Math.random() * 5; p[o + 3] = 0.15; p[o + 4] = 0.4; p[o + 7] = 3.5; }
       this.pk[this.pn++] = kind;
     }
     if (ne === 0) this.spawnAcc = 0;
@@ -1215,7 +1303,7 @@ export class CastleView {
       const kind = this.pk[i], k = p[o + 6] / p[o + 7];
       if (kind === 0) p[o + 4] -= 7.5 * dt;
       p[o] += p[o + 3] * dt; p[o + 1] += p[o + 4] * dt; p[o + 2] += p[o + 5] * dt;
-      const size = kind === 2 ? 0.8 + k * 1.6 : kind === 4 ? 2.6 * Math.sin(k * Math.PI) : kind === 3 ? 1.3 * Math.sin(k * Math.PI) : 1.1 * (1 - k * 0.6);
+      const size = kind === 2 ? 0.8 + k * 1.6 : kind === 4 ? 2.6 * Math.sin(k * Math.PI) : kind === 3 ? 1.3 * Math.sin(k * Math.PI) : kind === 5 ? 0.8 * Math.sin(k * Math.PI) : 1.1 * (1 - k * 0.6);
       this.m.compose(this.v.set(p[o], p[o + 1], p[o + 2]), this.q.identity(), this.s.set(size, size, size));
       this.sparks.setMatrixAt(i, this.m);
       const c = PCOL[kind], f = kind === 2 ? 1 : kind === 1 ? 1 - k * 0.6 : 1;
@@ -1238,7 +1326,7 @@ export class CastleView {
       const k = this.focusK;
       az = areaAngle(k) + (calm ? 0 : Math.sin(t * 0.25) * 0.1);
       tx = areaX(k); tz = areaZ(k);
-      if (this.mode === 'area') { dist = k === 0 ? 17 : 10.5; height = k === 0 ? 8.5 : 6.5; ty = k === 0 ? 2.0 : 1.0; }
+      if (this.mode === 'area') { dist = k === 0 ? 18 : 10.5; height = k === 0 ? 8 : 6.5; ty = k === 0 ? 3.4 : 1.0; }
       const it = this.mode === 'item' ? ITEMS.find((i) => i.id === this.focusId) : undefined;
       if (it) { tx = it.at[0] * 0.75 + tx * 0.25; tz = it.at[2] * 0.75 + tz * 0.25; ty = 1.2 + it.at[1] * 0.5; dist = k === 0 ? 14 : 10; height = k === 0 ? 7 : 5.5; }
       const r = this.mode === 'cat' && this.catId ? this.residents.get(this.catId) : undefined;
@@ -1283,6 +1371,9 @@ export class CastleView {
       this.water.geometry.attributes.normal.needsUpdate = true;
       this.updateFoam(t);
     }
+
+    // outlines for the islands, one island per frame
+    if (this.hi && this.inkN < this.islands.length) { const isl = this.islands[this.inkN++]; (isl.children[0] as Mesh).geometry = hull(isl.geometry, 0.07); }
 
     this.moveCats(t, dt);
     this.particles(t, dt);

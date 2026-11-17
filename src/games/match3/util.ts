@@ -1,4 +1,4 @@
-// Small shared helpers for the Whisker Castle views.
+// Small shared helpers for the Spellpaw views.
 import type { PerspectiveCamera } from 'three';
 
 export interface Rect { x: number; y: number; w: number; h: number }

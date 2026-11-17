@@ -1,6 +1,6 @@
 // One painted backdrop per world: sky, glow, layered silhouettes, props and drifting motes. Rides on the camera.
 import {
-  AdditiveBlending, CircleGeometry, Color, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Shape,
+  AdditiveBlending, CircleGeometry, Color, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, Shape,
   ShapeGeometry, type BufferGeometry, type PerspectiveCamera, type Texture,
 } from 'three';
 import { merge, part } from './art';
@@ -33,6 +33,19 @@ export const LOOKS: WorldLook[] = [
   { sky: [0x241050, 0x7a3fb0, 0xffb0a0], ridges: [['peak', 0x8a6ac8, 0.1, 0.8], ['spire', 0x5a3f9a, -0.3, 0.45], ['hill', 0x3a2670, -0.7, 0.2]], prop: 'tower', propColor: 0xffd84a, mote: [0xffe9a0, 0.03, 0.022], sun: [0.0, 0.3, 0xffd0a0], tiles: [0x3a2670, 0x483088], frame: 0xffd84a, ground: [0xb89af0, 0x5a3f9a] },
 ];
 
+const _c = new Color(), _hsl = { h: 0, s: 0, l: 0 };
+/**
+ * The dusk grade: keeps a colour's hue, lifts its saturation to at least `sMin` and sets its lightness (sRGB) to `l`.
+ * Greys and whites (snow, cloud, stone) take the hue `hue` and stay a little paler.
+ */
+function grade(c: number, l: number, hue: number, sMin = 0.55): number {
+  _c.set(c).getHSL(_hsl, SRGBColorSpace);
+  const grey = _hsl.s < 0.15 || _hsl.l > 0.93;
+  return _c.setHSL(grey ? hue : _hsl.h, grey ? 0.4 : Math.max(_hsl.s, sMin), grey ? Math.min(0.8, l * 1.6) : l, SRGBColorSpace).getHex();
+}
+const blend = (a: number, b: number, k: number) => new Color(a).lerp(new Color(b), k).getHex();
+const hueOf = (c: number) => _c.set(c).getHSL(_hsl, SRGBColorSpace).h;
+
 const tri = (x: number) => Math.abs((((x % 2) + 2) % 2) - 1);
 function height(kind: Ridge, x: number, s: number): number {
   const hill = Math.sin(x * 2.1 + s) * 0.5 + Math.sin(x * 4.7 + s * 2) * 0.25 + 0.5;
@@ -51,25 +64,41 @@ function ridge(kind: Ridge, color: number, base: number, amp: number, s: number)
   sh.moveTo(-4, -2);
   for (let k = 0; k <= 160; k++) { const x = -4 + k * 0.05; sh.lineTo(x, base + height(kind, x, s) * amp); }
   sh.lineTo(4, -2);
-  const top = new Color(color), low = new Color(color).multiplyScalar(0.72);
+  const top = new Color(color), low = new Color(color).multiplyScalar(0.45);
   return part(new ShapeGeometry(sh), (y) => low.clone().lerp(top, Math.max(0, Math.min(1, (y - base + 0.3) / (amp + 0.3)))).getHex());
 }
 
-function prop(kind: Prop, c: number, x: number, y: number, s: number): BufferGeometry[] {
+/** Lit window / crystal light: stays bright against the dark silhouettes. */
+const LIT = 0xffd98a;
+/** Silhouette props standing on a ridge: `c` body colour, `hi` its lit edge. */
+function prop(kind: Prop, c: number, hi: number, x: number, y: number, s: number): BufferGeometry[] {
   const P = (g: BufferGeometry, col: number, px: number, py: number, rz = 0) => part(g, col, [x + px * s, y + py * s, 0], [0, 0, rz], s);
-  const dark = new Color(c).multiplyScalar(0.7).getHex();
-  const triG = (w: number, h: number) => { const t = new Shape(); t.moveTo(-w, 0); t.lineTo(w, 0); t.lineTo(0, h); return new ShapeGeometry(t); };
+  const triG = (w: number, h: number, lean = 0) => { const t = new Shape(); t.moveTo(-w, 0); t.lineTo(w, 0); t.lineTo(lean, h); return new ShapeGeometry(t); };
+  const spire = (px: number, w: number, h: number, roof: number) => [P(new PlaneGeometry(w, h), c, px, h / 2), P(new PlaneGeometry(w * 0.3, h), hi, px - w * 0.35, h / 2), P(triG(w * 0.8, roof), c, px, h), P(new PlaneGeometry(w * 0.22, w * 0.5), LIT, px, h * 0.7)];
   switch (kind) {
-    case 'pine': return [P(new PlaneGeometry(0.03, 0.1), 0x6a4a34, 0, 0.05), P(triG(0.1, 0.16), dark, 0, 0.07), P(triG(0.08, 0.14), c, 0, 0.15), P(triG(0.055, 0.1), c, 0, 0.23)];
-    case 'tree': return [P(new PlaneGeometry(0.03, 0.14), 0x7a5a3c, 0, 0.07), P(new CircleGeometry(0.1, 16), dark, 0, 0.2), P(new CircleGeometry(0.075, 16), c, -0.02, 0.23)];
-    case 'palm': return [P(new PlaneGeometry(0.025, 0.26), 0xa87a4a, 0, 0.13, -0.12), ...[-1.2, -0.5, 0.5, 1.2].map((a) => P(triG(0.035, 0.16), c, 0.03, 0.26, a)), P(new CircleGeometry(0.025, 8), 0x7a5a3c, 0.03, 0.25)];
-    case 'tower': return [P(new PlaneGeometry(0.09, 0.3), 0xf6f0ff, 0, 0.15), P(triG(0.07, 0.14), c, 0, 0.3), P(new PlaneGeometry(0.025, 0.05), 0x5a4a8a, 0, 0.2), P(triG(0.008, 0.06), 0xffffff, 0, 0.44)];
-    case 'cactus': return [P(new PlaneGeometry(0.045, 0.22), c, 0, 0.11), P(new CircleGeometry(0.0225, 8), c, 0, 0.22), P(new PlaneGeometry(0.03, 0.09), dark, -0.055, 0.14), P(new PlaneGeometry(0.03, 0.07), dark, 0.055, 0.11), P(new PlaneGeometry(0.06, 0.025), dark, -0.035, 0.1), P(new PlaneGeometry(0.06, 0.025), dark, 0.035, 0.08)];
-    case 'crystal': return [P(triG(0.04, 0.24), c, 0, 0), P(triG(0.03, 0.16), dark, -0.045, 0, 0.3), P(triG(0.03, 0.14), dark, 0.045, 0, -0.3)];
-    case 'pillar': return [P(new PlaneGeometry(0.05, 0.5), c, 0, 0.25), P(new PlaneGeometry(0.09, 0.03), 0xffd84a, 0, 0.5), P(new PlaneGeometry(0.09, 0.03), 0xffd84a, 0, 0.015), P(new CircleGeometry(0.03, 12), 0xffe9a0, 0, 0.58)];
-    case 'goal': return [P(new PlaneGeometry(0.012, 0.16), c, -0.14, 0.08), P(new PlaneGeometry(0.012, 0.16), c, 0.14, 0.08), P(new PlaneGeometry(0.29, 0.012), c, 0, 0.16), ...[-0.07, 0, 0.07].map((px) => P(new PlaneGeometry(0.004, 0.16), 0xdfe8ff, px, 0.08))];
+    case 'pine': return [P(triG(0.085, 0.2), c, 0, 0), P(triG(0.065, 0.2), c, 0, 0.1), P(triG(0.04, 0.16), c, 0, 0.22), P(triG(0.02, 0.2, -0.02), hi, -0.045, 0.1)];
+    case 'tree': return [P(new PlaneGeometry(0.016, 0.08), c, 0, 0.04), P(triG(0.05, 0.42), c, 0, 0.05), P(triG(0.035, 0.26), c, 0.07, 0.03), P(triG(0.014, 0.36, -0.012), hi, -0.03, 0.06)];
+    case 'palm': return [P(new PlaneGeometry(0.02, 0.3), c, 0, 0.15, -0.14), ...[-1.9, -1.2, -0.5, 0.5, 1.2, 1.9].map((a) => P(triG(0.022, 0.19), a < 0 ? hi : c, 0.04, 0.3, a))];
+    case 'tower': return [...spire(0, 0.07, 0.34, 0.2), ...spire(0.085, 0.045, 0.2, 0.14), ...spire(-0.08, 0.04, 0.15, 0.12)];
+    case 'cactus': return [P(new PlaneGeometry(0.04, 0.24), c, 0, 0.12), P(triG(0.02, 0.05), c, 0, 0.24), P(new PlaneGeometry(0.026, 0.1), c, -0.055, 0.15), P(new PlaneGeometry(0.026, 0.08), c, 0.055, 0.12), P(new PlaneGeometry(0.06, 0.022), c, -0.035, 0.1), P(new PlaneGeometry(0.06, 0.022), c, 0.035, 0.08), P(new PlaneGeometry(0.01, 0.22), hi, -0.014, 0.12)];
+    case 'crystal': return [P(triG(0.04, 0.3), c, 0, 0), P(triG(0.03, 0.18), c, -0.045, 0, 0.35), P(triG(0.03, 0.16), c, 0.045, 0, -0.35), P(triG(0.012, 0.26, -0.008), LIT, -0.012, 0.01)];
+    case 'pillar': return [P(new PlaneGeometry(0.045, 0.5), c, 0, 0.25), P(new PlaneGeometry(0.012, 0.5), hi, -0.014, 0.25), P(new PlaneGeometry(0.085, 0.025), c, 0, 0.5), P(new PlaneGeometry(0.085, 0.025), c, 0, 0.012), P(triG(0.022, 0.07), LIT, 0, 0.535), P(triG(0.022, -0.05), LIT, 0, 0.535)];
+    case 'goal': return [P(new PlaneGeometry(0.03, 0.36), c, -0.16, 0.18), P(new PlaneGeometry(0.03, 0.36), c, 0.16, 0.18), P(triG(0.2, 0.09), c, 0, 0.36), P(new PlaneGeometry(0.29, 0.02), hi, 0, 0.36), P(triG(0.03, 0.08), LIT, 0, 0.2), P(triG(0.03, -0.08), LIT, 0, 0.2)];
     case 'none': return [];
   }
+}
+
+/** A towering anime cumulus: a stack of discs in shadow colour, with the lit side laid over it toward the sun. */
+function cloud(x: number, y: number, s: number, seed: number, lit: number, shadow: number, side: number): BufferGeometry[] {
+  const discs: [number, number, number][] = [];
+  for (let k = 0; k < 9; k++) {
+    const u = k / 8 - 0.5, tower = Math.exp(-u * u * 7);
+    const r = (0.07 + 0.06 * Math.abs(Math.sin(seed * 3.3 + k * 2.1))) * (0.6 + tower * 0.7);
+    discs.push([u * 0.62, tower * (0.16 + 0.1 * Math.sin(seed + k)), r]);
+    if (k % 2) discs.push([u * 0.5, tower * 0.34 + 0.02, r * 0.8]);
+  }
+  const disc = (c: number, dx: number, dy: number, k: number, z: number) => discs.map(([cx, cy, r]) => part(new CircleGeometry(r * k * s, 14), c, [x + (cx + dx) * s, y + (cy + dy) * s, z]));
+  return [...disc(shadow, 0, 0, 1, 0.004), ...disc(lit, side * 0.03, 0.035, 0.82, 0.008)];
 }
 
 const MOTES = 48;
@@ -81,6 +110,7 @@ export class Backdrop {
   private meshes: Mesh[] = [];
   private sun: Mesh;
   private motes: InstancedMesh;
+  private shafts: Mesh[] = [];
   private m = new Matrix4();
   private look = LOOKS[0];
   hi = true;
@@ -90,6 +120,11 @@ export class Backdrop {
     this.motes = new InstancedMesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: glow, transparent: true, blending: AdditiveBlending, depthWrite: false, fog: false }), MOTES);
     this.motes.frustumCulled = false;
     this.group.add(this.sun, this.motes);
+    for (let k = 0; k < 3; k++) { // light shafts through the sun (High only)
+      const m = new Mesh(this.sun.geometry, (this.sun.material as MeshBasicMaterial).clone());
+      this.shafts.push(m);
+      this.group.add(m);
+    }
     cam.add(this.group);
   }
 
@@ -99,14 +134,28 @@ export class Backdrop {
     const L = (this.look = LOOKS[k]);
     for (const m of this.meshes) { this.group.remove(m); m.geometry.dispose(); }
     this.meshes = [];
-    const [a, b, c] = L.sky.map((h) => new Color(h));
-    const layers: BufferGeometry[] = [part(new PlaneGeometry(12, 6, 1, 8), (y) => (y > 0 ? b.clone().lerp(a, y / 1.2) : c.clone().lerp(b, 1 + y / 1.2)).getHex())];
+    const hue = hueOf(L.sky[0]);
+    // dramatic dusk sky: near-black zenith, rich mid band, burning horizon in the sun's colour
+    const top = new Color(grade(L.sky[0], 0.1, hue, 0.7)), mid = new Color(grade(L.sky[1], 0.36, hue, 0.6)), low = new Color(grade(blend(L.sky[2], L.sun[2], 0.5), 0.7, hue, 0.75));
+    const sky = (y: number) => (y > 0.1 ? mid.clone().lerp(top, Math.min(1, (y - 0.1) / 0.5)) : low.clone().lerp(mid, Math.max(0, Math.min(1, (y + 0.45) / 0.55)))).getHex();
+    const back: BufferGeometry[] = [part(new PlaneGeometry(12, 6, 1, 48), sky)];
+    for (let n = 0; n < 60; n++) { // stars in the dark upper sky
+      const x = ((n * 0.6180339) % 1) * 3.6 - 1.8, y = 0.12 + ((n * 0.7548776) % 1) * 0.55, r = 0.003 + (n % 5) * 0.001;
+      back.push(part(new CircleGeometry(r, 4), blend(0xffffff, low.getHex(), (n % 3) * 0.25), [x, y, 0.002]));
+    }
+    const side = L.sun[0] >= 0 ? 1 : -1;
+    const cl = blend(low.getHex(), mid.getHex(), 0.25), cs = blend(cl, mid.getHex(), 0.6);
+    [[-1.25, 1.0, 0.3], [-0.2, 0.75, 1.9], [0.85, 1.15, 4.1], [1.75, 0.8, 5.6]].forEach(([x, s, seed]) => back.push(...cloud(x + Math.sin(k * 1.7) * 0.2, L.ridges[0][2] + L.ridges[0][3] * 0.35, s, seed + k, cl, cs, side)));
+    const layers: BufferGeometry[] = [merge(back)];
     L.ridges.forEach(([kind, color, base, amp], i) => {
-      const parts = [ridge(kind, color, base, amp, k * 3.1 + i * 1.7)];
+      // far ridges sink into the horizon haze; near ones are dark silhouettes
+      const rc = blend(grade(color, [0.3, 0.19, 0.1][i], hue), low.getHex(), [0.3, 0.1, 0][i]);
+      const parts = [ridge(kind, rc, base, amp, k * 3.1 + i * 1.7)];
       if (i === 1 && L.prop !== 'none') {
+        const pc = grade(L.propColor, 0.12, hue), ph = blend(pc, low.getHex(), 0.45);
         for (let n = 0; n < 9; n++) {
           const x = -2.6 + n * 0.65 + Math.sin(n * 7.3 + k) * 0.2;
-          parts.push(...prop(L.prop, L.propColor, x, base + height(kind, x, k * 3.1 + 1.7) * amp - 0.02, 0.8 + (n % 3) * 0.25));
+          parts.push(...prop(L.prop, pc, ph, x, base + height(kind, x, k * 3.1 + 1.7) * amp - 0.02, 0.8 + (n % 3) * 0.25));
         }
       }
       layers.push(merge(parts));
@@ -118,9 +167,17 @@ export class Backdrop {
       this.meshes.push(m);
       this.group.add(m);
     });
-    this.sun.position.set(L.sun[0], L.sun[1], 0.01);
-    this.sun.scale.setScalar(1.5);
+    // the sun sits low, behind the far ridge
+    const sx = L.sun[0] * 0.75, sy = L.ridges[0][2] + L.ridges[0][3] * 0.5;
+    this.sun.position.set(sx, sy, 0.01);
+    this.sun.scale.setScalar(1.0);
     (this.sun.material as MeshBasicMaterial).color.set(L.sun[2]).multiplyScalar(0.3);
+    this.shafts.forEach((m, i) => {
+      m.position.set(sx, sy, 0.012);
+      m.rotation.z = (sx > 0 ? 1 : -1) * (0.55 + i * 0.4);
+      m.scale.set(0.22 + i * 0.1, 5, 1);
+      (m.material as MeshBasicMaterial).color.set(L.sun[2]).multiplyScalar(0.1);
+    });
     (this.motes.material as MeshBasicMaterial).color.set(L.mote[0]).multiplyScalar(1.1);
   }
 
@@ -129,6 +186,7 @@ export class Backdrop {
     const s = this.dist * Math.tan((this.cam.fov * Math.PI) / 360) * 1.75;
     this.group.position.set(0, 0, -this.dist);
     this.group.scale.set(s, s, s);
+    for (const m of this.shafts) m.visible = this.hi;
     const n = this.hi ? MOTES : 0;
     const [, vy, size] = this.look.mote;
     const still = reducedMotion();

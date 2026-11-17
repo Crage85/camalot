@@ -28,7 +28,7 @@
     <script type="module">
       import '/src/core/theme.css';
       import { LOOP_GAIN, audio, audition, soundButton } from '/src/core/audio/index.ts';
-      import { Track, FORM_BARS, STEPS, parseSection } from '/src/core/audio/music.ts';
+      import { Track, FORM_BARS, STEPS, checkSong } from '/src/core/audio/music.ts';
       import { SONGS } from '/src/core/audio/songs.ts';
       import { SFX, SFX_MIX, buildLoop, createSfx } from '/src/core/audio/sfx.ts';
       import { createMixer } from '/src/core/audio/synth.ts';
@@ -49,6 +49,10 @@
       // way a game does, so the songs follow each other.
       const MOODS = ['menu', 'play', 'intense', 'win'];
       const NOTE = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+      const MODES = { '0,2,4,5,7,9,11': 'major', '0,2,4,6,7,9,11': 'lydian', '0,2,4,5,7,9,10': 'mixolydian', '0,2,3,5,7,9,10': 'dorian', '0,2,3,5,7,8,10': 'minor', '0,1,3,5,7,8,10': 'phrygian', '0,2,3,5,7,8,11': 'harmonic minor' };
+      const describe = (th) => `${NOTE[th.key % 12]} ${MODES[th.scale.join()]}, ${th.bpm} bpm${th.shuffle ? ' swung' : ''}. ${th.style}. Lead ${th.lead.join(' + ')}; ${th.comp[0]} ${th.comp[1]}; pad ${th.pad}; bass ${th.bass[0]}${th.arp ? `; arp ${th.arp[0]}` : ''}`;
+      window.describeSongs = () => Object.entries(SONGS).flatMap(([track, list]) => list.map((th, i) => `${track} ${i + 1} ${th.title}: ${describe(th)}; drums ${Object.keys(th.drums.play).join(' ')}`));
+      window.labSongs = SONGS; // shots/audio/calibrate.mjs tries trims on it
       for (const track of Object.keys(SONGS)) {
         const h = document.createElement('div');
         h.className = 'row';
@@ -61,8 +65,7 @@
           row.className = 'row song';
           row.innerHTML = `<b>${song + 1}. ${th.title}</b>`;
           for (const mood of MOODS) btn(mood, () => audition(track, song, mood), row);
-          const mode = th.scale[3] === 6 ? 'lydian' : th.scale[6] === 10 ? 'mixolydian' : 'major';
-          row.append(` ${NOTE[th.key % 12]} ${mode}, ${th.bpm} bpm${th.swing ? ' shuffle' : ''}, ${th.lead.join(' + ')}, ${th.comp.join(' ')}, ${th.bass.join(' ')}`);
+          row.append(` ${describe(th)}`);
           document.getElementById('music').append(row);
         });
       }
@@ -198,19 +201,11 @@
       };
       window.songList = () => Object.entries(SONGS).flatMap(([track, list]) => list.map((th, song) => [track, song, th.title, th.trim]));
       window.sfxNames = () => Object.keys(SFX);
-      /** How many melody notes that start on a beat are notes of the bar's chord. */
+      /** Strong melody notes (on a beat, or a beat long) that are chord notes, and those a semitone above one (clashes). */
       window.melodyCheck = () =>
         Object.entries(SONGS).flatMap(([name, list]) => list.map((th) => {
-          let on = 0, hit = 0;
-          for (const sec of [th.A, th.B])
-            for (const bar of parseSection(sec))
-              for (const [step, idx] of bar.mel) {
-                if (step % 4) continue;
-                on++;
-                const rel = (((idx - bar.chord[step < 8 ? 0 : 1]) % 7) + 7) % 7;
-                if (rel === 0 || rel === 2 || rel === 4) hit++;
-              }
-          return `${name} / ${th.title}: ${hit}/${on} beat notes are chord notes`;
+          const r = checkSong(th);
+          return `${r.clash ? 'FAIL ' : 'ok   '}  ${name} / ${th.title}: ${r.hit}/${r.strong} strong notes are chord notes, ${r.clash} clash`;
         }));
       window.labAudio = audio; // for the live rotation check
       window.labReady = true;

@@ -25,3 +25,6 @@ function show(p: StoredPlayer) {
 const p = currentPlayer();
 if (p) show(p);
 else void choosePlayer(false).then((n) => show(n as StoredPlayer));
+
+// The 3D art loads after the page is usable, so three.js never delays the first tap.
+void import('./hubscene').then((m) => m.startHubArt(document.getElementById('sky') as HTMLCanvasElement));

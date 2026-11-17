@@ -1,6 +1,6 @@
 // The nine places: sky, terrain, water, border magic, props, hazards, and drifting air motes. All art is code.
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { T, type Arena, type ZoneKind } from './data';
 import type { Sim } from './sim';
 
@@ -28,16 +28,46 @@ export function merge(parts: Part[]): THREE.BufferGeometry {
   return out;
 }
 
-export const flatMat = (opts: THREE.MeshStandardMaterialParameters = {}) =>
-  new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.8, metalness: 0, ...opts });
+/** The one cel-shading ramp every toon material shares: three hard steps. */
+export const GRADIENT = new THREE.DataTexture(new Uint8Array([89, 179, 255]), 3, 1, THREE.RedFormat);
+GRADIENT.minFilter = GRADIENT.magFilter = THREE.NearestFilter;
+GRADIENT.needsUpdate = true;
 
-/** Lit material whose own colour (vertex or instance) also shines by `k`; above 1 it blooms. */
-export function glowMat(k: number, opts: THREE.MeshStandardMaterialParameters = {}) {
-  const m = flatMat({ roughness: 0.3, emissive: new THREE.Color(k, k, k), ...opts });
+export const flatMat = (opts: THREE.MeshToonMaterialParameters = {}) => new THREE.MeshToonMaterial({ gradientMap: GRADIENT, ...opts });
+
+/** Cel-shaded material whose own colour (vertex or instance) also shines by `k`; above 1 it blooms. */
+export function glowMat(k: number, opts: THREE.MeshToonMaterialParameters = {}) {
+  const m = flatMat({ emissive: new THREE.Color(k, k, k), ...opts });
   m.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n\ttotalEmissiveRadiance *= diffuseColor.rgb;');
   };
+  m.customProgramCacheKey = () => 'glow';
   return m;
+}
+
+/** Ink outline: the back faces of a hull pushed out along its normals, in a darkened version of the object's own colour.
+ *  `thick` is in the object's own units; the line never gets thinner than about two screen pixels. */
+export function inkMat(thick: number, opts: THREE.MeshBasicMaterialParameters = {}) {
+  const m = new THREE.MeshBasicMaterial({ color: 0x5a4a6a, side: THREE.BackSide, ...opts });
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      #ifdef USE_INSTANCING
+        mat4 inkM = modelViewMatrix * instanceMatrix; float inkS = length(instanceMatrix[0].xyz) * length(modelMatrix[0].xyz);
+      #else
+        mat4 inkM = modelViewMatrix; float inkS = length(modelMatrix[0].xyz);
+      #endif
+      transformed += normalize(normal) * max(${thick.toFixed(4)}, -(inkM * vec4(position, 1.0)).z * 0.0026 / max(inkS, 0.0001));`);
+  };
+  m.customProgramCacheKey = () => `ink${thick}`;
+  return m;
+}
+/** A copy of a hard-edged shape with smooth normals, so its ink hull does not split at the edges. */
+export function hullGeo(geo: THREE.BufferGeometry): THREE.BufferGeometry {
+  const g = geo.clone();
+  g.deleteAttribute('normal');
+  const out = mergeVertices(g, 1e-3);
+  out.computeVertexNormals();
+  return out;
 }
 
 export function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, count: number, withColor: boolean) {
@@ -114,8 +144,9 @@ function terrain(arena: Arena, h: (x: number, z: number) => number, low: boolean
       const y = h(x, z);
       pos.push(x, y, z);
       if (r <= R + 3) {
-        c.copy(cg).lerp(ca, smooth((fbm(x * 0.045, z * 0.045) - 0.4) * 5));
-        c.multiplyScalar(0.84 + smooth((fbm(x * 0.021 + 40, z * 0.021 + 9) - 0.3) * 3) * 0.26 + noise(x * 0.9, z * 0.9) * 0.06);
+        // painted patches: hard-edged colour areas in three tones, like a cel background
+        c.copy(cg).lerp(ca, smooth((fbm(x * 0.045, z * 0.045) - 0.47) * 16));
+        c.multiplyScalar(0.84 + Math.round(smooth((fbm(x * 0.021 + 40, z * 0.021 + 9) - 0.3) * 3) * 2) * 0.11);
       } else {
         c.copy(co).lerp(cf, smooth(Math.abs(y) / 45));
         if (arena.id === 'peak' || arena.id === 'valley') c.lerp(snow, smooth((y - (arena.id === 'peak' ? 22 : 62)) / 14));
@@ -138,7 +169,7 @@ function terrain(arena: Arena, h: (x: number, z: number) => number, low: boolean
   g.setIndex(idx);
   const flat = g.toNonIndexed();
   flat.computeVertexNormals();
-  const mesh = new THREE.Mesh(flat, flatMat({ vertexColors: true, roughness: 0.95 }));
+  const mesh = new THREE.Mesh(flat, flatMat({ vertexColors: true }));
   mesh.receiveShadow = true;
   return mesh;
 }
@@ -149,24 +180,35 @@ const FOG_SET = 'vFog = smoothstep(uFog.x, uFog.y, length((modelViewMatrix * vec
 const fogU = (arena: Arena) => ({ uFog: { value: new THREE.Vector2(140, 460) }, uFogCol: { value: new THREE.Color(arena.sky) } });
 
 function sky(arena: Arena, sunDir: THREE.Vector3): THREE.Mesh {
+  const top = new THREE.Color(arena.skyTop), hor = new THREE.Color(arena.sky);
   const mat = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { top: { value: new THREE.Color(arena.skyTop) }, hor: { value: new THREE.Color(arena.sky) }, sun: { value: new THREE.Color(arena.sun) }, sunDir: { value: sunDir.clone().normalize() }, night: { value: arena.night ? 1 : 0 }, uTime: { value: 0 } },
+    uniforms: { top: { value: top }, mid: { value: hor.clone().lerp(top, 0.55) }, hor: { value: hor }, sun: { value: new THREE.Color(arena.sun) }, aur: { value: new THREE.Color(arena.border) }, sunDir: { value: sunDir.clone().normalize() }, night: { value: arena.night ? 1 : 0 }, uTime: { value: 0 } },
     vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `
-      uniform vec3 top, hor, sun, sunDir; uniform float night, uTime; varying vec3 vDir;
+      uniform vec3 top, mid, hor, sun, aur, sunDir; uniform float night, uTime; varying vec3 vDir;
       float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float stars(vec3 d, float sc, float cut){
+        vec2 g = d.xz / (abs(d.y) + 0.35) * sc; vec2 id = floor(g); vec2 f = fract(g) - 0.5;
+        float r = h21(id);
+        return step(cut, r) * smoothstep(0.18, 0.0, length(f)) * (0.55 + 0.45 * sin(uTime * 2.0 + r * 40.0));
+      }
       void main(){
         vec3 d = normalize(vDir);
-        float t = pow(clamp(d.y * 1.15 + 0.08, 0.0, 1.0), 0.6);
-        vec3 c = mix(hor, top, t);
+        // a strong three-colour sweep: horizon glow, a band of mixed colour, deep zenith
+        vec3 c = mix(hor, mid, smoothstep(-0.02, 0.2, d.y));
+        c = mix(c, top, smoothstep(0.14, 0.7, d.y));
         float s = max(dot(d, sunDir), 0.0);
-        c += sun * (pow(s, 600.0) * 3.0 + pow(s, 12.0) * 0.28);
+        float flat1 = max(dot(normalize(vec3(d.x, 0.0, d.z)), normalize(vec3(sunDir.x, 0.0, sunDir.z))), 0.0);
+        c += sun * pow(flat1, 5.0) * smoothstep(0.45, 0.0, abs(d.y)) * 0.32; // the horizon burns toward the sun
+        c += sun * (smoothstep(0.9990, 0.9994, s) * 3.0 + pow(s, 90.0) * 0.55 + pow(s, 8.0) * 0.2); // hard disc, soft halo
         if (night > 0.5) {
-          vec2 g = d.xz / (abs(d.y) + 0.35) * 26.0; vec2 id = floor(g); vec2 f = fract(g) - 0.5;
-          float r = h21(id);
-          float star = step(0.9, r) * smoothstep(0.16, 0.0, length(f)) * (0.6 + 0.4 * sin(uTime * 2.0 + r * 40.0));
-          c += vec3(star) * 1.6 * smoothstep(0.0, 0.25, d.y);
+          c += vec3(stars(d, 26.0, 0.88) * 1.7 + stars(d.zyx, 61.0, 0.8) * 0.8) * smoothstep(0.0, 0.25, d.y);
+          float x = atan(d.z, d.x);
+          float curtain = sin(x * 5.0 + sin(x * 2.3 + uTime * 0.21) * 2.2 + uTime * 0.08);
+          float rays = 0.55 + 0.45 * sin(x * 70.0 + sin(d.y * 9.0 + uTime * 0.6) * 1.5);
+          float au = smoothstep(0.15, 0.95, curtain) * rays * smoothstep(0.04, 0.2, d.y) * smoothstep(0.7, 0.22, d.y);
+          c += mix(aur, aur.gbr, smoothstep(0.15, 0.6, d.y)) * au * 0.75;
         }
         gl_FragColor = vec4(c, 1.0);
       }`,
@@ -174,6 +216,43 @@ function sky(arena: Arena, sunDir: THREE.Vector3): THREE.Mesh {
   const m = new THREE.Mesh(new THREE.SphereGeometry(700, 32, 16), mat);
   m.frustumCulled = false;
   m.renderOrder = -10;
+  return m;
+}
+
+/** Slanted shafts of sunlight (or moonlight) that drift around the camera. High quality only. */
+function shafts(arena: Arena, sunDir: THREE.Vector3): THREE.Mesh {
+  const N = 16, H = 24, pos: number[] = [], uv: number[] = [], ctr: number[] = [], idx: number[] = [];
+  const lean = new THREE.Vector3(sunDir.x, 0, sunDir.z).multiplyScalar(H / sunDir.y);
+  const side = new THREE.Vector3(-sunDir.z, 0, sunDir.x).normalize();
+  for (let i = 0; i < N; i++) {
+    const w = 2 + hash(i, 3) * 5, cx = hash(i, 1), cz = hash(i, 2);
+    for (const [u, v] of [[0, 0], [1, 0], [1, 1], [0, 1]]) {
+      pos.push(side.x * (u - 0.5) * w + lean.x * v, H * v, side.z * (u - 0.5) * w + lean.z * v);
+      uv.push(u, v); ctr.push(cx, cz);
+    }
+    idx.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('ctr', new THREE.Float32BufferAttribute(ctr, 2));
+  g.setIndex(idx);
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+    uniforms: { uTime: { value: 0 }, cam: { value: new THREE.Vector3() }, col: { value: new THREE.Color(arena.sun).multiplyScalar(arena.night ? 0.16 : 0.22) } },
+    vertexShader: `
+      attribute vec2 ctr; uniform vec3 cam; uniform float uTime; varying vec2 vUv; varying float vF;
+      void main(){
+        vUv = uv;
+        vec2 c = mod(ctr * 120.0 + vec2(uTime * 0.6, 0.0) - cam.xz, 120.0) - 60.0;
+        vF = smoothstep(60.0, 38.0, max(abs(c.x), abs(c.y))) * (0.6 + 0.4 * sin(uTime * 0.7 + ctr.x * 40.0));
+        gl_Position = projectionMatrix * viewMatrix * vec4(position + vec3(c.x + cam.x, 0.0, c.y + cam.z), 1.0);
+      }`,
+    fragmentShader: 'uniform vec3 col; varying vec2 vUv; varying float vF; void main(){ float a = smoothstep(0.0, 0.35, vUv.x) * smoothstep(1.0, 0.65, vUv.x) * smoothstep(0.0, 0.12, vUv.y) * (1.0 - vUv.y); gl_FragColor = vec4(col * a * vF, 1.0); }',
+  });
+  const m = new THREE.Mesh(g, mat);
+  m.frustumCulled = false;
+  m.renderOrder = 4;
   return m;
 }
 
@@ -230,7 +309,7 @@ function barrier(arena: Arena): THREE.Mesh {
 function decalMat(kind: ZoneKind | 'lava' | 'hole', arena: Arena): THREE.ShaderMaterial {
   const k = { slick: 0, slow: 1, fast: 2, lava: 3, hole: 4 }[kind];
   const cols: Record<string, [number, number]> = {
-    slick: [0xbfeaff, 0xffffff], slow: [0x3fb8d8, 0xbff4ff], fast: [arena.id === 'cat' ? 0x7ee081 : arena.id === 'disco' ? 0x4dff88 : arena.id === 'cloud' ? 0xff8fc8 : 0xffe9b0, 0xffffff],
+    slick: [0xbfeaff, 0xffffff], slow: [0x3fb8d8, 0xbff4ff], fast: [arena.id === 'cat' ? 0x4dffb0 : arena.id === 'disco' ? 0x4dff88 : arena.id === 'cloud' ? 0x7ad0ff : 0xffe9b0, 0xffffff],
     lava: [0xff3a0a, 0xffd040], hole: [0x3a5ad8, 0x9ad0ff],
   };
   return new THREE.ShaderMaterial({
@@ -280,25 +359,28 @@ const rock = (c: number, c2: number): Part[] => [[ball(0.6, 0), c, m4(0, 0.25, 0
 const shroom = (stalk: number): Part[] => [[cyl(0.18, 0.24, 0.6), stalk, m4(0, 0.3)]];
 const cap = (c: number, dots = 0xffffff): Part[] => [[dome(0.55), c, m4(0, 0.55)], [ball(0.09, 0), dots, m4(0.25, 0.92, 0.1)], [ball(0.07, 0), dots, m4(-0.2, 0.9, -0.2)], [ball(0.07, 0), dots, m4(-0.05, 1.0, 0.25)]];
 const crystal = (c: number): Part[] => [[new THREE.OctahedronGeometry(0.4), c, m4(0, 0.6, 0, 1, 1.8, 1)], [new THREE.OctahedronGeometry(0.25), c, m4(0.35, 0.35, 0.1, 1, 1.5, 1, 0, 0, -0.4)]];
+/** A seated stone guardian cat with lit eyes. */
 const cat = (c: number, c2: number): Part[] => [
-  [ball(1.3, 2), c, m4(0, 1.2, 0, 1, 1.1, 0.95)], [ball(0.95, 2), c, m4(0, 2.9, 0.15)],
-  [cone(0.36, 0.7, 4), c, m4(-0.55, 3.75, 0.15)], [cone(0.36, 0.7, 4), c, m4(0.55, 3.75, 0.15)],
-  [ball(0.55, 1), c2, m4(0, 0.9, 0.75, 1, 1.1, 0.6)], [ball(0.1, 0), 0x2a2a35, m4(-0.33, 3.05, 1.03)], [ball(0.1, 0), 0x2a2a35, m4(0.33, 3.05, 1.03)],
-  [ball(0.08, 0), 0xff8fa8, m4(0, 2.8, 1.1)], [new THREE.TorusGeometry(0.9, 0.2, 5, 10, Math.PI * 1.2), c, m4(1.1, 0.5, -0.5, 1, 1, 1, Math.PI / 2, 0, 0.3)],
+  [box(2.6, 0.5, 2.4), c2, m4(0, 0.25)],
+  [cone(1.15, 2.6, 6), c, m4(0, 1.8, -0.1)], [ball(0.8, 1), c, m4(0, 3.2, 0.2, 1, 0.9, 1)],
+  [cone(0.28, 0.9, 4), c, m4(-0.5, 4.05, 0.1, 1, 1, 0.5)], [cone(0.28, 0.9, 4), c, m4(0.5, 4.05, 0.1, 1, 1, 0.5)],
+  [cone(0.3, 0.5, 4), c, m4(0, 3.0, 0.95, 1, 1, 1, Math.PI / 2)],
+  [new THREE.TorusGeometry(0.9, 0.16, 4, 10, Math.PI * 1.2), c, m4(1.0, 0.9, -0.5, 1, 1, 1, Math.PI / 2, 0, 0.3)],
 ];
+const catEyes = (c: number): Part[] => [[box(0.3, 0.1, 0.06), c, m4(-0.33, 3.35, 0.9, 1, 1, 1, 0, 0, -0.35)], [box(0.3, 0.1, 0.06), c, m4(0.33, 3.35, 0.9, 1, 1, 1, 0, 0, 0.35)]];
 
 function propsFor(arena: Arena): Prop[] {
   switch (arena.id) {
     case 'valley': return [
-      { lit: tree(0x9a6a44, 0x5fb84f, 0x7fd05c), n: 150, where: 'out', s: [0.9, 1.9], cluster: 5, sway: 1, shadow: true },
-      { lit: tree(0xb08a70, 0xffa8cc, 0xffc8e0), n: 50, where: 'out', s: [0.8, 1.4], cluster: 3, sway: 1, shadow: true },
-      { lit: [[box(6, 4, 6), 0xf4efe6, m4(0, 2)], [cyl(1.4, 1.4, 7, 8), 0xf4efe6, m4(-3, 3.5, -3)], [cone(1.9, 3, 8), 0xb18cff, m4(-3, 8.5, -3)], [cyl(1.4, 1.4, 7, 8), 0xf4efe6, m4(3, 3.5, 3)], [cone(1.9, 3, 8), 0xff8fc8, m4(3, 8.5, 3)], [cyl(1.1, 1.1, 10, 8), 0xf4efe6, m4(3, 5, -3)], [cone(1.5, 3.4, 8), 0x7fd8ff, m4(3, 11.7, -3)], [box(1.4, 2.2, 0.3), 0x9a6a44, m4(0, 1.1, 3.05)]], n: 3, where: 'out', s: [1.6, 2.2], far: true, shadow: true },
+      { lit: tree(0x6a4630, 0x2f8a4a, 0x57b04a), n: 150, where: 'out', s: [0.9, 1.9], cluster: 5, sway: 1, shadow: true },
+      { lit: tree(0x5a3a34, 0xe8558a, 0xff8fb0), n: 50, where: 'out', s: [0.8, 1.4], cluster: 3, sway: 1, shadow: true },
+      { lit: [[box(6, 4, 6), 0xf4efe6, m4(0, 2)], [cyl(1.4, 1.4, 7, 8), 0xf4efe6, m4(-3, 3.5, -3)], [cone(1.9, 4.2, 8), 0x3a4a8a, m4(-3, 9.1, -3)], [cyl(1.4, 1.4, 7, 8), 0xf4efe6, m4(3, 3.5, 3)], [cone(1.9, 4.2, 8), 0xa8324a, m4(3, 9.1, 3)], [cyl(1.1, 1.1, 10, 8), 0xf4efe6, m4(3, 5, -3)], [cone(1.5, 5, 8), 0x2a6a8a, m4(3, 12.5, -3)], [box(1.4, 2.2, 0.3), 0x9a6a44, m4(0, 1.1, 3.05)]], n: 3, where: 'out', s: [1.6, 2.2], far: true, shadow: true },
       { lit: [[box(2.4, 1.6, 2), 0xfff4e0, m4(0, 0.8)], [cone(2.1, 1.5, 4), 0xd4623a, m4(0, 2.3, 0, 1, 1, 1, 0, Math.PI / 4)], [box(0.5, 0.9, 0.1), 0x9a6a44, m4(0, 0.45, 1.02)], [box(0.4, 0.8, 0.4), 0xb0a090, m4(0.6, 2.6, 0)]], n: 10, where: 'out', s: [1, 1.4], shadow: true },
       { lit: [...shroom(0xfff4e0), ...cap(0xff6b7a)], n: 70, where: 'in', s: [0.7, 1.4], cluster: 4 },
-      { lit: flower(0xff8fc8, 0xffe066), n: 220, where: 'in', s: [0.8, 1.5], cluster: 8, sway: 2 },
+      { lit: flower(0xe8457a, 0xffd23d), n: 220, where: 'in', s: [0.8, 1.5], cluster: 8, sway: 2 },
       { lit: flower(0xffffff, 0xffb84d), n: 160, where: 'in', s: [0.8, 1.4], cluster: 7, sway: 2 },
       { lit: flower(0x9b8cff, 0xfff0a0), n: 120, where: 'in', s: [0.8, 1.4], cluster: 6, sway: 2 },
-      { lit: tuft(0x5fae48), n: 500, where: 'in', s: [0.8, 1.6], cluster: 6, sway: 3 },
+      { lit: tuft(0x2f7a3a), n: 500, where: 'in', s: [0.8, 1.6], cluster: 6, sway: 3 },
       { lit: rock(0xb8b4c0, 0x9c98a8), n: 50, where: 'in', s: [0.5, 1.1], cluster: 2 },
       { lit: [[cyl(0.08, 0.1, 2.2, 5), 0x7a5a44, m4(0, 1.1)]], glow: [[ball(0.3, 1), 0xffe9a0, m4(0, 2.35)]], n: 28, where: 'rim', s: [1, 1.2] },
     ];
@@ -307,7 +389,7 @@ function propsFor(arena: Arena): Prop[] {
       { lit: [[ball(1.6, 0), 0x8d9bb5, m4(0, 0.7, 0, 1, 0.8, 1)], [ball(1.3, 0), 0xffffff, m4(0, 1.3, 0, 1, 0.5, 1)]], n: 40, where: 'out', s: [0.8, 2.4], shadow: true },
       { lit: [[box(3, 1.8, 2.4), 0x9a6a44, m4(0, 0.9)], [box(3.5, 0.3, 1.9), 0xffffff, m4(0, 2.4, 0.75, 1, 1, 1, 0.6)], [box(3.5, 0.3, 1.9), 0xffffff, m4(0, 2.4, -0.75, 1, 1, 1, -0.6)], [box(0.5, 1, 0.5), 0x8a7a70, m4(0.9, 3, 0)]], glow: [[box(0.6, 0.6, 0.05), 0xffd880, m4(-0.6, 1, 1.22)]], n: 8, where: 'out', s: [1, 1.4], shadow: true },
       { lit: [[cyl(0.2, 0.26, 8, 5), 0x6a7280, m4(0, 4)], [box(3.4, 0.25, 0.25), 0x6a7280, m4(0, 8)], [box(1.1, 0.9, 0.9), 0xff6b6b, m4(1.3, 6.9, 0)], [box(1.1, 0.9, 0.9), 0x5cc8ff, m4(-1.3, 6.9, 0)]], n: 10, where: 'out', s: [1, 1.2], shadow: true },
-      { lit: [[ball(0.7), 0xffffff, m4(0, 0.6)], [ball(0.5), 0xffffff, m4(0, 1.5)], [ball(0.36), 0xffffff, m4(0, 2.15)], [cone(0.08, 0.4, 5), 0xff9d3c, m4(0, 2.15, 0.45, 1, 1, 1, Math.PI / 2)], [cyl(0.3, 0.3, 0.3, 8), 0x2a2a35, m4(0, 2.6)], [box(0.9, 0.12, 0.3), 0xff6b6b, m4(0, 1.85)]], n: 16, where: 'in', s: [0.7, 1] },
+      { lit: [[box(0.9, 0.3, 0.9), 0x6a7890, m4(0, 0.15)], [cyl(0.2, 0.26, 1.1, 6), 0x7a88a0, m4(0, 0.85)], [box(0.8, 0.14, 0.8), 0x6a7890, m4(0, 1.45)], [cone(0.85, 0.55, 4), 0x4a5670, m4(0, 2.3, 0, 1, 1, 1, 0, Math.PI / 4)], [cone(0.5, 0.2, 4), 0xffffff, m4(0, 2.55, 0, 1, 1, 1, 0, Math.PI / 4)]], glow: [[box(0.5, 0.5, 0.5), 0xffc860, m4(0, 1.78)]], n: 16, where: 'in', s: [0.8, 1.2] },
       { lit: [[ball(1, 1), 0xffffff, m4(0, 0, 0, 1, 0.4, 1)], [ball(0.6, 1), 0xe6eeff, m4(0.7, 0, 0.4, 1, 0.45, 1)]], n: 150, where: 'in', s: [0.6, 1.6], cluster: 3 },
       { lit: [[cyl(0.04, 0.04, 1.4, 4), 0x2a2a35, m4(0, 0.7)], [box(0.5, 0.35, 0.03), 0xff5a5a, m4(0.27, 1.2)]], n: 40, where: 'in', s: [1, 1.2], cluster: 2 },
       { lit: [[cyl(0.04, 0.04, 1.4, 4), 0x2a2a35, m4(0, 0.7)], [box(0.5, 0.35, 0.03), 0x4a8aff, m4(0.27, 1.2)]], n: 40, where: 'in', s: [1, 1.2], cluster: 2 },
@@ -316,7 +398,7 @@ function propsFor(arena: Arena): Prop[] {
     ];
     case 'beach': return [
       { lit: [[cyl(0.22, 0.34, 4.6, 6), 0xb98a5a, m4(0.3, 2.3, 0, 1, 1, 1, 0, 0, -0.12)], ...ringOf(6, (a): Part => [box(2.8, 0.08, 0.75), 0x4fbf6a, m4(Math.cos(a) * 1.25 + 0.6, 4.45, Math.sin(a) * 1.25, 1, 1, 1, 0, -a, -0.38)]), [ball(0.25, 0), 0x7a5230, m4(0.6, 4.2, 0.25)], [ball(0.25, 0), 0x7a5230, m4(0.35, 4.15, -0.2)]], n: 110, where: 'out', s: [0.9, 1.6], cluster: 4, sway: 0.7, shadow: true },
-      { lit: [[cyl(0.06, 0.06, 2.6, 4), 0xffffff, m4(0, 1.3)], ...ringOf(8, (a, k): Part => [new THREE.ConeGeometry(1.7, 0.7, 8, 1, true, a, Math.PI / 4), k % 2 ? 0xff6b9a : 0xffffff, m4(0, 2.7)]), [box(1.2, 0.1, 2.2), 0x5cc8ff, m4(1.3, 0.05, 0)]], n: 22, where: 'out', s: [1, 1.2], shadow: true },
+      { lit: [[cyl(0.06, 0.06, 2.6, 4), 0xffffff, m4(0, 1.3)], ...ringOf(8, (a, k): Part => [new THREE.ConeGeometry(1.7, 0.7, 8, 1, true, a, Math.PI / 4), k % 2 ? 0xd8323a : 0xffffff, m4(0, 2.7)]), [box(1.2, 0.1, 2.2), 0x5cc8ff, m4(1.3, 0.05, 0)]], n: 22, where: 'out', s: [1, 1.2], shadow: true },
       { lit: [[cyl(0.9, 1.1, 0.8, 8), 0xe8c880, m4(0, 0.4)], [cyl(0.5, 0.6, 0.7, 8), 0xe8c880, m4(0, 1.1)], [cone(0.5, 0.5, 8), 0xe0b868, m4(0, 1.7)], [cyl(0.02, 0.02, 0.6, 3), 0x8a6a4a, m4(0, 2.1)], [box(0.3, 0.2, 0.02), 0xff6b9a, m4(0.16, 2.3)]], n: 14, where: 'in', s: [0.6, 1] },
       { lit: [[dome(0.35, 6), 0xffc2d6, m4(0, 0, 0, 1, 0.6, 1)]], n: 150, where: 'in', s: [0.6, 1.3], cluster: 4 },
       { lit: ringOf(5, (a): Part => [box(0.5, 0.1, 0.16), 0xff9d5c, m4(Math.cos(a) * 0.25, 0.05, Math.sin(a) * 0.25, 1, 1, 1, 0, -a)]), n: 90, where: 'in', s: [0.8, 1.4], cluster: 2 },
@@ -346,16 +428,16 @@ function propsFor(arena: Arena): Prop[] {
       { lit: flower(0xffe066, 0xff8a3c), n: 90, where: 'in', s: [0.8, 1.2], cluster: 5, sway: 2 },
     ];
     case 'cat': return [
-      { lit: cat(0xf2a04a, 0xfff4e0), n: 5, where: 'out', s: [2.2, 3.4], shadow: true },
-      { lit: cat(0x8a8a9a, 0xffffff), n: 5, where: 'out', s: [2, 3], shadow: true },
-      { lit: cat(0xffffff, 0xffd0e0), n: 4, where: 'out', s: [2, 3.2], shadow: true },
-      { lit: tree(0xb08a70, 0xffa8cc, 0xffc8e0), n: 140, where: 'out', s: [0.9, 1.8], cluster: 6, sway: 1, shadow: true },
-      { lit: [[cyl(0.35, 0.35, 4, 8), 0xe8c8a0, m4(0, 2)], [cyl(1.3, 1.3, 0.25, 10), 0xff8fc8, m4(0, 2.2)], [cyl(1, 1, 0.25, 10), 0x8fd8ff, m4(0, 4.1)], [box(1.2, 0.9, 1.2), 0xc8a0ff, m4(0, 0.45)], [ball(0.25, 0), 0xffe066, m4(1.1, 1.6, 0)]], n: 12, where: 'out', s: [1, 1.5], shadow: true },
-      { lit: [[cyl(0.4, 0.4, 0.06, 8), 0xff9ec8, m4(0, 0.03)], ...ringOf(4, (a): Part => [cyl(0.15, 0.15, 0.06, 6), 0xff9ec8, m4(Math.cos(a * 0.4 - 0.6) * 0.62, 0.03, Math.sin(a * 0.4 - 0.6) * 0.62 - 0.1)])], n: 130, where: 'in', s: [0.7, 1.2], cluster: 4 },
+      { lit: cat(0x7a8296, 0x565c70), glow: catEyes(0xffd04a), n: 5, where: 'out', s: [2.2, 3.4], shadow: true },
+      { lit: cat(0x3a3a4a, 0x2a2a38), glow: catEyes(0x4dffd9), n: 5, where: 'out', s: [2, 3], shadow: true },
+      { lit: cat(0x4a8a7a, 0x3a6a62), glow: catEyes(0xff7ad9), n: 4, where: 'out', s: [2, 3.2], shadow: true },
+      { lit: tree(0x4a2e34, 0xe8558a, 0xff8fb0), n: 140, where: 'out', s: [0.9, 1.8], cluster: 6, sway: 1, shadow: true },
+      { lit: [[cyl(0.28, 0.34, 5, 8), 0xc8322a, m4(-1.8, 2.5)], [cyl(0.28, 0.34, 5, 8), 0xc8322a, m4(1.8, 2.5)], [box(5.4, 0.4, 0.6), 0x2a2030, m4(0, 5.2)], [box(4.8, 0.3, 0.4), 0xc8322a, m4(0, 4.2)], [box(0.5, 0.8, 0.3), 0x2a2030, m4(0, 4.75)]], n: 12, where: 'out', s: [1, 1.5], shadow: true },
+      { lit: ringOf(5, (a, k): Part => [cyl(0.16, 0.16, 0.03, 5), k % 2 ? 0xff8fb0 : 0xffc0d4, m4(Math.cos(a * 1.7) * (0.3 + k * 0.13), 0.02, Math.sin(a * 1.7) * (0.3 + k * 0.13), 1.5, 1, 0.8, 0, a * 2.3)]), n: 130, where: 'in', s: [0.7, 1.2], cluster: 4 },
       { lit: [[cyl(0.5, 0.36, 0.25, 10), 0x8fd8ff, m4(0, 0.13)], [cyl(0.42, 0.42, 0.04, 10), 0xffffff, m4(0, 0.25)]], n: 16, where: 'in', s: [0.8, 1.1] },
-      { lit: flower(0xff8fc8, 0xffffff), n: 240, where: 'in', s: [0.8, 1.5], cluster: 8, sway: 2 },
-      { lit: flower(0xc8a0ff, 0xffe066), n: 160, where: 'in', s: [0.8, 1.4], cluster: 7, sway: 2 },
-      { lit: tuft(0x7ec06a), n: 420, where: 'in', s: [0.8, 1.5], cluster: 6, sway: 3 },
+      { lit: flower(0xe8558a, 0xffffff), n: 240, where: 'in', s: [0.8, 1.5], cluster: 8, sway: 2 },
+      { lit: flower(0x7a5ae8, 0xffd23d), n: 160, where: 'in', s: [0.8, 1.4], cluster: 7, sway: 2 },
+      { lit: tuft(0x2f7a4a), n: 420, where: 'in', s: [0.8, 1.5], cluster: 6, sway: 3 },
       { lit: [[box(0.5, 0.2, 0.14), 0x8fc8e8, m4(0, 0.12)], [cone(0.16, 0.26, 3), 0x8fc8e8, m4(-0.34, 0.12, 0, 1, 1, 0.4, 0, 0, -Math.PI / 2)]], n: 60, where: 'in', s: [0.8, 1.3], cluster: 3 },
     ];
     case 'disco': return [
@@ -475,8 +557,8 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
           vec2 g = vW.xz / 5.0; vec2 id = floor(g); vec2 f = abs(fract(g) - 0.5);
           float r = h21(id); float beat = 0.5 + 0.5 * sin(uTime * 4.2 + r * 6.283);
           vec3 pal = 0.5 + 0.5 * cos(6.283 * (r + vec3(0.0, 0.33, 0.67)) + uTime * 0.3);
-          float line = smoothstep(0.44, 0.5, max(f.x, f.y));
-          vec3 c = mix(vec3(0.06, 0.04, 0.14) + pal * (0.1 + 0.3 * beat * step(0.55, r)), vec3(1.0, 0.6, 1.0) * 1.3, line);
+          float line = smoothstep(0.465, 0.5, max(f.x, f.y));
+          vec3 c = mix(vec3(0.03, 0.02, 0.09) + pal * (0.03 + 0.26 * beat * step(0.6, r)), mix(vec3(1.0, 0.25, 0.85), vec3(0.2, 0.85, 1.0), 0.5 + 0.5 * sin(vW.x * 0.03 + vW.z * 0.02 + uTime * 0.4)) * 1.4, line);
           gl_FragColor = vec4(c, 1.0);
         }`,
     }));
@@ -484,16 +566,15 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
     floor.position.y = 0.02;
     group.add(floor);
     const ballGeo = new THREE.IcosahedronGeometry(7, 1);
-    const disco = new THREE.Mesh(ballGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.9, roughness: 0.15, flatShading: true, emissive: 0x8a6aff, emissiveIntensity: 0.9 }));
+    const disco = new THREE.Mesh(ballGeo, flatMat({ color: 0xffffff, emissive: 0x8a6aff, emissiveIntensity: 0.9 }));
     disco.position.set(0, 46, -R - 30);
     disco.userData.spin = 0.4;
     group.add(disco);
   }
 
   // props
-  const swayMats: THREE.MeshStandardMaterial[] = [];
-  const swayMat = (base: THREE.MeshStandardMaterial, amount: number) => {
-    const prev = base.onBeforeCompile;
+    const swayMat = <M extends THREE.Material>(base: M, amount: number): M => {
+    const prev = base.onBeforeCompile, prevKey = base.customProgramCacheKey();
     base.onBeforeCompile = (sh, r) => {
       prev?.call(base, sh, r);
       sh.uniforms.uTime = base.userData.uTime;
@@ -505,9 +586,8 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
         #endif`);
     };
     base.userData.uTime = { value: 0 };
-    base.customProgramCacheKey = () => `sway${amount}${base.emissive.r > 0 ? 'g' : ''}`;
+    base.customProgramCacheKey = () => `sway${amount}${prevKey}`;
     timed.push(base.userData.uTime);
-    swayMats.push(base);
     return base;
   };
   let seed = arena.id.charCodeAt(0) * 7 + arena.id.length;
@@ -548,9 +628,12 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
       if (!list) tiles.set(k, list = []);
       list.push(m);
     }
-    const add = (parts: Part[] | undefined, mat: THREE.MeshStandardMaterial) => {
+    const add = (parts: Part[] | undefined, mat: THREE.Material | null) => {
+      const ink = !mat;
       if (!parts) return;
-      const geo = merge(parts), mt = pr.sway ? swayMat(mat, pr.sway) : mat;
+      let geo = merge(parts);
+      if (ink) { geo.computeBoundingSphere(); mat = inkMat(geo.boundingSphere!.radius * 0.016, { vertexColors: true }); geo = hullGeo(geo); }
+      const mt = pr.sway ? swayMat(mat!, pr.sway) : mat!;
       for (const list of tiles.values()) {
         const mesh = instanced(geo, mt, list.length, false);
         list.forEach((m, i) => mesh.setMatrixAt(i, m));
@@ -559,20 +642,22 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
         mesh.computeBoundingSphere();
         mesh.boundingSphere!.radius += 2; // room for the sway
         mesh.frustumCulled = true;
-        mesh.castShadow = !!pr.shadow && !low;
-        mesh.receiveShadow = pr.where !== 'in';
+        mesh.castShadow = !!pr.shadow && !low && !ink;
+        mesh.receiveShadow = pr.where !== 'in' && !ink;
         group.add(mesh);
       }
     };
     add(pr.lit, flatMat({ vertexColors: true }));
     add(pr.glow, glowMat(arena.night ? 0.95 : 1.1, { vertexColors: true }));
+    // ink outlines on the big props only (the ones that cast shadows), and only on High
+    if (pr.shadow && !low) { add(pr.lit, null); add(pr.glow, null); }
   }
 
   // puffy clouds high in the sky
   if (!arena.night) {
     const puff = merge([[ball(6, 2), 0xffffff, m4(0, 0, 0, 1, 0.5, 1)], [ball(4.5, 2), 0xffffff, m4(6, 0.5, 1, 1, 0.55, 1)], [ball(4, 2), 0xffffff, m4(-5.5, 0, -1, 1, 0.5, 1)], [ball(3.4, 2), 0xffffff, m4(1, 1.8, -3, 1, 0.55, 1)]]);
     const nCloud = Math.round(46 * GROW);
-    const clouds = instanced(puff, new THREE.MeshStandardMaterial({ vertexColors: true, emissive: 0x9a9aa8, roughness: 1, fog: false }), nCloud, false);
+    const clouds = instanced(puff, flatMat({ vertexColors: true, emissive: new THREE.Color(arena.sky).multiplyScalar(0.45), fog: false }), nCloud, false);
     for (let i = 0; i < nCloud; i++) { const a = rnd() * 6.28, r = 40 + Math.sqrt(rnd()) * (R + 380), s = 1.5 + rnd() * 3.5; clouds.setMatrixAt(i, m4(Math.cos(a) * r, 55 + rnd() * 70, Math.sin(a) * r, s, s, s, 0, rnd() * 6.28)); }
     clouds.count = nCloud;
     clouds.userData.spin = 0.004;
@@ -586,7 +671,7 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
   // many hazards share a few looks: one geometry per look, one material per kind of surface
   const geoCache = new Map<string, THREE.BufferGeometry>();
   const geoOf = (key: string, parts: Part[]) => { let g = geoCache.get(key); if (!g) geoCache.set(key, g = merge(parts)); return g; };
-  const hazLit = flatMat({ vertexColors: true, roughness: 0.6 }), hazGlow = glowMat(1.5, { vertexColors: true });
+  const hazLit = flatMat({ vertexColors: true }), hazGlow = glowMat(1.5, { vertexColors: true }), hazInk = inkMat(0.035, { vertexColors: true });
   for (const o of sim.obstacles) {
     if (o.kind === 'pool') {
       const m = new THREE.Mesh(disc, poolMat!);
@@ -602,8 +687,8 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
         : [[cyl(0.8, 1, 1.3, 7), 0xc8683a, m4(0, 0.65)], [cyl(0.6, 0.8, 1.2, 7), 0xe0905a, m4(0.05, 1.9)], [cyl(0.75, 0.6, 0.5, 7), 0xb85a30, m4(0, 2.75)], [ball(0.5, 0), 0xa85028, m4(0.8, 0.3, 0.5)]];
       if (arena.id === 'forge') glow = [[new THREE.TorusGeometry(0.98, 0.06, 4, 16), 0xff5a1f, m4(0, 0.08, 0, 1, 1, 1, Math.PI / 2)]];
     } else if (arena.id === 'cat') {
-      const c = [0xff8fc8, 0x8fd8ff, 0xffe066, 0xc8a0ff][bumpers.length % 4];
-      lit = [[ball(1, 2), c, m4(0, 0.95)], ...ringOf(5, (a): Part => [new THREE.TorusGeometry(1.01, 0.05, 4, 20), 0xffffff, m4(0, 0.95, 0, 1, 1, 1, a * 0.5, a, 0)])];
+      const c = [0xd8324a, 0x2a6ad8, 0xe8a82a, 0x7a3ad8][bumpers.length % 4];
+      lit = [[ball(1, 2), c, m4(0, 0.95)], ...ringOf(5, (a): Part => [new THREE.TorusGeometry(1.01, 0.05, 4, 20), 0xffd88a, m4(0, 0.95, 0, 1, 1, 1, a * 0.5, a, 0)])];
     } else if (arena.id === 'cloud') {
       lit = [[ball(1, 2), 0xffffff, m4(0, 0.7, 0, 1, 0.75, 1)], [ball(0.6, 2), 0xffe8f4, m4(0.6, 0.5, 0.3)], [ball(0.6, 2), 0xe8f0ff, m4(-0.55, 0.5, -0.3)]];
     } else {
@@ -616,6 +701,7 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
     lm.castShadow = !low;
     g.add(lm);
     if (glow.length) g.add(new THREE.Mesh(geoOf(look + 'g', glow), hazGlow));
+    if (!low) g.add(new THREE.Mesh(geoCache.get(look + 'i') ?? geoCache.set(look + 'i', hullGeo(merge([...lit, ...glow]))).get(look + 'i')!, hazInk));
     g.position.set(o.x, 0, o.z);
     g.scale.setScalar(o.r);
     g.rotation.y = rnd() * 6.28;
@@ -630,6 +716,8 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
     group.add(m);
   }
 
+  const rays = low ? null : shafts(arena, sunDir);
+  if (rays) { track(rays.material as THREE.ShaderMaterial); group.add(rays); }
   const motes = air(arena, low);
   track(motes.material as THREE.ShaderMaterial);
   group.add(motes);
@@ -646,6 +734,7 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
       const mu = (motes.material as THREE.ShaderMaterial).uniforms;
       (mu.cam.value as THREE.Vector3).copy(cam);
       mu.px.value = px;
+      if (rays) ((rays.material as THREE.ShaderMaterial).uniforms.cam.value as THREE.Vector3).copy(cam);
       for (const s of spinners) s.rotation.y += s.userData.spin * dt;
       for (const b of bumpers) {
         if (b.t > 1.2) continue;

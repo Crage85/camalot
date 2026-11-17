@@ -36,16 +36,16 @@ export const radiusOf = (mass: number) => 0.5 + 0.75 * (1 - Math.exp(-mass / 700
 export const turnRateOf = (mass: number) => 4.2 - 2.2 * (1 - Math.exp(-mass / 900)); // rad/s; big wyrms turn slower
 export const lengthScore = (mass: number) => Math.round(mass * 10);
 
-// Friendly fantasy names for computer wyrms. Fixed list, picked in order without repeats.
+// Names for computer wyrms. Fixed list, picked in order without repeats.
 export const BOT_NAMES = [
-  'Pip Emberwing', 'Mossy', 'Snowdrop', 'Sir Noodle', 'Lady Fern', 'Biscuit',
-  'Twinkle', 'Pebble', 'Juniper', 'Marzipan', 'Clover', 'Captain Puddle',
-  'Bramble', 'Sprinkles', 'Thistle', 'Moonpie', 'Wisp', 'Duchess Plum',
-  'Acorn', 'Sunny', 'Glimmer', 'Tumble', 'Maple', 'Ziggy',
-  'Hazel', 'Doodle', 'Puddingtop', 'Saffron', 'Nimbus', 'Truffle',
-  'Pickle', 'Lady Bluebell', 'Cobble', 'Sir Waffles', 'Poppy', 'Fizz',
-  'Comet', 'Honeydew', 'Rosehip', 'Wobble', 'Tinsel', 'Sage',
-  'Muffin', 'Lord Pudding', 'Jellybean', 'Cricket', 'Kiwi', 'Dewdrop',
+  'Ashka', 'Veyra', 'Korrin', 'Sable', 'Thorne', 'Nyx',
+  'Riven', 'Kael', 'Zephyr', 'Onyx', 'Vesper', 'Drav',
+  'Lady Fen', 'Halcyon', 'Juniper', 'Orin', 'Sir Kestrel', 'Captain Squall',
+  'Bramble', 'Talon', 'Thistle', 'Mirage', 'Wisp', 'Duchess Vex',
+  'Fenris', 'Solace', 'Glaive', 'Rook', 'Marrow', 'Zarek',
+  'Hex', 'Cinder', 'Ironbark', 'Saffron', 'Nimbus', 'Garnet',
+  'Quill', 'Lady Nightbell', 'Cobalt', 'Lord Ember', 'Pyre', 'Flint',
+  'Comet', 'Raze', 'Requiem', 'Echo', 'Tempest', 'Sage',
 ];
 
 export type BotStyle = 'grazer' | 'hunter' | 'circler';
@@ -86,56 +86,56 @@ const sk = (id: string, name: string, colors: number[], acc: Accessory, accColor
 const coins = (cost: number): Unlock => ({ by: 'coins', cost });
 
 export const SKINS: Skin[] = [
-  sk('ember', 'Ember', [0xff7a4d, 0xff7a4d, 0xffb36b], 'horns', 0xfff0c8),
-  sk('seafoam', 'Seafoam', [0x4fd1c5, 0x4fd1c5, 0xa8f0e0], 'horns', 0xfff0c8),
-  sk('bubblegum', 'Bubblegum', [0xff8fc8, 0xffc2e2], 'ears', 0xff8fc8, coins(60)),
-  sk('lilac', 'Lilac', [0xb18cff, 0xb18cff, 0xe2d4ff], 'horns', 0xffe3a0, coins(100)),
-  sk('snowcat', 'Snow Cat', [0xf6f4ff, 0xf6f4ff, 0xb8bdd0], 'ears', 0xf6f4ff, coins(150)),
-  sk('soccer', 'Goal Kick', [0xffffff, 0x2a2a35], 'horns', 0x2a2a35, coins(200)),
-  sk('aspen', 'Aspen Gold', [0xffd04a, 0xffd04a, 0xffefa8], 'horns', 0xffffff, coins(250)),
-  sk('minty', 'Minty', [0x8ff0c0, 0xffffff, 0x8ff0c0, 0x4fcf9a], 'bunny', 0xffffff, coins(400)),
-  sk('peach', 'Peach Fizz', [0xffb59a, 0xffd9c2, 0xff8f7a], 'bunny', 0xffd9c2, coins(600)),
-  sk('tabby', 'Tabby Cat', [0xf2a04a, 0xf2a04a, 0xb86a24], 'ears', 0xf2a04a, coins(800)),
-  sk('tuxedo', 'Tuxedo Cat', [0x2a2a35, 0x2a2a35, 0xffffff], 'ears', 0x2a2a35, coins(1100)),
-  sk('blueberry', 'Blueberry', [0x5a6cff, 0x8f9cff, 0x3a48c8], 'unicorn', 0xffe066, coins(1500)),
-  sk('sunset', 'Sunset', [0xff5f6d, 0xff8a5c, 0xffc371, 0xff8a5c], 'horns', 0xffe9b0, coins(2000)),
-  sk('powder', 'Powder Day', [0xffffff, 0xbfe4ff, 0x5cb8ff], 'bunny', 0x5cb8ff, coins(2500)),
-  sk('calico', 'Calico Cat', [0xffffff, 0xf2a04a, 0xffffff, 0x3a3038], 'ears', 0xf2a04a, coins(3200), false, 0xffffff),
-  sk('galaxy', 'Galaxy', [0x3b2a8f, 0x7a4dff, 0x2b3a8f, 0xff7ad9], 'unicorn', 0xff7ad9, coins(4000), true),
-  sk('unicorn', 'Unicorn Dream', [0xffffff, 0xffc2e2, 0xc2e4ff, 0xe2d4ff], 'unicorn', 0xffd04a, coins(5000), true, 0xffffff),
-  sk('candy', 'Candy Cane', [0xff4d5e, 0xffffff], 'bunny', 0xff4d5e, coins(6500), false, 0xffffff),
-  sk('royal', 'Golden Royal', [0xffc83d, 0xffe58a, 0xffc83d, 0xb14dff], 'horns', 0xb14dff, coins(8000), true),
-  sk('rainbow', 'Rainbow', [0xff6b6b, 0xffb84d, 0xffe066, 0x7ee081, 0x5cc8ff, 0xb18cff], 'horns', 0xffe066, { by: 'length', value: 5000 }, false, 0xffffff),
-  sk('starry', 'Starry Night', [0x2b3a8f, 0x2b3a8f, 0x2b3a8f, 0xffd75e], 'ears', 0x2b3a8f, { by: 'pops', value: 5 }),
-  sk('jade', 'Elder Jade', [0x2fae7a, 0x7fe0b0, 0x2fae7a, 0xf4efe6], 'horns', 0xf4efe6, { by: 'level', value: 15 }),
-  sk('aurora', 'Mythic Aurora', [0x4dffc3, 0x4dc3ff, 0xb14dff, 0xff7ad9], 'unicorn', 0xffffff, { by: 'level', value: 28 }, true),
-  sk('catcher', 'Star Catcher', [0xffe066, 0xfff4c2, 0xffb84d], 'bunny', 0xffffff, { by: 'stars', value: 100 }, true),
-  sk('constellation', 'Constellation', [0x141a4a, 0x141a4a, 0xffffff, 0x141a4a, 0x7fd8ff], 'unicorn', 0x7fd8ff, { by: 'stars', value: 216 }, true),
-  sk('sprite', 'Sprite Friend', [0x9dffb0, 0xeaffd0, 0x5fe08a], 'bunny', 0xffe066, { by: 'award', id: 'sprites3' }, true),
-  sk('champion', 'Champion', [0xd43d3d, 0xffd04a, 0xd43d3d, 0xffffff], 'horns', 0xffd04a, { by: 'award', id: 'pops4' }),
+  sk('ember', 'Ember', [0xff5a2a, 0xff5a2a, 0xffa040], 'horns', 0xffe9b0),
+  sk('seafoam', 'Tidecrest', [0x1fb8a8, 0x1fb8a8, 0x7fe8d0], 'horns', 0xfff0c8),
+  sk('bubblegum', 'Rosethorn', [0xe8457a, 0xe8457a, 0xff8fb0], 'ears', 0xffd0dc, coins(60)),
+  sk('lilac', 'Duskveil', [0x7a4de8, 0x7a4de8, 0xc0a0ff], 'horns', 0xffd88a, coins(100)),
+  sk('snowcat', 'Snow Lynx', [0xeef0fa, 0xeef0fa, 0x8a94b8], 'ears', 0x7fd8ff, coins(150)),
+  sk('soccer', 'Striker', [0xf4f4f8, 0x1a1a24], 'horns', 0x1a1a24, coins(200)),
+  sk('aspen', 'Aspen Gold', [0xf5b81f, 0xf5b81f, 0xffe08a], 'horns', 0xffffff, coins(250)),
+  sk('minty', 'Jadewind', [0x2fc88a, 0xe8fff4, 0x2fc88a, 0x1f9a6a], 'bunny', 0xffffff, coins(400)),
+  sk('peach', 'Dawnfire', [0xff7a5a, 0xffb08a, 0xe8503a], 'bunny', 0xffe0c0, coins(600)),
+  sk('tabby', 'Amberstripe', [0xe88a2a, 0xe88a2a, 0x8a4a14], 'ears', 0xffc870, coins(800)),
+  sk('tuxedo', 'Nightmantle', [0x1a1a24, 0x1a1a24, 0xf4f4f8], 'ears', 0xf4f4f8, coins(1100)),
+  sk('blueberry', 'Stormcaller', [0x3a4ce8, 0x7a8cff, 0x2430a8], 'unicorn', 0xffd23d, coins(1500)),
+  sk('sunset', 'Sunfall', [0xff3f5a, 0xff7a3a, 0xffb84a, 0xff7a3a], 'horns', 0xffe9b0, coins(2000)),
+  sk('powder', 'Whiteout', [0xffffff, 0x9fd4ff, 0x2a9aff], 'bunny', 0x2a9aff, coins(2500)),
+  sk('calico', 'Patchfang', [0xf4f4f8, 0xe88a2a, 0xf4f4f8, 0x2a2028], 'ears', 0xe88a2a, coins(3200), false, 0xf4f4f8),
+  sk('galaxy', 'Voidstar', [0x2a1a8f, 0x7a4dff, 0x1a2a8f, 0xff5ad0], 'unicorn', 0xff7ad9, coins(4000), true),
+  sk('unicorn', 'Prism Horn', [0xf4f4ff, 0xff7ab8, 0x7ac0ff, 0xb890ff], 'unicorn', 0xffd04a, coins(5000), true, 0xf4f4ff),
+  sk('candy', 'Crimson Stripe', [0xd8243a, 0xf4f4f8], 'bunny', 0xd8243a, coins(6500), false, 0xf4f4f8),
+  sk('royal', 'Sovereign', [0xf5b81f, 0xffe08a, 0xf5b81f, 0x8a2ae8], 'horns', 0xb14dff, coins(8000), true),
+  sk('rainbow', 'Spectrum', [0xe83a3a, 0xff9a1f, 0xffd23d, 0x3ac85a, 0x2a9aff, 0x8a5aff], 'horns', 0xffe066, { by: 'length', value: 5000 }, false, 0xf4f4f8),
+  sk('starry', 'Starry Night', [0x1f2c8f, 0x1f2c8f, 0x1f2c8f, 0xffd75e], 'ears', 0xffd75e, { by: 'pops', value: 5 }),
+  sk('jade', 'Elder Jade', [0x1f9a6a, 0x6fe0a8, 0x1f9a6a, 0xf4efe6], 'horns', 0xf4efe6, { by: 'level', value: 15 }),
+  sk('aurora', 'Mythic Aurora', [0x2fffb8, 0x2fb0ff, 0xa040ff, 0xff5ad0], 'unicorn', 0xffffff, { by: 'level', value: 28 }, true),
+  sk('catcher', 'Starseeker', [0xffd23d, 0xfff0b0, 0xff9a1f], 'bunny', 0xffffff, { by: 'stars', value: 100 }, true),
+  sk('constellation', 'Constellation', [0x10164a, 0x10164a, 0xffffff, 0x10164a, 0x5fc8ff], 'unicorn', 0x7fd8ff, { by: 'stars', value: 216 }, true),
+  sk('sprite', 'Spritebound', [0x5fe08a, 0xd8ffb0, 0x2fb86a], 'bunny', 0xffe066, { by: 'award', id: 'sprites3' }, true),
+  sk('champion', 'Champion', [0xc8242a, 0xf5b81f, 0xc8242a, 0xf4f4f8], 'horns', 0xffd04a, { by: 'award', id: 'pops4' }),
   // one per boss
-  sk('b-valley', 'Mossback', [0x5f8f3f, 0x7fb85a, 0x5f8f3f, 0xc8a070], 'horns', 0xc8a070, { by: 'boss', arena: 'valley' }),
-  sk('b-peak', 'Frostwhisker', [0xbfe8ff, 0xffffff, 0x8fc8ff], 'ears', 0xbfe8ff, { by: 'boss', arena: 'peak' }, true),
-  sk('b-beach', 'Captain Coral', [0xff7a8a, 0xffc2a8, 0xff7a8a, 0x2fd0c0], 'horns', 0x2fd0c0, { by: 'boss', arena: 'beach' }),
-  sk('b-grove', 'Glimmercap', [0x7a4dff, 0x4dffd9, 0x7a4dff], 'bunny', 0x4dffd9, { by: 'boss', arena: 'grove' }, true),
-  sk('b-canyon', 'Rustle the Red', [0xd4623a, 0xe8935a, 0xb04a2a], 'horns', 0xffe9b0, { by: 'boss', arena: 'canyon' }),
-  sk('b-cat', 'Queen Mittens', [0xf6e8d8, 0xf6e8d8, 0x8a6a5a], 'ears', 0x8a6a5a, { by: 'boss', arena: 'cat' }, false, 0xf6e8d8),
-  sk('b-disco', 'DJ Sparkle', [0xff4dd2, 0x4dd2ff, 0xffe04d, 0x4dff88], 'unicorn', 0xffffff, { by: 'boss', arena: 'disco' }, true),
-  sk('b-forge', 'Cinderjaw', [0x3a2a2a, 0xff5a1f, 0x3a2a2a, 0xffb81f], 'horns', 0xffb81f, { by: 'boss', arena: 'forge' }, true),
-  sk('b-cloud', 'Rainbow Empress', [0xff7a9a, 0xffc86b, 0xfff07a, 0x8ae89a, 0x7ac8ff, 0xc89aff], 'unicorn', 0xffd04a, { by: 'boss', arena: 'cloud' }, true, 0xffffff),
+  sk('b-valley', 'Mossback', [0x4a7a2f, 0x6fa84a, 0x4a7a2f, 0xb88a50], 'horns', 0xc8a070, { by: 'boss', arena: 'valley' }),
+  sk('b-peak', 'Rimeclaw', [0x9fdcff, 0xf4faff, 0x5aa8f0], 'ears', 0xbfe8ff, { by: 'boss', arena: 'peak' }, true),
+  sk('b-beach', 'Tidereaver', [0xe8456a, 0xffa888, 0xe8456a, 0x1fc0b0], 'horns', 0x2fd0c0, { by: 'boss', arena: 'beach' }),
+  sk('b-grove', 'Lumenshade', [0x6a3dff, 0x2fffd0, 0x6a3dff], 'bunny', 0x4dffd9, { by: 'boss', arena: 'grove' }, true),
+  sk('b-canyon', 'Scoria', [0xc8502a, 0xe8854a, 0x9a3a1f], 'horns', 0xffe9b0, { by: 'boss', arena: 'canyon' }),
+  sk('b-cat', 'Moonclaw', [0xe8dcc8, 0xe8dcc8, 0x4a3a6a], 'ears', 0x9a7aff, { by: 'boss', arena: 'cat' }, false, 0xe8dcc8),
+  sk('b-disco', 'Neon Seraph', [0xff2fc8, 0x2fc8ff, 0xffd82f, 0x2fff7a], 'unicorn', 0xffffff, { by: 'boss', arena: 'disco' }, true),
+  sk('b-forge', 'Cinderjaw', [0x2a1c1c, 0xff5a1f, 0x2a1c1c, 0xffb81f], 'horns', 0xffb81f, { by: 'boss', arena: 'forge' }, true),
+  sk('b-cloud', 'Prism Empress', [0xff5a8a, 0xffb84a, 0xffe85a, 0x5ae07a, 0x5ab0ff, 0xb07aff], 'unicorn', 0xffd04a, { by: 'boss', arena: 'cloud' }, true, 0xf4f4ff),
 ];
 export const DEFAULT_OWNED = ['ember', 'seafoam'];
 
-// Bot looks: a fixed rotation of bright looks.
+// Bot looks: a fixed rotation of strong colours.
 export const BOT_SKINS: Pick<Skin, 'colors' | 'head' | 'acc' | 'accColor'>[] = [
-  { colors: [0x7ee081, 0x7ee081, 0xc8f5b0], head: 0x7ee081, acc: 'horns', accColor: 0xfff0c8 },
-  { colors: [0x5cc8ff, 0x5cc8ff, 0xc2ecff], head: 0x5cc8ff, acc: 'ears', accColor: 0x5cc8ff },
-  { colors: [0xffb84d, 0xffe066], head: 0xffb84d, acc: 'horns', accColor: 0xffffff },
-  { colors: [0xff6b9a, 0xff6b9a, 0xffd0e0], head: 0xff6b9a, acc: 'bunny', accColor: 0xffd0e0 },
-  { colors: [0x9b8cff, 0xc8beff], head: 0x9b8cff, acc: 'unicorn', accColor: 0xffe3a0 },
-  { colors: [0x46c79a, 0x46c79a, 0xffe066], head: 0x46c79a, acc: 'horns', accColor: 0xffe066 },
-  { colors: [0xe8e2d4, 0xc49a6c], head: 0xe8e2d4, acc: 'ears', accColor: 0xc49a6c },
-  { colors: [0xff8a5c, 0xffffff], head: 0xff8a5c, acc: 'ears', accColor: 0xff8a5c },
+  { colors: [0x3ac85a, 0x3ac85a, 0xa8f08a], head: 0x3ac85a, acc: 'horns', accColor: 0xfff0c8 },
+  { colors: [0x2a9aff, 0x2a9aff, 0x9fd8ff], head: 0x2a9aff, acc: 'ears', accColor: 0xbfe8ff },
+  { colors: [0xff9a1f, 0xff9a1f, 0xffd23d], head: 0xff9a1f, acc: 'horns', accColor: 0xffffff },
+  { colors: [0xe8386a, 0xe8386a, 0xff9ab8], head: 0xe8386a, acc: 'bunny', accColor: 0xffd0e0 },
+  { colors: [0x7a5aff, 0x7a5aff, 0xb8a8ff], head: 0x7a5aff, acc: 'unicorn', accColor: 0xffd88a },
+  { colors: [0x1fa88a, 0x1fa88a, 0xffd23d], head: 0x1fa88a, acc: 'horns', accColor: 0xffe066 },
+  { colors: [0xd8d0c0, 0xd8d0c0, 0x9a6a3c], head: 0xd8d0c0, acc: 'ears', accColor: 0xc49a6c },
+  { colors: [0xe8502a, 0xe8502a, 0x2a2028], head: 0xe8502a, acc: 'ears', accColor: 0xffb070 },
 ];
 
 // ---- places ----
@@ -161,17 +161,17 @@ export interface Arena {
   boss: { name: string; skin: string };
 }
 
-const GEMS_A = [0xff6b9a, 0xffe066, 0x5cc8ff, 0xb18cff, 0x7ee081, 0xff9d5c];
+const GEMS_A = [0xff3a6a, 0xffc81f, 0x2aa8ff, 0x9a5aff, 0x3ad86a, 0xff7a2a];
 export const ARENAS: Arena[] = [
-  { id: 'valley', name: 'Fairy Valley', blurb: 'A calm meadow. A good place to learn.', ground: 0x8fd16a, groundAlt: 0x74c058, outside: 0x5fa64e, far: 0x6fa8c8, skyTop: 0x4aa3ff, sky: 0xcdeeff, sun: 0xfff1d0, border: 0xd9a8ff, gems: GEMS_A, obstacles: [], zones: [], boss: { name: 'Old Mossback', skin: 'b-valley' } },
-  { id: 'peak', name: 'Snowy Peak', blurb: 'Ice patches make turning slippery.', ground: 0xf2f6ff, groundAlt: 0xdce8fa, outside: 0xe4ecfa, far: 0x9fb4d8, skyTop: 0x5a9cf0, sky: 0xdcefff, sun: 0xfff6e8, border: 0x8fe8ff, gems: [0x4aa8ff, 0xb18cff, 0xff6b9a, 0x2fd0c0, 0xffb84d, 0x6c7cff], obstacles: [], zones: [['slick', 90]], boss: { name: 'Frostwhisker', skin: 'b-peak' } },
-  { id: 'beach', name: 'Sunny Beach', blurb: 'Tide pools slow you down.', ground: 0xf5dfa3, groundAlt: 0xeccf86, outside: 0xf0d590, far: 0x58b8a0, skyTop: 0x2f9ef5, sky: 0xc6f0ff, sun: 0xfff0c0, border: 0xffa8c8, gems: [0xff6b6b, 0x2fd0c0, 0xffe066, 0xff8fc8, 0x5cc8ff, 0x9b8cff], obstacles: [], zones: [['slow', 90]], boss: { name: 'Captain Coral', skin: 'b-beach' } },
-  { id: 'grove', name: 'Glowshroom Grove', blurb: 'Bouncy mushrooms bump you back.', ground: 0x2c4a5e, groundAlt: 0x23405a, outside: 0x1c3048, far: 0x1a2a4a, skyTop: 0x0c1030, sky: 0x2a3a6a, sun: 0x9fc8ff, border: 0x4dffd9, night: true, gems: [0x4dffd9, 0xff7ad9, 0xffe066, 0x7a9dff, 0x9dff7a, 0xffa04d], obstacles: [['bumper', 144]], zones: [], boss: { name: 'Glimmercap', skin: 'b-grove' } },
-  { id: 'canyon', name: 'Red Rock Canyon', blurb: 'Stone pillars pop you. Wind gusts speed you up.', ground: 0xe0a070, groundAlt: 0xd08a5a, outside: 0xc8784a, far: 0xb0603a, skyTop: 0x4a8ae0, sky: 0xffe0c0, sun: 0xffd9a0, border: 0xffd04a, gems: [0x2fd0c0, 0xffe066, 0xffffff, 0x5cc8ff, 0xb18cff, 0x7ee081], obstacles: [['rock', 126]], zones: [['fast', 45]], boss: { name: 'Rustle the Red', skin: 'b-canyon' } },
-  { id: 'cat', name: 'Catnap Garden', blurb: 'Yarn balls bounce. Catnip makes you zoom.', ground: 0xc8e8a0, groundAlt: 0xb4dc8c, outside: 0x9ccc7c, far: 0xe8b8d0, skyTop: 0xff9ec8, sky: 0xffe8f0, sun: 0xfff0e0, border: 0xff8fc8, gems: [0xff8fc8, 0xffe066, 0x8fd8ff, 0xc8a0ff, 0xffb070, 0xffffff], obstacles: [['bumper', 117]], zones: [['fast', 54]], boss: { name: 'Queen Mittens', skin: 'b-cat' } },
-  { id: 'disco', name: 'Starlight Dance Floor', blurb: 'Slippery tiles and speed tiles.', ground: 0x2a2050, groundAlt: 0x3a2a70, outside: 0x181030, far: 0x2a1a5a, skyTop: 0x0a0620, sky: 0x3a1a6a, sun: 0xd0a0ff, border: 0xff4dd2, night: true, gems: [0xff4dd2, 0x4dd2ff, 0xffe04d, 0x4dff88, 0xff884d, 0xb44dff], obstacles: [], zones: [['slick', 72], ['fast', 72]], boss: { name: 'DJ Sparkle', skin: 'b-disco' } },
-  { id: 'forge', name: 'Dragon Forge', blurb: 'Lava pools and hot rocks pop you.', ground: 0x4a3a3a, groundAlt: 0x3a2c2e, outside: 0x2a2024, far: 0x3a1a1a, skyTop: 0x1a0a14, sky: 0x6a2a1a, sun: 0xffa060, border: 0xff7a1f, night: true, gems: [0xffb81f, 0xff5a1f, 0xfff07a, 0xff7ad9, 0x7ad9ff, 0xffffff], obstacles: [['pool', 81], ['rock', 45]], zones: [], boss: { name: 'Cinderjaw', skin: 'b-forge' } },
-  { id: 'cloud', name: 'Cloud Kingdom', blurb: 'Sky holes, bouncy clouds, and rainbow speed strips.', ground: 0xf8f4ff, groundAlt: 0xe8e0ff, outside: 0xd8e4ff, far: 0xffd0e8, skyTop: 0x6a7af0, sky: 0xffd8e8, sun: 0xfff4d8, border: 0xffe066, gems: [0xff6b6b, 0xffb84d, 0xffe066, 0x7ee081, 0x5cc8ff, 0xb18cff], obstacles: [['pool', 72], ['bumper', 72]], zones: [['fast', 54]], boss: { name: 'The Rainbow Empress', skin: 'b-cloud' } },
+  { id: 'valley', name: 'Emerald Vale', blurb: 'Open grassland at golden hour. Learn the hunt here.', ground: 0x3f8f40, groundAlt: 0x2f7a3c, outside: 0x2f6e38, far: 0x4a6aa8, skyTop: 0x2456c8, sky: 0xffd9a0, sun: 0xffd9a0, border: 0xb07aff, gems: GEMS_A, obstacles: [], zones: [], boss: { name: 'Old Mossback', skin: 'b-valley' } },
+  { id: 'peak', name: 'Frostfang Peak', blurb: 'Ice sheets make you slide wide.', ground: 0xdfe9fc, groundAlt: 0xa4c0f0, outside: 0xc4d6f6, far: 0x5a78c0, skyTop: 0x1440b0, sky: 0xa8d0ff, sun: 0xfff2dc, border: 0x5fe0ff, gems: [0x2a8aff, 0x9a5aff, 0xff3a6a, 0x1fc0b0, 0xffa01f, 0x5a6aff], obstacles: [], zones: [['slick', 90]], boss: { name: 'Rimeclaw', skin: 'b-peak' } },
+  { id: 'beach', name: 'Coral Strand', blurb: 'Tide pools drag your speed down.', ground: 0xf0d48a, groundAlt: 0xe0bc6a, outside: 0xe8c878, far: 0x2a9a8a, skyTop: 0x1474e8, sky: 0xa8ecff, sun: 0xfff0c0, border: 0xff5a8a, gems: [0xff3a4a, 0x1fc0b0, 0xffc81f, 0xff5aa8, 0x2a9aff, 0x8a6aff], obstacles: [], zones: [['slow', 90]], boss: { name: 'Tidereaver', skin: 'b-beach' } },
+  { id: 'grove', name: 'Moonspore Grove', blurb: 'Glowcaps knock you back.', ground: 0x2c4a5e, groundAlt: 0x23405a, outside: 0x1c3048, far: 0x1a2a4a, skyTop: 0x080c2a, sky: 0x2a3a6a, sun: 0x9fc8ff, border: 0x4dffd9, night: true, gems: [0x4dffd9, 0xff7ad9, 0xffe066, 0x7a9dff, 0x9dff7a, 0xffa04d], obstacles: [['bumper', 144]], zones: [], boss: { name: 'Lumenshade', skin: 'b-grove' } },
+  { id: 'canyon', name: 'Red Rock Canyon', blurb: 'Stone pillars end your run. Wind gusts speed you up.', ground: 0xb8704a, groundAlt: 0x9a5638, outside: 0x9a5234, far: 0x6a3a3a, skyTop: 0x2a3ab8, sky: 0xf0a070, sun: 0xffc890, border: 0xffd04a, gems: [0x1fc0b0, 0xffe066, 0xffffff, 0x2a9aff, 0x9a5aff, 0x3ad86a], obstacles: [['rock', 126]], zones: [['fast', 45]], boss: { name: 'Scoria the Red', skin: 'b-canyon' } },
+  { id: 'cat', name: 'Moonclaw Shrine', blurb: 'Temari orbs knock you back. Catmint strips give speed.', ground: 0x6aa85a, groundAlt: 0x579a50, outside: 0x4a8a4a, far: 0x8a5a9a, skyTop: 0x2a1f7a, sky: 0xff8a9a, sun: 0xffc0a0, border: 0xff5aa0, gems: [0xff5aa8, 0xffd23d, 0x5ac0ff, 0xa87aff, 0xff8a3a, 0xffffff], obstacles: [['bumper', 117]], zones: [['fast', 54]], boss: { name: 'Lady Moonclaw', skin: 'b-cat' } },
+  { id: 'disco', name: 'Neon Starfloor', blurb: 'Slick tiles and speed tiles.', ground: 0x2a2050, groundAlt: 0x3a2a70, outside: 0x181030, far: 0x2a1a5a, skyTop: 0x0a0620, sky: 0x3a1a6a, sun: 0xd0a0ff, border: 0xff4dd2, night: true, gems: [0xff4dd2, 0x4dd2ff, 0xffe04d, 0x4dff88, 0xff884d, 0xb44dff], obstacles: [], zones: [['slick', 72], ['fast', 72]], boss: { name: 'Neon Seraph', skin: 'b-disco' } },
+  { id: 'forge', name: 'Dragon Forge', blurb: 'Lava pools and hot rocks end your run.', ground: 0x4a3a3a, groundAlt: 0x3a2c2e, outside: 0x2a2024, far: 0x3a1a1a, skyTop: 0x1a0a14, sky: 0x6a2a1a, sun: 0xffa060, border: 0xff7a1f, night: true, gems: [0xffb81f, 0xff5a1f, 0xfff07a, 0xff7ad9, 0x7ad9ff, 0xffffff], obstacles: [['pool', 81], ['rock', 45]], zones: [], boss: { name: 'Cinderjaw', skin: 'b-forge' } },
+  { id: 'cloud', name: 'Skyreach Citadel', blurb: 'Sky gaps, cloud bumpers, and jetstream strips.', ground: 0xe4e2fc, groundAlt: 0xb4b0ee, outside: 0xb8c4f4, far: 0xf09ab0, skyTop: 0x2a3ad0, sky: 0xffb890, sun: 0xfff0d0, border: 0xffd04a, gems: [0xff3a4a, 0xff9a1f, 0xffd23d, 0x3ad86a, 0x2a9aff, 0x9a5aff], obstacles: [['pool', 72], ['bumper', 72]], zones: [['fast', 54]], boss: { name: 'The Prism Empress', skin: 'b-cloud' } },
 ];
 export const FREE_ARENAS = 3; // the first three places were open in the first version and stay open
 
@@ -179,7 +179,7 @@ export type PotionKind = 'magnet' | 'double' | 'bubble' | 'zoom' | 'frost';
 export const POTIONS: Record<PotionKind, { color: number; label: string; level: number }> = {
   magnet: { color: 0xffc23d, label: 'Magnet', level: 1 },
   double: { color: 0xff5fa2, label: 'Double gems', level: 1 },
-  bubble: { color: 0x7fd8ff, label: 'Bubble', level: 1 },
+  bubble: { color: 0x7fd8ff, label: 'Ward', level: 1 },
   zoom: { color: 0x7dff6a, label: 'Free boost', level: 10 },
   frost: { color: 0xc8f4ff, label: 'Frost', level: 15 },
 };
@@ -206,12 +206,12 @@ export const STAGES: Stage[] = ARENAS.flatMap((a, c) => {
     ({ id: `${a.id}-${n}`, arena: a.id, chapter: c, n, kind, tiers: [t[0], t[1], t[2]], text });
   return [
     mk(1, 'length', LEN_A[Math.min(3, c)], 'Grow long'),
-    mk(2, 'pops', [1, 2, 3], 'Pop wyrms'),
+    mk(2, 'pops', [1, 2, 3], 'Take down wyrms'),
     mk(3, 'sprites', c < 3 ? [4, 8, 14] : c < 7 ? [3, 6, 10] : [2, 4, 7], 'Catch sprite gems'),
     mk(4, 'rush', [4000, 6000, 8500].map((v) => v + c * 100), 'Gem rush: 3 minutes'),
     mk(5, 'crown', [10, 30, 60].map((v) => v + c * 2), 'Stay in the top 3'),
-    mk(6, 'length', LEN_B[Math.min(3, c)], 'Grow huge'),
-    mk(7, 'pops', c < 3 ? [2, 3, 4] : [1, 2, 4], 'Pop many wyrms'),
+    mk(6, 'length', LEN_B[Math.min(3, c)], 'Grow massive'),
+    mk(7, 'pops', c < 3 ? [2, 3, 4] : [1, 2, 4], 'Take down more'),
     mk(8, 'boss', [1, 2, 3], `Boss: ${a.boss.name}`),
   ];
 });
@@ -221,7 +221,7 @@ export function goalText(st: Stage, tier: number): string {
   const v = st.tiers[Math.min(2, tier)];
   switch (st.kind) {
     case 'length': return `Reach length ${v}`;
-    case 'pops': return `Pop ${v} ${v === 1 ? 'wyrm' : 'wyrms'}`;
+    case 'pops': return `Take down ${v} ${v === 1 ? 'wyrm' : 'wyrms'}`;
     case 'sprites': return `Catch ${v} sprite gems`;
     case 'rush': return `Reach length ${v} in 3 minutes`;
     case 'crown': return `Stay in the top 3 for ${v} seconds`;
@@ -243,7 +243,7 @@ export const xpFor = (length: number, pops: number, newStars: number) => Math.ro
 export interface Evo { level: number; name: string; perk: string }
 export const EVOS: Evo[] = [
   { level: 1, name: 'Hatchling', perk: '' },
-  { level: 3, name: 'Sprout', perk: 'Grows back fins.' },
+  { level: 3, name: 'Whelp', perk: 'Grows back fins.' },
   { level: 6, name: 'Drake', perk: 'Grows wings. New move: Roar scares smaller wyrms.' },
   { level: 10, name: 'Wyvern', perk: 'Bigger wings. Boost costs less. Free boost potions appear.' },
   { level: 15, name: 'Elder', perk: 'Tail gem. Pulls gems from farther. Frost potions appear.' },
@@ -271,7 +271,7 @@ const ladder = (key: string, stat: StatKey, text: (v: number) => string, steps: 
   steps.map(([value, c], i) => ({ id: `${key}${i + 1}`, text: text(value), stat, value, coins: c }));
 export const AWARDS: Award[] = [
   ...ladder('gems', 'gems', (v) => `Eat ${v} gems`, [[500, 40], [5000, 120], [25000, 300], [100000, 700]]),
-  ...ladder('pops', 'pops', (v) => `Pop ${v} wyrms`, [[10, 40], [50, 120], [200, 300], [600, 700]]),
+  ...ladder('pops', 'pops', (v) => `Take down ${v} wyrms`, [[10, 40], [50, 120], [200, 300], [600, 700]]),
   ...ladder('length', 'length', (v) => `Grow ${v} length in total`, [[50000, 60], [500000, 250], [2000000, 700]]),
   ...ladder('sprites', 'sprites', (v) => `Catch ${v} sprite gems`, [[10, 40], [100, 150], [400, 500]]),
   ...ladder('potions', 'potions', (v) => `Drink ${v} potions`, [[10, 30], [100, 120], [300, 300]]),

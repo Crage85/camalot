@@ -1,4 +1,4 @@
-// Level data for Kitty Cup Run. Every level is generated from its number, so level 7 is always the same level 7.
+// Level data for Neko Strike. Every level is generated from its number, so level 7 is always the same level 7.
 import { LAST_LEVEL, parTeamLvl, startCats, TRAP_MOVE, where, type TrapKind, type WorldId } from './data';
 
 export type GateOp = '+' | '-' | 'x' | '÷' | '%';
@@ -35,7 +35,7 @@ export const MAX_COUNT = 999; // team size cap
 export const GAP = 20; // distance between track sections
 export const TRAP_LOSS = 0.85; // share of the team the generator expects to keep per trap
 
-/** New gate kinds arrive one cup at a time through the Kitten League. */
+/** New gate kinds arrive one cup at a time through the Rookie League. */
 export const FEATURES: { cup: number; name: string; text: string }[] = [
   { cup: 1, name: 'Sliding gates', text: 'Some gates slide side to side.' },
   { cup: 2, name: 'Three gates', text: 'Pick from three gates.' },

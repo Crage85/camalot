@@ -1,10 +1,10 @@
-// Munch Hollow data: every tunable number, the campaign, upgrades, abilities, skins, treasures, awards and the save format.
+// Riftmaw data: every tunable number, the campaign, upgrades, abilities, skins, treasures, awards and the save format.
 import type { MapId, Part } from './parts';
 import type { Ability, PowKind, Skin } from './world';
 
 // Rules Craig delegated (listed in the build report).
 export const TUNE = {
-  R0: 0.5, // starting hole radius
+  R0: 0.5, // starting rift radius
   K: 0.17, // growth: R^2 = R0^2 + K * mass
   massPow: 1.5, // an object's mass is its footprint half-diagonal to this power (1.5 keeps big things worth it without ending the round early)
   EDIBLE: 1.15, // an object can fall in when its half-diagonal is under R * EDIBLE
@@ -31,29 +31,29 @@ export const TUNE = {
 export type UpKey = 'size' | 'speed' | 'time' | 'gain' | 'reach' | 'coins';
 export const UPGRADES: { key: UpKey; name: string; help: string; max: number; base: number; per: number }[] = [
   { key: 'size', name: 'Start size', help: 'Begin every round wider', max: 12, base: 50, per: 0.07 },
-  { key: 'gain', name: 'Appetite', help: 'Grow faster from everything', max: 12, base: 70, per: 0.06 },
+  { key: 'gain', name: 'Hunger', help: 'Grow faster from everything', max: 12, base: 70, per: 0.06 },
   { key: 'speed', name: 'Speed', help: 'Move faster', max: 10, base: 50, per: 0.05 },
-  { key: 'reach', name: 'Wide rim', help: 'Things tip in from farther out', max: 6, base: 120, per: 0.035 },
+  { key: 'reach', name: 'Wide rim', help: 'Pull things in from farther out', max: 6, base: 120, per: 0.035 },
   { key: 'time', name: 'More time', help: '5 more seconds each round', max: 6, base: 80, per: 5 },
-  { key: 'coins', name: 'Coin nose', help: 'More coins from every round', max: 8, base: 90, per: 0.08 },
+  { key: 'coins', name: 'Plunder', help: 'More coins from every round', max: 8, base: 90, per: 0.08 },
 ];
 export const upPrice = (u: (typeof UPGRADES)[number], lv: number) => Math.round((u.base * 1.55 ** lv) / 10) * 10;
 
 // ---------- abilities (unlocked by campaign stars; one is worn at a time) ----------
 export const ABILITIES: { id: Ability; name: string; help: string; stars: number }[] = [
-  { id: 'gulp', name: 'Big Gulp', help: 'Pull in everything nearby that fits', stars: 24 },
-  { id: 'giant', name: 'Giant', help: 'Be 30% wider for 7 seconds', stars: 110 },
-  { id: 'freeze', name: 'Freeze', help: 'Rival holes stop for 5 seconds', stars: 220 },
+  { id: 'gulp', name: 'Maelstrom', help: 'Pull in everything nearby that fits', stars: 24 },
+  { id: 'giant', name: 'Colossus', help: '30% wider for 7 seconds', stars: 110 },
+  { id: 'freeze', name: 'Stasis', help: 'Rival rifts freeze for 5 seconds', stars: 220 },
 ];
-/** Hole titles by total stars (the evolution ladder shown on the menu). */
-export const TITLES: [number, string][] = [[0, 'Sprout Well'], [30, 'Moon Well'], [80, 'Star Well'], [150, 'Comet Well'], [240, 'Dragon Well'], [340, 'Sky Well'], [450, 'Legend Well'], [540, 'Crown of Wells']];
-export const SIZE_NAMES = ['Tiny', 'Nibbler', 'Muncher', 'Gobbler', 'Chomper', 'Devourer', 'Titan', 'Legend'];
+/** Rift ranks by total stars (the evolution ladder shown on the menu). */
+export const TITLES: [number, string][] = [[0, 'Fracture'], [30, 'Breach'], [80, 'Riftwalker'], [150, 'Voidcaller'], [240, 'Dragonbane'], [340, 'Skybreaker'], [450, 'Worldeater'], [540, 'Riftmaw Sovereign']];
+export const SIZE_NAMES = ['Spark', 'Fissure', 'Breach', 'Rift', 'Chasm', 'Abyss', 'Titan', 'Worldeater'];
 export const sizeName = (level: number) => SIZE_NAMES[Math.min(SIZE_NAMES.length - 1, Math.floor((level - 1) / 3))];
 
 // ---------- skins ----------
 const ear = (s: number): Part[] => [
-  ['cone', 0xff9ec7, 0.45 * s, 0.28, -0.93, 0.48, 0.58, 0.2, 0, 0, -0.3 * s],
-  ['cone', 0xffe0ec, 0.45 * s, 0.25, -0.86, 0.28, 0.38, 0.06, 0, 0, -0.3 * s],
+  ['cone', 0x2a2238, 0.45 * s, 0.28, -0.93, 0.48, 0.58, 0.2, 0, 0, -0.3 * s],
+  ['cone', GL | 0xff5a7a, 0.45 * s, 0.25, -0.86, 0.28, 0.38, 0.06, 0, 0, -0.3 * s],
 ];
 const horn = (s: number): Part[] => [['cone', 0xfff3b0, 0.5 * s, 0.3, -0.88, 0.16, 0.55, 0.16, -0.3, 0, -0.45 * s]];
 const GL = 0x1000000; // glow flag (parts.ts G)
@@ -62,22 +62,22 @@ const around = (n: number, from: number, to: number, f: (x: number, z: number, a
 const gems = (c: number, n = 6): Part[] => around(n, 0, Math.PI * 2 * (1 - 1 / n), (x, z) => ['oct', GL | c, x, 0.16, z, 0.17, 0.3, 0.17]);
 // price -1: a reward skin, earned by finishing a place's treasure set (or all crowns).
 export const SKINS: Skin[] = [
-  { id: 'moon', name: 'Moonbeam', price: 0, colors: [0xb388ff, 0x9a6cf0], arcs: 8, inner: 0x2c1650, parts: around(3, -0.6, 0.6, (x, z) => ['oct', GL | 0xffe08a, x, 0.3, z, 0.2, 0.3, 0.2]) },
-  { id: 'kitty', name: 'Kitty', price: 120, colors: [0xff9ec7, 0xffb7d5], arcs: 8, inner: 0x4a1a36, parts: [...ear(-1), ...ear(1)] },
-  { id: 'dragon', name: 'Dragon', price: 200, colors: [0x5cd68a, 0x3fae6a], arcs: 10, inner: 0x12361f, parts: [...horn(-1), ...horn(1), ...around(5, 1.9, 4.4, (x, z) => ['cone', 0x3fae6a, x, 0.14, z, 0.16, 0.28, 0.16])] },
-  { id: 'snow', name: 'Snowflake', price: 150, colors: [0x9fe4ff, 0xffffff], arcs: 12, inner: 0x16324c, parts: gems(0xe8fbff) },
-  { id: 'soccer', name: 'Soccer', price: 150, colors: [0xffffff, 0x222222], arcs: 10, inner: 0x1b1b1b, parts: [['ball', 0xffffff, 0, 0.32, -1.08, 0.34, 0.34, 0.34]] },
-  { id: 'rainbow', name: 'Rainbow', price: 300, colors: [0xff6b6b, 0xffa94d, 0xffe066, 0x69db7c, 0x4dabf7, 0xb197fc], arcs: 12, inner: 0x2a1840, parts: [] },
-  { id: 'set-kingdom', name: 'Royal', price: -1, colors: [0x7e57c2, 0xffd54a], arcs: 8, inner: 0x24124a, parts: gems(0xff5c8a, 8) },
-  { id: 'set-ski', name: 'Powder', price: -1, colors: [0xe8f6ff, 0x4dabf7], arcs: 8, inner: 0x10304c, parts: around(4, -0.9, 0.9, (x, z) => ['cone', 0xffffff, x, 0.2, z, 0.2, 0.4, 0.2]) },
-  { id: 'set-beach', name: 'Seashell', price: -1, colors: [0xffc1cc, 0x4fc3e8, 0xfff3c4], arcs: 9, inner: 0x103848, parts: gems(0xfff3c4, 5) },
+  { id: 'moon', name: 'Moonrune', price: 0, colors: [0x7a3ff0, 0x2a1a5a], arcs: 8, inner: 0x2c1650, parts: around(3, -0.6, 0.6, (x, z) => ['oct', GL | 0xffe08a, x, 0.3, z, 0.2, 0.3, 0.2]) },
+  { id: 'kitty', name: 'Nekomata', price: 120, colors: [0xd8325a, 0x2a2238], arcs: 8, inner: 0x4a1a36, parts: [...ear(-1), ...ear(1)] },
+  { id: 'dragon', name: 'Wyvern', price: 200, colors: [0x5cd68a, 0x3fae6a], arcs: 10, inner: 0x12361f, parts: [...horn(-1), ...horn(1), ...around(5, 1.9, 4.4, (x, z) => ['cone', 0x3fae6a, x, 0.14, z, 0.16, 0.28, 0.16])] },
+  { id: 'snow', name: 'Frostbrand', price: 150, colors: [0x9fe4ff, 0xffffff], arcs: 12, inner: 0x16324c, parts: gems(0xe8fbff) },
+  { id: 'soccer', name: 'Striker', price: 150, colors: [0xffffff, 0x222222], arcs: 10, inner: 0x1b1b1b, parts: [['ball', 0xffffff, 0, 0.32, -1.08, 0.34, 0.34, 0.34]] },
+  { id: 'rainbow', name: 'Prism', price: 300, colors: [0xff6b6b, 0xffa94d, 0xffe066, 0x69db7c, 0x4dabf7, 0xb197fc], arcs: 12, inner: 0x2a1840, parts: [] },
+  { id: 'set-kingdom', name: 'Regalia', price: -1, colors: [0x7e57c2, 0xffd54a], arcs: 8, inner: 0x24124a, parts: gems(0xff5c8a, 8) },
+  { id: 'set-ski', name: 'Whiteout', price: -1, colors: [0xe8f6ff, 0x4dabf7], arcs: 8, inner: 0x10304c, parts: around(4, -0.9, 0.9, (x, z) => ['cone', 0xffffff, x, 0.2, z, 0.2, 0.4, 0.2]) },
+  { id: 'set-beach', name: 'Tidecaller', price: -1, colors: [0x1a8ab8, 0x0f4a7a, 0xe8d8a0], arcs: 9, inner: 0x103848, parts: gems(0xfff3c4, 5) },
   { id: 'set-desert', name: 'Sunstone', price: -1, colors: [0xf2b84a, 0xd9773a], arcs: 8, inner: 0x4a2408, parts: gems(0x3fc4d8, 4) },
-  { id: 'set-cat', name: 'Yarn', price: -1, colors: [0xff8fc8, 0x9fe4ff, 0xffe066], arcs: 12, inner: 0x3a1a4a, parts: [...ear(-1), ...ear(1), ['ball', 0xff5c8a, 0, 0.3, 1.08, 0.36, 0.36, 0.36]] },
-  { id: 'set-candy', name: 'Peppermint', price: -1, colors: [0xffffff, 0xff4d6d], arcs: 16, inner: 0x4a1020, parts: gems(0xff8fc8, 4) },
-  { id: 'set-park', name: 'Aspen', price: -1, colors: [0xffc93c, 0x3f8f4f], arcs: 8, inner: 0x1c3018, parts: around(5, -1.2, 1.2, (x, z) => ['cone', 0x2e8b57, x, 0.26, z, 0.2, 0.52, 0.2]) },
+  { id: 'set-cat', name: 'Nine Lives', price: -1, colors: [0xc8323c, 0x2a2238, 0xd9a441], arcs: 12, inner: 0x3a1a4a, parts: [...ear(-1), ...ear(1), ['ball', 0xff5c8a, 0, 0.3, 1.08, 0.36, 0.36, 0.36]] },
+  { id: 'set-candy', name: 'Crimson Sigil', price: -1, colors: [0xffffff, 0xff4d6d], arcs: 16, inner: 0x4a1020, parts: gems(0xff8fc8, 4) },
+  { id: 'set-park', name: 'Wildwood', price: -1, colors: [0xffc93c, 0x3f8f4f], arcs: 8, inner: 0x1c3018, parts: around(5, -1.2, 1.2, (x, z) => ['cone', 0x2e8b57, x, 0.26, z, 0.2, 0.52, 0.2]) },
   { id: 'set-dragon', name: 'Ember', price: -1, colors: [0x3a2a3a, 0xff7a2a], arcs: 10, inner: 0x5a1a08, parts: [...horn(-1), ...horn(1), ...gems(0xff9a2a, 6)] },
-  { id: 'set-sky', name: 'Starlight', price: -1, colors: [0x2a2470, 0xc8b8ff], arcs: 10, inner: 0x0c0830, parts: gems(0xfff3c4, 10) },
-  { id: 'crown', name: 'Crowned', price: -1, colors: [0xffd54a, 0xffb300], arcs: 8, inner: 0x4a3000, parts: [...around(7, -1.2, 1.2, (x, z) => ['cone', 0xffd54a, x, 0.3, z, 0.22, 0.6, 0.22]), ...around(7, -1.2, 1.2, (x, z) => ['ball', GL | 0xff5c8a, x, 0.62, z, 0.12, 0.12, 0.12])] },
+  { id: 'set-sky', name: 'Astral', price: -1, colors: [0x2a2470, 0xc8b8ff], arcs: 10, inner: 0x0c0830, parts: gems(0xfff3c4, 10) },
+  { id: 'crown', name: 'Sovereign', price: -1, colors: [0xffd54a, 0xffb300], arcs: 8, inner: 0x4a3000, parts: [...around(7, -1.2, 1.2, (x, z) => ['cone', 0xffd54a, x, 0.3, z, 0.22, 0.6, 0.22]), ...around(7, -1.2, 1.2, (x, z) => ['ball', GL | 0xff5c8a, x, 0.62, z, 0.12, 0.12, 0.12])] },
 ];
 
 // ---------- campaign: 9 places x 20 levels ----------
@@ -146,32 +146,32 @@ export const levelCoins = (l: LevelDef, stars: number, first: boolean) => (first
 
 // ---------- treasures: 10 per place, one hidden in each treasure level ----------
 export const TREASURES: Record<MapId, string[]> = {
-  kingdom: ['Golden Acorn', 'Tiny Crown', 'Wishing Coin', 'Silver Bell', 'Royal Teacup', 'Glass Slipper', 'Knight\'s Spoon', 'Rose Brooch', 'Moon Key', 'Star Scepter'],
-  ski: ['Frozen Pinecone', 'Lucky Mitten', 'Golden Ski Pass', 'Snow Globe', 'Cocoa Medal', 'Ice Diamond', 'Silver Sled Bell', 'First Snowflake', 'Summit Flag', 'Powder Trophy'],
-  beach: ['Pink Pearl', 'Message Bottle', 'Sand Dollar', 'Coral Comb', 'Sailor\'s Compass', 'Gold Flip-Flop', 'Mermaid Mirror', 'Sunset Shell', 'Captain\'s Whistle', 'Tide Crown'],
-  desert: ['Sun Coin', 'Oasis Lily', 'Brass Lamp', 'Star Map', 'Sand Rose', 'Turquoise Ring', 'Silk Kite', 'Date Palm Seed', 'Mirage Gem', 'Sun Palace Key'],
-  cat: ['Golden Yarn', 'Jingle Bell', 'Feather Wand', 'Silver Fish', 'Catnip Bouquet', 'Velvet Collar', 'Paw Stamp', 'Cream Saucer', 'Whisker Comb', 'Palace Tuna'],
-  candy: ['Rainbow Sprinkle', 'Golden Gumdrop', 'Sugar Star', 'Mint Medal', 'Caramel Key', 'Cherry Jewel', 'Frosting Rose', 'Toffee Crown', 'Jelly Moon', 'Birthday Candle'],
+  kingdom: ['Golden Acorn', 'Signet Crown', 'Oath Coin', 'Silver Bell', 'Royal Chalice', 'Glass Dagger', 'Knight\'s Spur', 'Rose Brooch', 'Moon Key', 'Star Scepter'],
+  ski: ['Frozen Pinecone', 'Frostward Gauntlet', 'Golden Ski Pass', 'Storm Globe', 'Glacier Medal', 'Ice Diamond', 'Silver Sled Bell', 'First Snowflake', 'Summit Flag', 'Avalanche Trophy'],
+  beach: ['Black Pearl', 'Message Bottle', 'Sand Dollar', 'Coral Comb', 'Sailor\'s Compass', 'Gold Trident', 'Siren Mirror', 'Sunset Shell', 'Captain\'s Whistle', 'Tide Crown'],
+  desert: ['Sun Coin', 'Oasis Lily', 'Brass Lamp', 'Star Map', 'Sand Rose', 'Turquoise Ring', 'Silk Banner', 'Date Palm Seed', 'Mirage Gem', 'Sun Palace Key'],
+  cat: ['Golden Thread', 'Shrine Bell', 'Feather Talisman', 'Silver Koi', 'Silvervine Charm', 'Onyx Fang', 'Clan Seal', 'Moonglass Mirror', 'Whisker Blade', 'Ninth Life Gem'],
+  candy: ['Prism Shard', 'Amber Drop', 'Sugarglass Star', 'Mint Sigil', 'Caramel Key', 'Cherry Jewel', 'Glazed Rose', 'Toffee Crown', 'Crystal Moon', 'Everflame Candle'],
   park: ['Blue Columbine', 'Aspen Leaf of Gold', 'Ranger Badge', 'Trail Compass', 'Pyrite Nugget', 'River Stone Heart', 'Elk Whistle', 'Campfire Mug', 'Summit Register', 'Fourteener Pin'],
   dragon: ['Ember Scale', 'Dragon Tooth', 'Lava Pearl', 'Hoard Coin', 'Smoke Ring', 'Obsidian Mirror', 'Fire Opal', 'Hatchling Shell', 'Flame Lantern', 'Heart of the Volcano'],
-  sky: ['Fallen Star', 'Moon Dust Jar', 'Comet Tail', 'Cloud Pillow', 'Rocket Ticket', 'Saturn Ring', 'Nebula Marble', 'Wishing Lens', 'Aurora Ribbon', 'Moon Palace Crown'],
+  sky: ['Fallen Star', 'Moondust Vial', 'Comet Tail', 'Cloud Anchor', 'Starship Key', 'Saturn Ring', 'Nebula Marble', 'Wishing Lens', 'Aurora Ribbon', 'Moon Palace Crown'],
 };
 export const treasureAt = (l: LevelDef) => TREASURE_LEVELS.indexOf(l.n); // -1 = none
 
 // ---------- awards (each pays coins once) ----------
 export type Stat = 'eaten' | 'bosses' | 'gobbled' | 'treasures' | 'stars' | 'crowns' | 'maxLevel' | 'wins' | 'combo' | 'questions' | 'places';
 const AW: [Stat, string, string, number[]][] = [
-  ['eaten', 'Hungry', 'Swallow {n} things', [500, 5000, 25000, 100000]],
-  ['maxLevel', 'Growing up', 'Reach size {n}', [8, 12, 16, 20]],
-  ['bosses', 'Landmark lover', 'Swallow {n} giant landmarks', [1, 5, 9, 30]],
-  ['stars', 'Star catcher', 'Earn {n} stars', [30, 120, 300, 540]],
-  ['places', 'Explorer', 'Open {n} places', [3, 6, 9]],
-  ['treasures', 'Treasure hunter', 'Find {n} treasures', [10, 45, 90]],
-  ['crowns', 'Royalty', 'Win {n} crowns', [10, 60, 180]],
+  ['eaten', 'Devourer', 'Swallow {n} things', [500, 5000, 25000, 100000]],
+  ['maxLevel', 'Ascendant', 'Reach size {n}', [8, 12, 16, 20]],
+  ['bosses', 'Landmark Breaker', 'Swallow {n} landmarks', [1, 5, 9, 30]],
+  ['stars', 'Starbound', 'Earn {n} stars', [30, 120, 300, 540]],
+  ['places', 'Pathfinder', 'Open {n} places', [3, 6, 9]],
+  ['treasures', 'Relic Hunter', 'Find {n} treasures', [10, 45, 90]],
+  ['crowns', 'Crownbearer', 'Win {n} crowns', [10, 60, 180]],
   ['wins', 'Champion', 'Win {n} battles', [5, 25, 100]],
-  ['gobbled', 'Rival muncher', 'Gobble {n} rival holes', [10, 100, 500]],
-  ['combo', 'Chain eater', 'Reach a combo of {n}', [20, 50, 100]],
-  ['questions', 'Bright spark', 'Earn {n} question bonuses', [10, 50, 200]],
+  ['gobbled', 'Rift Slayer', 'Consume {n} rival rifts', [10, 100, 500]],
+  ['combo', 'Chain Master', 'Reach a chain of {n}', [20, 50, 100]],
+  ['questions', 'Scholar', 'Earn {n} question bonuses', [10, 50, 200]],
 ];
 export const AWARDS = AW.flatMap(([stat, name, text, goals]) => goals.map((goal, i) => ({ id: `${stat}-${goal}`, stat, name: `${name} ${'I'.repeat(i + 1).replace('IIII', 'IV')}`, text: text.replace('{n}', goal.toLocaleString('en-US')), goal, coins: 20 * (i + 1) * (i + 1) })));
 

@@ -1,23 +1,23 @@
-// All Whisker Castle levels: 12 worlds of 20. Layout legend: board.ts LEGEND.
-// Colors: 0 yarn, 1 fish, 2 star gem, 3 potion, 4 paw, 5 crown.
+// All Spellpaw levels: 12 worlds of 20. Layout legend: board.ts LEGEND.
+// Colors: 0 flame crystal, 1 sun sigil, 2 star prism, 3 leaf rune, 4 tide orb, 5 moon sigil.
 // Moves, crown-challenge moves and star scores live in tuned.ts, written by the bot (selftest.ts tune).
 import type { Goal, GoalType, LevelDef } from './board';
 import { SALT, TUNED } from './tuned';
 
 export const PER_WORLD = 20;
 export const WORLDS: { name: string; from: number; adds: string }[] = [
-  { name: 'Yarn Meadow', adds: 'Crates: match next to a crate to break it.' },
-  { name: 'Frost Tower', adds: 'Ice, stardust, and kittens to rescue.' },
-  { name: 'Dragon Garden', adds: 'Vines that grow, and a sixth kind of piece.' },
-  { name: 'Seashell Shore', adds: 'Crabs: match the piece on top to catch one.' },
-  { name: 'Powder Peak', adds: 'Ski trails: groom every tile of snow.' },
-  { name: 'Ember Roost', adds: 'Dragon eggs that hatch with a puff of fire.' },
-  { name: 'Canyon Mine', adds: 'Boulders that only specials can break.' },
-  { name: 'Starlight Ballroom', adds: 'Sparkle goals: make specials to win.' },
-  { name: 'Kitten Cup', adds: 'Everything so far, mixed together.' },
-  { name: 'Cloud Kingdom', adds: 'Bigger boards and three goals at once.' },
-  { name: 'Aurora Lake', adds: 'Harder mixes with fewer moves to spare.' },
-  { name: 'Crown Summit', adds: 'The hardest levels in the kingdom.' },
+  { name: 'Verdant Reach', adds: 'Sealed Crates: match beside one to break it.' },
+  { name: 'Frostspire', adds: 'Frost Seals, Miasma, and cat mages to rescue.' },
+  { name: 'Wyrmwood', adds: 'Thornvines that spread, and a sixth gem.' },
+  { name: 'Tidebreak Coast', adds: 'Scuttlers: match the gem above one to catch it.' },
+  { name: 'Rimepeak', adds: 'Frost Paths: spread the path over every tile.' },
+  { name: 'Ember Roost', adds: 'Dragon Eggs that hatch in a burst of fire.' },
+  { name: 'Runestone Canyon', adds: 'Runestones that only specials can break.' },
+  { name: 'Astral Hall', adds: 'Spell goals: forge specials to win.' },
+  { name: 'Arcane Arena', adds: 'Every hazard so far, combined.' },
+  { name: 'Skyhold', adds: 'Larger boards and three goals at once.' },
+  { name: 'Aurora Lake', adds: 'Tougher mixes with fewer moves to spare.' },
+  { name: 'Crown Summit', adds: 'The hardest levels in the citadel.' },
 ].map((w, k) => ({ ...w, from: k * PER_WORLD }));
 
 type Draft = Pick<LevelDef, 'colors' | 'goals' | 'layout' | 'tip'>;
@@ -29,11 +29,11 @@ const open = (w: number, h: number) => Array.from({ length: h }, () => '.'.repea
 const OLD: Draft[] = [
   // ---- Yarn Meadow ----
   { colors: 4, goals: [{ type: 'score', n: 3000 }], layout: open(7, 7),
-    tip: 'Swap two pieces side by side to make a row of 3.' },
+    tip: 'Swap two adjacent gems to line up 3.' },
   { colors: 4, goals: [{ type: 'collect', color: 0, n: 35 }], layout: open(7, 8),
-    tip: 'Match 4 in a row to make a wand. A wand clears a whole line.' },
+    tip: 'Match 4 in a row to forge a Line Spell. It clears a whole line.' },
   { colors: 5, goals: [{ type: 'collect', color: 1, n: 25 }, { type: 'collect', color: 4, n: 25 }], layout: open(8, 8),
-    tip: 'Match 5 in an L or T shape to make a fire puff.' },
+    tip: 'Match 5 in an L or T to forge a Burst Sigil.' },
   { colors: 5, goals: [{ type: 'score', n: 3500 }], layout: [
     '-......-',
     '........',
@@ -43,7 +43,7 @@ const OLD: Draft[] = [
     '........',
     '........',
     '-......-',
-  ], tip: 'Match a 2 by 2 square to make a dragonfly. It flies to a goal.' },
+  ], tip: 'Match a 2 by 2 square to summon a Familiar. It homes in on a goal.' },
   { colors: 5, goals: [{ type: 'crate' }], layout: [
     '........',
     '........',
@@ -53,9 +53,9 @@ const OLD: Draft[] = [
     '........',
     '........',
     '........',
-  ], tip: 'Match next to a crate to break it.' },
+  ], tip: 'Match beside a Sealed Crate to break it.' },
   { colors: 5, goals: [{ type: 'collect', color: 2, n: 25 }], layout: open(8, 8),
-    tip: 'Match 5 in a straight row for a rainbow orb. Swap it with any piece.' },
+    tip: 'Match 5 in a straight row for a Prism Nova. Swap it with any gem.' },
   { colors: 5, goals: [{ type: 'collect', color: 3, n: 25 }, { type: 'collect', color: 0, n: 25 }], layout: [
     '---...---',
     '--.....--',
@@ -76,9 +76,9 @@ const OLD: Draft[] = [
     '..2222..',
     '........',
     '........',
-  ], tip: 'Dark crates need two hits.' },
+  ], tip: 'Dark crates take two hits.' },
   { colors: 5, goals: [{ type: 'score', n: 9000 }], layout: open(9, 9),
-    tip: 'Swap two specials together for a big combo.' },
+    tip: 'Swap two specials together for a combo.' },
   { colors: 5, goals: [{ type: 'crate' }, { type: 'collect', color: 4, n: 30 }], layout: [
     '........',
     '........',
@@ -122,7 +122,7 @@ const OLD: Draft[] = [
     '.i....i.',
     '........',
     '........',
-  ], tip: 'Ice holds a piece in place. Match the piece to melt the ice.' },
+  ], tip: 'A Frost Seal locks a gem in place. Match the gem to break the seal.' },
   { colors: 5, goals: [{ type: 'ice' }, { type: 'collect', color: 1, n: 20 }], layout: [
     '........',
     '.I....I.',
@@ -132,7 +132,7 @@ const OLD: Draft[] = [
     '........',
     '.I....I.',
     '........',
-  ], tip: 'Thick ice needs two matches.' },
+  ], tip: 'Thick Frost Seals take two matches.' },
   { colors: 5, goals: [{ type: 'dust' }], layout: [
     '........',
     '........',
@@ -142,7 +142,7 @@ const OLD: Draft[] = [
     '..gggg..',
     '........',
     '........',
-  ], tip: 'Make matches on the stardust to clear it.' },
+  ], tip: 'Match on top of Miasma to clear it.' },
   { colors: 5, goals: [{ type: 'dust' }], layout: [
     '........',
     '.gg..gg.',
@@ -152,7 +152,7 @@ const OLD: Draft[] = [
     '.gGggGg.',
     '.gg..gg.',
     '........',
-  ], tip: 'Bright stardust needs two matches.' },
+  ], tip: 'Dense Miasma takes two matches.' },
   { colors: 5, goals: [{ type: 'kitten', n: 2 }], layout: [
     '...k....',
     '........',
@@ -162,7 +162,7 @@ const OLD: Draft[] = [
     '........',
     '........',
     '........',
-  ], tip: 'Clear the pieces under a kitten. Kittens on the bottom row are safe.' },
+  ], tip: 'Clear the gems under a cat mage. A mage that reaches the bottom row is rescued.' },
   { colors: 5, goals: [{ type: 'kitten', n: 3 }, { type: 'crate' }], layout: [
     '..k..k..',
     '........',
@@ -249,7 +249,7 @@ const OLD: Draft[] = [
     '..v..v..',
     '.vv..vv.',
     'v.v..v.v',
-  ], tip: 'Vines grow when you skip them. Match next to a vine to cut it.' },
+  ], tip: 'Thornvines spread on any turn you leave them alone. Match beside one to cut it.' },
   { colors: 5, goals: [{ type: 'vine' }, { type: 'collect', color: 3, n: 25 }], layout: [
     '........',
     '........',
@@ -261,7 +261,7 @@ const OLD: Draft[] = [
     'vv....vv',
   ] },
   { colors: 6, goals: [{ type: 'score', n: 5000 }], layout: open(9, 9),
-    tip: 'Six kinds of pieces now. Look for specials.' },
+    tip: 'Six gem types now. Look for specials.' },
   { colors: 5, goals: [{ type: 'vine' }, { type: 'dust' }], layout: [
     '........',
     '........',
@@ -359,48 +359,48 @@ const INTRO: Record<number, Draft> = {
   // Seashell Shore: crabs
   60: { colors: 5, goals: [{ type: 'crab' }], layout: [
     '........', '........', '..c..c..', '........', '........', '........', '........', '........',
-  ], tip: 'A crab hides under a piece. Match that piece to catch the crab.' },
+  ], tip: 'A Scuttler hides under a gem. Match that gem to catch it.' },
   61: { colors: 5, goals: [{ type: 'crab' }], layout: [
     '........', '.c....c.', '........', '........', '........', '.c....c.', '........', '........',
-  ], tip: 'If a move catches no crab, each crab scuttles one tile.' },
+  ], tip: 'If a move catches no Scuttler, each one moves a tile.' },
   62: { colors: 5, goals: [{ type: 'crab' }, { type: 'crate' }], layout: [
     '-......-', '........', '..c..c..', '.1....1.', '.1....1.', '...cc...', '........', '-......-',
-  ], tip: 'Dragonflies chase crabs for you.' },
+  ], tip: 'Familiars hunt Scuttlers for you.' },
   // Powder Peak: ski trails
   80: { colors: 5, goals: [{ type: 'trail' }], layout: [
     '......', '.tttt.', '.tttt.', '.tttt.', '.tttt.', '......',
-  ], tip: 'Groomed snow spreads. Make a match that touches a groomed tile.' },
+  ], tip: 'Frost Path spreads. Make a match that touches a path tile.' },
   81: { colors: 5, goals: [{ type: 'trail' }], layout: [
     't.t.t.t', 't.t.t.t', 't.t.t.t', 't.t.t.t', 't.t.t.t', 't.t.t.t', 't.t.t.t',
-  ], tip: 'A wand fired from groomed snow grooms its whole line.' },
+  ], tip: 'A Line Spell cast from the path extends it along the whole line.' },
   82: { colors: 5, goals: [{ type: 'trail' }], layout: [
     'ttt.ttt', 'tt...tt', 't.....t', '.......', 't.....t', 'tt...tt', 'ttt.ttt',
-  ], tip: 'Groom every tile to finish the trail.' },
+  ], tip: 'Cover every tile to finish the Frost Path.' },
   // Ember Roost: dragon eggs
   100: { colors: 5, goals: [{ type: 'egg' }], layout: [
     '........', '........', '........', '..e..e..', '........', '........', '........', '........',
-  ], tip: 'Match next to a dragon egg twice. It hatches with a puff of fire.' },
+  ], tip: 'Match beside a Dragon Egg twice. It hatches in a burst of fire.' },
   101: { colors: 5, goals: [{ type: 'egg' }], layout: [
     '........', '.e....e.', '........', '........', '........', '........', '.e....e.', '........',
   ], tip: 'A hatching egg clears the tiles around it.' },
   102: { colors: 5, goals: [{ type: 'egg' }, { type: 'crate' }], layout: [
     '........', '........', '.1e..e1.', '........', '........', '.1e..e1.', '........', '........',
-  ], tip: 'Hatch an egg next to crates to break them too.' },
+  ], tip: 'Hatch an egg beside crates to break them too.' },
   // Canyon Mine: boulders
   120: { colors: 5, goals: [{ type: 'rock' }], layout: [
     '........', '........', '........', '..r..r..', '........', '........', '........', '........',
-  ], tip: 'Boulders only break from specials. Aim a wand down their row.' },
+  ], tip: 'Only specials break Runestones. Aim a Line Spell down their row.' },
   121: { colors: 5, goals: [{ type: 'rock' }], layout: [
     '........', '.r....r.', '........', '........', '........', '........', '.r....r.', '........',
-  ], tip: 'Fire puffs and dragonflies break boulders too.' },
+  ], tip: 'Burst Sigils and Familiars break Runestones too.' },
   122: { colors: 5, goals: [{ type: 'rock' }], layout: [
     '........', '........', '..R..R..', '........', '........', '.r....r.', '........', '........',
-  ], tip: 'Dark boulders need two blasts.' },
+  ], tip: 'Dark Runestones take two hits.' },
   // Starlight Ballroom: make specials
   140: { colors: 4, goals: [{ type: 'special', n: 3 }], layout: open(8, 8),
-    tip: 'Make specials to fill the goal. Match 4, match 5, or match a square.' },
+    tip: 'Forge specials to fill the goal: match 4, match 5, or a square.' },
   141: { colors: 5, goals: [{ type: 'special', n: 4 }], layout: open(9, 8),
-    tip: 'Every wand, fire puff, dragonfly and rainbow orb you make counts.' },
+    tip: 'Every Line Spell, Burst Sigil, Familiar and Prism Nova counts.' },
   142: { colors: 5, goals: [{ type: 'special', n: 5 }, { type: 'collect', color: 2, n: 25 }], layout: [
     '-......-', '........', '........', '........', '........', '........', '........', '-......-',
   ] },

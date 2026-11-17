@@ -1,5 +1,5 @@
 /* Tractor HUD. Panels, buttons and key caps come from src/core/theme.css (.cm-*). */
-html, body { margin: 0; height: 100%; overflow: hidden; background: #a8dcff; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--cm-stage, #070a1a); }
 .tr-canvas { position: fixed; inset: 0; display: block; touch-action: none; }
 .tr-hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; font-family: var(--cm-ui); }
 .tr-hud .cm-btn, .tr-hud .cm-panel { pointer-events: auto; }
@@ -84,3 +84,22 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #a8dcff; }
 .tr-unstuck { animation: tr-pulse 0.9s ease-in-out infinite; }
 @keyframes tr-pulse { 50% { scale: 1.08; } }
 @media (prefers-reduced-motion: reduce) { .tr-unstuck { animation: none; } }
+
+/* Anime effects drawn over the canvas. White only, so they sit on any theme. */
+.tr-speed, .tr-flash { position: fixed; inset: 0; z-index: 5; pointer-events: none; opacity: 0; }
+/* Speed lines on turbo: two uneven fans of streaks that crowd the edges and jitter. */
+.tr-speed {
+  background:
+    repeating-conic-gradient(from 0deg at 50% 46%, #fff0 0 2.1deg, #ffffffb0 2.1deg 2.5deg, #fff0 2.5deg 5.3deg, #ffffff70 5.3deg 5.5deg, #fff0 5.5deg 9deg),
+    repeating-conic-gradient(from 3deg at 50% 46%, #fff0 0 6.4deg, #ffffffd0 6.4deg 6.7deg, #fff0 6.7deg 13deg);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 46%, transparent 38%, #000 82%);
+  mask-image: radial-gradient(ellipse at 50% 46%, transparent 38%, #000 82%);
+  transition: opacity 0.2s;
+}
+.tr-speed.on { opacity: 0.7; animation: tr-streak 0.24s steps(3) infinite; }
+@keyframes tr-streak { 33% { rotate: 1.3deg; scale: 1.03; } 66% { rotate: -0.9deg; scale: 0.98; } }
+/* Impact flash when the Unstuck jump lands. */
+.tr-flash { background: radial-gradient(ellipse at 50% 60%, #fff0 30%, #fff 100%); }
+.tr-flash.on { animation: tr-flash 0.28s ease-out; }
+@keyframes tr-flash { 0% { opacity: 0.75; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tr-speed.on { animation: none; } .tr-flash.on { animation: none; } }

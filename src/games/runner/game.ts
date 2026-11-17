@@ -1,5 +1,5 @@
-// Kitty Cup Run: a cat soccer team runs down a path, grows through math gates, beats rival teams,
-// dodges traps, and scores past the goalkeeper. Run logic and drawing; screens.ts holds the menus.
+// Neko Strike: a cat soccer team runs down a path, grows through math gates, beats rival teams,
+// dodges traps, and scores past the goalkeeper with a power shot. Run logic and drawing; screens.ts holds the menus.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -13,7 +13,7 @@ import {
 } from './data';
 import {
   buildCannon, buildCrown, buildGateRow, buildGoal, buildStands, buildTrap, buildWorld, catGeometry, catMaterial, catMesh, disposeTree,
-  gateShimmer, gloveGeo, smoothMat, soccerBall, starGeometry, type CatMesh, type WorldArt,
+  gateShimmer, gloveGeo, setInk, smoothMat, soccerBall, starGeometry, streakTexture, type CatMesh, type WorldArt,
 } from './art';
 import { Screens } from './screens';
 import '../../core/theme.css';
@@ -26,17 +26,23 @@ const FAN_CAP = 1500;
 const SPACING = 0.25; // crowd packing
 const W = TRACK_HALF;
 const TRADE_TICK = 0.09; // seconds between fight trades
-const FURS = ['#f6a04d', '#f7e3c0', '#a9a9b8', '#55505e', '#ffffff', '#c98b5a', '#f6a04d', '#ffffff'].map((c) => new THREE.Color(c));
-const PARTY = ['#ff5d8f', '#ffd84a', '#4aa8ff', '#2fd39a', '#9b6bff', '#ff8a3d'].map((c) => new THREE.Color(c));
+const FURS = ['#f08a2e', '#f2dcb4', '#9a9ab0', '#3a3648', '#f4f0ea', '#b8763e', '#d8602a', '#e8e4f0'].map((c) => new THREE.Color(c));
+const PARTY = ['#e8305a', '#ffcf3a', '#2f8cf0', '#12c898', '#8a5aff', '#ff7a1a'].map((c) => new THREE.Color(c));
 const WHITE = new THREE.Color('#ffffff');
 const GOLD = new THREE.Color('#ffcf3a');
+const CYAN = new THREE.Color('#9ff0ff');
+// Power shot timing, seconds after the keeper is beaten: charge up, then the ball's flight to the net.
+const CHARGE = 0.7;
+const HIT = CHARGE + 0.2;
+const ACE = 16; // added to a cat's number to switch on the ace-only parts (headband, tall hair, armband)
 
 interface Cat { x: number; z: number; fur: number; phase: number; s: number; num: number; safe: number }
 interface Rival { d: number; count: number; cats: Cat[]; label: HTMLDivElement; captain: boolean }
 interface Stray { d: number; x: number; cats: Cat[] }
-interface GateRow { d: number; opts: Gate[]; group: THREE.Group; panels: THREE.Mesh[]; lane: number; move?: GateMove; done: boolean; pop: number; chosen: number }
+interface GateRow { d: number; opts: Gate[]; group: THREE.Group; panels: THREE.Mesh[]; glints: THREE.Mesh[]; lane: number; move?: GateMove; done: boolean; pop: number; chosen: number }
 interface Trap { kind: TrapKind; move: TrapMove; d: number; x: number; speed: number; phase: number; objs: THREE.Object3D[]; spin?: THREE.Object3D; hits: { x: number; z: number; r: number }[]; sd: number; on: boolean }
-interface Bit { kind: 0 | 1 | 2; x: number; y: number; z: number; vx: number; vy: number; vz: number; age: number; life: number; size: number; color: THREE.Color; grav: number; spin: number }
+type BitKind = 0 | 1 | 2 | 3;
+interface Bit { kind: BitKind; x: number; y: number; z: number; vx: number; vy: number; vz: number; age: number; life: number; size: number; color: THREE.Color; grav: number; spin: number }
 
 export type State = 'menu' | 'run' | 'fight' | 'boss' | 'goal' | 'end' | 'lost';
 const GA = 2.39996323; // golden angle
@@ -81,6 +87,13 @@ export class RunnerGame {
   private coinMesh: THREE.InstancedMesh | null = null;
   private gloves: THREE.Mesh[];
   private crowns: THREE.Mesh[];
+  private shotAura: THREE.Mesh;
+  private shotTrail: THREE.Mesh;
+  private shotRing: THREE.Mesh;
+  private shotFrom = new THREE.Vector3();
+  private speedEl: HTMLDivElement;
+  private impactEl: HTMLDivElement;
+  private speed = 0;
   private cannons: { d: number; fired: boolean; x: number }[] = [];
 
   save: RunnerSave = newSave();
@@ -169,8 +182,8 @@ export class RunnerGame {
     this.scene.add(this.hemi, this.sun, this.sun.target, this.levelGroup, this.goal.group, this.kickBall);
     this.kickBall.visible = false;
 
-    this.cats = catMesh(catGeometry(0), this.catU, CAP);
-    this.fans = catMesh(catGeometry(1), this.catU, FAN_CAP);
+    this.cats = catMesh(catGeometry(0), this.catU, CAP, true);
+    this.fans = catMesh(catGeometry(1), this.catU, FAN_CAP, false);
     this.fans.mesh.castShadow = false;
     this.fans.mesh.count = 0;
     this.blob = new THREE.InstancedMesh(
@@ -184,14 +197,29 @@ export class RunnerGame {
       im.count = 0;
       return im;
     };
+    // Particles: 0 flash glint (a knocked-out player dissolves in light), 1 sparkle, 2 confetti, 3 impact burst.
+    const add = { side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false };
     this.bitMesh = [
-      bit(new THREE.IcosahedronGeometry(0.2, 1), 500, new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.9 })),
-      bit(starGeometry().scale(0.22, 0.22, 0.22), 400, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })),
+      bit(starGeometry(4, 0.2).scale(0.5, 0.5, 0.5), 300, new THREE.MeshBasicMaterial(add)),
+      bit(starGeometry(4, 0.2).scale(0.24, 0.24, 0.24), 600, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })),
       bit(new THREE.PlaneGeometry(0.16, 0.24), 700, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })),
+      bit(starGeometry(11, 0.42, 1), 60, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })),
     ];
     this.gloves = [0, 1].map(() => new THREE.Mesh(gloveGeo, smoothMat));
     this.crowns = [0, 1, 2].map(() => buildCrown());
-    this.scene.add(this.cats.mesh, this.fans.mesh, this.blob, ...this.bitMesh, ...this.gloves, ...this.crowns);
+    // Power shot: a glow around the ball, a ring that closes in while it charges, and a streak behind it in flight.
+    const glow = (g: THREE.BufferGeometry, color: THREE.Color, map: THREE.Texture | null = null) => {
+      const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ ...add, color, map }));
+      m.visible = false;
+      m.frustumCulled = false;
+      return m;
+    };
+    const streak = new THREE.PlaneGeometry(0.9, 1).translate(0, -0.5, 0).rotateX(-Math.PI / 2);
+    this.shotAura = glow(new THREE.IcosahedronGeometry(0.5, 2), new THREE.Color(1.1, 0.7, 0.2));
+    this.shotTrail = glow(streak, new THREE.Color(2.2, 1.7, 0.7), streakTexture());
+    this.shotTrail.add(new THREE.Mesh(streak, this.shotTrail.material).rotateZ(Math.PI / 2));
+    this.shotRing = glow(new THREE.RingGeometry(0.9, 1, 40).rotateX(-Math.PI / 2), new THREE.Color(2, 1.6, 0.6));
+    this.scene.add(this.cats.mesh, this.cats.hull!, this.fans.mesh, this.blob, ...this.bitMesh, ...this.gloves, ...this.crowns, this.shotAura, this.shotTrail, this.shotRing);
 
     const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent: HTMLElement = root) => {
       const e = document.createElement(tag);
@@ -199,6 +227,8 @@ export class RunnerGame {
       parent.appendChild(e);
       return e;
     };
+    this.speedEl = el('div', 'rn-speed');
+    this.impactEl = el('div', 'rn-impact');
     this.labels = el('div', 'rn-labels');
     this.countLabel = el('div', 'rn-bubble rn-mine', this.labels);
     this.keeperLabel = el('div', 'rn-bubble rn-keeper', this.labels);
@@ -266,6 +296,7 @@ export class RunnerGame {
     this.renderer.shadowMap.enabled = !this.low;
     this.sun.castShadow = !this.low;
     this.blob.visible = this.low;
+    setInk(!this.low);
     this.maxShow = this.low ? 240 : 400;
     this.scene.traverse((o) => {
       const m = (o as THREE.Mesh).material;
@@ -297,10 +328,14 @@ export class RunnerGame {
       this.world = { ...buildWorld(L.world, L.league, this.low), key };
       this.scene.add(this.world.group);
       const look = this.world.look;
-      this.scene.fog = new THREE.Fog(look.skyLow, 55, 210);
+      this.scene.fog = new THREE.Fog(look.skyLow.clone().lerp(look.skyTop, 0.3), 75, 270);
       this.scene.background = look.skyLow;
       this.hemi.color.copy(look.skyTop).lerp(WHITE, 0.6);
       this.hemi.groundColor.set(look.ground).lerp(WHITE, 0.2);
+      if (look.amb) {
+        this.hemi.color.set(look.amb[0]);
+        this.hemi.groundColor.set(look.amb[1]);
+      }
       this.hemi.intensity = look.hemi;
       this.sun.color.copy(look.sunColor);
       this.sun.intensity = look.sun;
@@ -316,10 +351,10 @@ export class RunnerGame {
     this.cannons = [];
     for (const it of L.items) {
       if (it.kind === 'gates') {
-        const { group, panels, lane } = buildGateRow(it.opts);
+        const { group, panels, lane, glints } = buildGateRow(it.opts);
         group.position.z = -it.d;
         this.levelGroup.add(group);
-        this.gates.push({ d: it.d, opts: it.opts, group, panels, lane, move: it.move, done: false, pop: 0, chosen: -1 });
+        this.gates.push({ d: it.d, opts: it.opts, group, panels, glints, lane, move: it.move, done: false, pop: 0, chosen: -1 });
       } else if (it.kind === 'rival') {
         const label = document.createElement('div');
         label.className = 'rn-bubble rn-rival';
@@ -348,7 +383,7 @@ export class RunnerGame {
     if (this.coins.length) {
       const cm = new THREE.InstancedMesh(
         new THREE.CylinderGeometry(0.3, 0.3, 0.09, 16).rotateX(Math.PI / 2),
-        new THREE.MeshLambertMaterial({ color: '#ffcf3a', emissive: '#ffb020', emissiveIntensity: 0.9 }), this.coins.length);
+        new THREE.MeshLambertMaterial({ color: '#ffcf3a', emissive: '#ffb020', emissiveIntensity: 1.1 }), this.coins.length);
       cm.frustumCulled = false;
       this.coinMesh = cm;
       this.levelGroup.add(cm);
@@ -398,7 +433,7 @@ export class RunnerGame {
     this.keeperX = 0;
     this.keeperTilt = 0;
     this.keeperHp = Math.max(1, Math.round(L.keeper * (1 - 0.05 * this.starLvl.pixel)));
-    this.kickBall.visible = false;
+    this.kickBall.visible = this.shotAura.visible = this.shotTrail.visible = this.shotRing.visible = false;
 
     this.d = 0;
     this.cx = 0;
@@ -525,22 +560,30 @@ export class RunnerGame {
     }
   }
 
-  /** Particles. kind 0 soft puff, 1 glowing star, 2 confetti. */
-  burst(kind: 0 | 1 | 2, x: number, y: number, z: number, n: number, color: THREE.Color | null, power = 1, up = 1) {
+  /** Particles. kind 0 flash glint, 1 sparkle, 2 confetti, 3 impact burst. Flashes and impacts stay where they start. */
+  burst(kind: BitKind, x: number, y: number, z: number, n: number, color: THREE.Color | null, power = 1, up = 1) {
     const max = this.low ? 350 : 1100;
+    const still = kind === 0 || kind === 3;
     for (let i = 0; i < n; i++) {
       if (this.bits.length >= max) this.bits.shift();
       const c = color ?? PARTY[Math.floor(Math.random() * PARTY.length)];
       this.bits.push({
         kind, x, y, z,
-        vx: (Math.random() - 0.5) * 2.5 * power, vy: (0.6 + Math.random() * 1.6) * power * up, vz: (Math.random() - 0.5) * 2.5 * power,
-        age: 0, life: (kind === 2 ? 1.6 : 0.5) + Math.random() * 0.4, size: 0.6 + Math.random() * 0.7,
-        color: kind === 1 ? c.clone().multiplyScalar(2.2) : c, grav: kind === 2 ? 2.2 : kind === 1 ? 3 : 2, spin: Math.random() * 10,
+        vx: still ? 0 : (Math.random() - 0.5) * 2.5 * power, vy: still ? 0 : (0.6 + Math.random() * 1.6) * power * up, vz: still ? 0 : (Math.random() - 0.5) * 2.5 * power,
+        age: 0, life: still ? 0.16 + Math.random() * 0.08 : (kind === 2 ? 1.6 : 0.5) + Math.random() * 0.4, size: still ? power : 0.6 + Math.random() * 0.7,
+        color: kind === 1 ? c.clone().multiplyScalar(2.2) : c, grav: still ? 0 : kind === 2 ? 2.2 : 3, spin: Math.random() * 10,
       });
     }
   }
+  /** A knocked-out player leaves in a flash of light and a few rising sparkles. */
   private poof(x: number, z: number) {
-    this.burst(0, x, 0.4, z, this.low ? 2 : 4, WHITE);
+    this.burst(0, x, 0.8, z, 1, WHITE, 1.6);
+    this.burst(1, x, 0.8, z, this.low ? 1 : 2, CYAN, 1.2, 1.6);
+  }
+  /** One anime impact frame: the picture snaps to high contrast for a few frames. */
+  private impactFrame() {
+    this.impactEl.classList.add('on');
+    setTimeout(() => this.impactEl.classList.remove('on'), 110);
   }
   private firework(x: number, y: number, z: number) {
     const c = PARTY[Math.floor(Math.random() * PARTY.length)];
@@ -558,10 +601,11 @@ export class RunnerGame {
     e.className = 'rn-float ' + cls;
     e.textContent = text;
     const v = new THREE.Vector3(x, y, z).project(this.camera);
-    e.style.left = `${((v.x + 1) / 2) * this.root.clientWidth}px`;
-    e.style.top = `${((1 - v.y) / 2) * this.root.clientHeight}px`;
+    const mid = cls === 'goal'; // GOAL lands in the middle of the screen
+    e.style.left = mid ? '50%' : `${((v.x + 1) / 2) * this.root.clientWidth}px`;
+    e.style.top = mid ? '30%' : `${((1 - v.y) / 2) * this.root.clientHeight}px`;
     this.labels.appendChild(e);
-    setTimeout(() => e.remove(), 1000);
+    setTimeout(() => e.remove(), mid ? 1700 : 1000);
   }
   private bump(stat: Stat, by = 1) {
     this.save.stats[stat] = (this.save.stats[stat] ?? 0) + by;
@@ -619,7 +663,17 @@ export class RunnerGame {
           p.children[0].visible = false;
         } else p.position.y = 1.5 + Math.sin(this.time * 2.5 + g.d + i) * 0.06;
       });
+      // Glints on the gate crystals: each one flares in turn.
+      g.glints.forEach((gl, i) => {
+        const k = g.done ? 0 : Math.pow(Math.max(0, Math.sin(this.time * 2.2 + g.d * 0.7 + i * 1.9)), 6);
+        gl.scale.setScalar(0.001 + k * 0.75);
+        gl.rotation.z = this.time * 0.8 + i;
+      });
     }
+    // Speed lines: stronger with a big team, in fights, at the keeper, and full during the power shot.
+    const sp = st === 'goal' && this.goalClock < HIT ? 1 : st === 'boss' ? 0.5 : st === 'fight' ? 0.45 : st === 'run' ? Math.max(0, Math.min(1, (this.count - 60) / 300)) * 0.5 : 0;
+    this.speed += (sp - this.speed) * Math.min(1, dt * (sp > this.speed ? 10 : 4));
+    this.speedEl.style.opacity = this.paused ? '0' : this.speed.toFixed(2);
     // Crowd sound: louder inside stadium stretches and at a goal.
     const L = this.level;
     const inStands = (this.d > L.stadium[0] - 10 && this.d < L.stadium[1] + 6) || this.d > L.length - 34;
@@ -692,7 +746,7 @@ export class RunnerGame {
         this.bump('strays', s.cats.length);
         this.float(`+${add}`, s.x, 1.8, -s.d, 'good');
         this.sfx('meow', 1.1);
-        this.burst(1, s.x, 1, -s.d, 6, new THREE.Color('#ff9fd6'), 2);
+        this.burst(1, s.x, 1, -s.d, 6, CYAN, 2);
         for (const c of s.cats) if (this.team.length < this.maxShow) this.team.push(c);
         s.cats = [];
         this.syncTeam();
@@ -792,6 +846,9 @@ export class RunnerGame {
     if (this.popClock > 0.1) {
       this.popClock = 0;
       this.sfx('pop', 0.85 + Math.random() * 0.4, 0.6);
+      // Impact burst where the two sides meet.
+      const cz = this.state === 'boss' ? otherZ + 1.2 : -this.d - radiusZ(this.team.length) - 0.2;
+      this.burst(3, this.cx + (Math.random() - 0.5) * 2.4, 1 + Math.random() * 0.6, cz, 1, Math.random() < 0.5 ? WHITE : GOLD, 0.8 + Math.random() * 0.7);
     }
     return n;
   }
@@ -813,7 +870,8 @@ export class RunnerGame {
       r.cats.forEach((c) => this.poof(c.x, c.z));
       this.burst(1, 0, 1.2, -r.d, 24, null, 4);
       this.burst(2, 0, 1.5, -r.d, this.low ? 10 : 30, null, 3, 2);
-      this.float(r.captain ? `Captain ${where(this.cur).world.captain} beaten!` : 'Won!', 0, 2.6, -r.d, 'good');
+      this.burst(3, 0, 1.4, -r.d, 1, WHITE, 2.6);
+      this.float(r.captain ? `Captain ${where(this.cur).world.captain} beaten` : 'Broke through', 0, 2.8, -r.d, 'good');
       this.sfx('cheer', 1, 0.8);
       this.bump('fights');
       if (r.captain) this.bump('captains');
@@ -841,40 +899,81 @@ export class RunnerGame {
       this.state = 'goal';
       this.goalClock = 0;
       this.kickBall.visible = true;
-      this.sfx('kick');
+      this.shotFrom.set(this.cx, 0.45, -this.d - radiusZ(this.team.length) - 1.3);
+      this.sfx('boost');
       this.music('win');
     } else if (this.count <= 0) this.lose();
   }
 
+  /** The power shot: the ball charges at the team's feet, flies to the top corner in a streak, and bursts the net. */
   private updateGoal(dt: number) {
     const before = this.goalClock;
     this.goalClock += dt;
-    const t = Math.min(1, this.goalClock / 0.8);
-    const z0 = -this.d - 1;
+    const gc = this.goalClock;
+    const from = this.shotFrom;
     const gz = -(this.level.length + 10);
-    const z1 = gz - 1.6;
-    this.kickBall.position.set(this.cx * (1 - t) + 2.2 * t, 0.35 + Math.sin(t * Math.PI) * 1.6 + t * 1.3, z0 + (z1 - z0) * t);
-    this.kickBall.rotation.x -= dt * 12;
-    if (t >= 1) this.kickBall.position.y = Math.max(0.35, 1.65 - (this.goalClock - 0.8) * 3);
-    // The keeper dives the wrong way.
-    this.keeperX += (-2.2 - this.keeperX) * Math.min(1, dt * 5);
-    this.keeperTilt += (1.2 - this.keeperTilt) * Math.min(1, dt * 5);
-    if (this.goalClock >= 0.8) this.goal.ripple(this.goalClock - 0.8, 2.2, 1.65);
-    if (before < 0.8 && this.goalClock >= 0.8) {
-      this.shake = 0.7;
-      this.burst(2, 0, 3, gz + 3, this.low ? 60 : 220, null, 7, 1.6);
-      this.burst(1, 2.2, 1.6, gz, 30, null, 5);
-      this.float('GOAL!', 0, 4.6, gz, 'goal');
+    const ball = this.kickBall.position;
+    const { shotAura: aura, shotTrail: trail, shotRing: ring } = this;
+    if (gc < CHARGE) {
+      // Charge: light gathers on the ball.
+      const k = gc / CHARGE;
+      ball.set(from.x, from.y + k * 0.25, from.z);
+      this.kickBall.rotation.x -= dt * (10 + k * 50);
+      aura.visible = ring.visible = true;
+      aura.position.copy(ball);
+      aura.scale.setScalar(0.45 + k * 0.55 + Math.sin(gc * 60) * 0.05);
+      ring.position.set(from.x, 0.05, from.z);
+      ring.scale.setScalar(3.4 * (1 - k) + 0.3);
+      this.shake = Math.max(this.shake, k * 0.18);
+      for (let i = 0; i < (this.low ? 1 : 3); i++) {
+        const a = Math.PI + Math.random() * Math.PI; // ahead of the ball only, clear of the camera
+        const r = 1.6 + Math.random();
+        const life = 0.22 + Math.random() * 0.1;
+        this.bits.push({ kind: 1, x: ball.x + Math.cos(a) * r, y: ball.y + 0.3 + Math.random() * 1.2, z: ball.z + Math.sin(a) * r, vx: (-Math.cos(a) * r) / life, vy: -1.5, vz: (-Math.sin(a) * r) / life, age: 0, life, size: 0.55, color: GOLD.clone().multiplyScalar(2.2), grav: 0, spin: Math.random() * 10 });
+      }
+    } else {
+      // Strike and flight, then the ball drops inside the net.
+      const t = Math.min(1, (gc - CHARGE) / (HIT - CHARGE));
+      ball.set(from.x + (2.2 - from.x) * t, from.y + 0.25 + (1.4 - from.y) * t, from.z + (gz - 1.5 - from.z) * t);
+      if (t >= 1) ball.y = Math.max(0.35, 1.65 - (gc - HIT) * 3);
+      this.kickBall.rotation.x -= dt * 40;
+      ring.visible = false;
+      aura.visible = trail.visible = t < 1;
+      aura.position.copy(ball);
+      aura.scale.setScalar(0.8);
+      trail.position.copy(ball);
+      trail.lookAt(from);
+      trail.scale.set(1, 1, Math.max(0.01, ball.distanceTo(from)));
+      if (t < 1) this.burst(1, ball.x, ball.y, ball.z, this.low ? 1 : 3, GOLD, 1.2, 0.4);
+      // The keeper dives the wrong way.
+      this.keeperX += (-2.2 - this.keeperX) * Math.min(1, dt * 7);
+      this.keeperTilt += (1.2 - this.keeperTilt) * Math.min(1, dt * 7);
+    }
+    if (before < CHARGE && gc >= CHARGE) {
+      this.impactFrame();
+      this.shake = 0.5;
+      this.sfx('kick');
+      this.burst(3, from.x, from.y + 0.3, from.z - 0.3, 1, WHITE, 1.7);
+    }
+    if (gc >= HIT) this.goal.ripple(gc - HIT, 2.2, 1.65, 2);
+    if (before < HIT && gc >= HIT) {
+      // Net burst.
+      this.shake = 0.8;
+      this.burst(3, 2.2, 1.65, gz - 1, 1, GOLD, 4.2);
+      this.burst(0, 2.2, 1.65, gz - 0.9, 1, WHITE, 5);
+      this.burst(1, 2.2, 1.65, gz - 1, this.low ? 16 : 44, null, 6);
+      this.burst(2, 0, 3, gz + 3, this.low ? 40 : 140, null, 7, 1.6);
+      this.float('GOAL', 0, 4.6, gz, 'goal');
       this.sfx('win');
       this.sfx('cheer', 1, 0.6);
     }
     // Fireworks over the stadium.
     this.fireClock -= dt;
-    if (this.goalClock > 0.9 && this.fireClock <= 0 && this.goalClock < 14) {
+    if (gc > HIT + 0.1 && this.fireClock <= 0 && gc < 14) {
       this.fireClock = 0.28 + Math.random() * 0.3;
       this.firework((Math.random() - 0.5) * 26, 9 + Math.random() * 7, gz - 4 - Math.random() * 10);
     }
-    if (this.state === 'goal' && this.goalClock > 2.6) this.finish();
+    if (this.state === 'goal' && gc > HIT + 1.8) this.finish();
   }
 
   private moveTeam(dt: number) {
@@ -934,11 +1033,11 @@ export class RunnerGame {
     if (cat) {
       s.cats[cat.id] = 1;
       if (!s.captain) s.captain = cat.id;
-      news.push(`Star cat ${cat.name} joins your team!`);
+      news.push(`Ace ${cat.name} joins the squad.`);
     }
     if (wh.final && first && !wh.endless) {
       this.bump('cups');
-      news.push(`You won the ${wh.world.cup}!`);
+      news.push(`${wh.world.cup} won.`);
     }
     const total = totalStars(s);
     for (const j of JERSEYS) {
@@ -948,7 +1047,7 @@ export class RunnerGame {
         news.push(`New jersey: ${j.name}`);
       }
     }
-    if (first && L.n === LAST_LEVEL) news.push('All 32 cups won. The Endless Cup is open!');
+    if (first && L.n === LAST_LEVEL) news.push('All 32 cups won. The Endless Cup is open.');
     this.bonusCats = 0;
     this.persist();
     this.state = 'end';
@@ -960,7 +1059,7 @@ export class RunnerGame {
   // ---------------- Render ----------------
   private put(i: number, x: number, y: number, z: number, ry: number, k: number, tilt: number, jersey: THREE.Color, trim: THREE.Color, fur: THREE.Color, phase: number, run: number, hop: number, num: number) {
     const c = this.cats;
-    tmpM.compose(tmpP.set(x, y, z), tmpQ.setFromEuler(tmpE.set(run > 0 ? -0.12 : 0, ry, tilt)), tmpS.set(k, k, k));
+    tmpM.compose(tmpP.set(x, y, z), tmpQ.setFromEuler(tmpE.set(run === 1 ? -0.2 : 0, ry, tilt)), tmpS.set(k, k, k));
     c.mesh.setMatrixAt(i, tmpM);
     c.jersey.setXYZ(i, jersey.r, jersey.g, jersey.b);
     c.trim.setXYZ(i, trim.r, trim.g, trim.b);
@@ -984,7 +1083,7 @@ export class RunnerGame {
     const running = st === 'run' || st === 'boss' || st === 'fight';
     const party = st === 'goal' || st === 'end';
     const run = running ? 1 : 0;
-    const hop = party ? 0.32 : running ? 0.1 : 0.02;
+    const hop = party && this.goalClock > HIT ? 0.32 : running ? 0.05 : 0.012;
     let idx = 0;
     const menu = st === 'menu';
     for (const c of this.team) {
@@ -997,9 +1096,9 @@ export class RunnerGame {
     const wear = (x: number, y: number, z: number, k: number) => {
       const c = this.crowns[crown++];
       c.visible = true;
-      c.position.set(x, y + 0.93 * k, z);
-      c.scale.setScalar(k * 1.1);
-      c.rotation.y = this.time;
+      c.position.set(x, y + (1.5 + Math.sin(this.time * 3 + crown) * 0.03) * k, z);
+      c.scale.setScalar(k * 1.2);
+      c.rotation.y = this.time * 2;
     };
     // The team's captain (a star cat) leads from the front.
     const capId = STARS.find((c) => c.id === s.captain);
@@ -1007,8 +1106,8 @@ export class RunnerGame {
       const z = menu ? 1.1 : -this.d - radiusZ(this.team.length) - 0.55;
       const x = menu ? 0.9 : this.cx;
       furC.set(capId.fur);
-      this.put(idx++, x, 0, z, menu ? 0.5 : Math.PI, 1.5, 0, GOLD, trimC, furC, 0, run, hop, 0);
-      wear(x, 0, z, 1.5);
+      this.put(idx++, x, 0, z, menu ? 0.5 : Math.PI, 1.22, 0, jerseyC, GOLD, furC, 0, run, hop, ACE + 9);
+      wear(x, 0, z, 1.22);
     }
     for (const r of this.rivals) {
       if (!r.cats.length || !near(-r.d)) continue;
@@ -1016,39 +1115,47 @@ export class RunnerGame {
       for (const c of r.cats) if (idx < CAP - 3) this.put(idx++, c.x, 0, c.z, 0, c.s, 0, rivalC, rivalT, FURS[c.fur], c.phase, fight ? 1 : 0, fight ? 0.1 : 0.03, c.num);
       if (r.captain) {
         const z = -r.d - radiusZ(r.cats.length) - 0.7 + (fight ? r.cats[0].z + r.d : 0);
-        this.put(idx++, 0, 0, z, 0, 1.8, 0, rivalT, rivalC, FURS[3], 1, 0, 0.06, 0);
-        wear(0, 0, z, 1.8);
+        this.put(idx++, 0, 0, z, 0, 1.4, 0, rivalT, rivalC, FURS[3], 1, 0, 0.012, ACE + 9);
+        wear(0, 0, z, 1.4);
       }
     }
-    for (const sg of this.strays) if (near(-sg.d)) for (const c of sg.cats) this.put(idx++, c.x, 0, c.z, 0, 0.9, 0, strayC, WHITE, FURS[c.fur], c.phase, 0, 0.06, 15);
-    // Goalkeeper: a big cat with gloves; cup finals have a crowned boss keeper.
+    for (const sg of this.strays) if (near(-sg.d)) for (const c of sg.cats) this.put(idx++, c.x, 0, c.z, 0, 0.95, 0, strayC, WHITE, FURS[c.fur], c.phase, 0, 0.012, 15);
+    // Goalkeeper: a towering cat in a wide stance with gloves; cup finals have a marked boss keeper with an ace's headband.
     const kz = -(this.level.length + 8.5);
-    const ks = wh.final ? 3.3 : 2.6;
+    const ks = wh.final ? 2.5 : 2.05;
     const kWob = st === 'boss' && this.tradeClock > 0 ? 1 + Math.sin(this.time * 40) * 0.03 : 1;
-    this.put(idx++, this.keeperX, 0, kz, 0, ks * kWob, this.keeperTilt, keeperC, keeperT, wh.final ? FURS[3] : FURS[2], 0, 0, st === 'boss' ? 0.04 : 0.01, 0);
-    if (wh.final) wear(this.keeperX - Math.sin(this.keeperTilt) * 0.93 * ks, (Math.cos(this.keeperTilt) - 1) * 0.93 * ks, kz, ks);
+    this.put(idx++, this.keeperX, 0, kz, 0, ks * kWob, this.keeperTilt, keeperC, keeperT, wh.final ? FURS[3] : FURS[2], 0, 2, 0, wh.final ? ACE : 0);
+    if (wh.final) wear(this.keeperX - Math.sin(this.keeperTilt) * 1.5 * ks, (Math.cos(this.keeperTilt) - 1) * 1.5 * ks, kz, ks);
     this.gloves.forEach((g, i) => {
-      const sx = (i ? 1 : -1) * 0.34;
-      const up = 0.56 + Math.abs(Math.sin(this.time * 8 + i)) * (st === 'boss' ? 0.22 : 0.05);
+      // Same arm angle as the keeper stance in the cat shader, so each glove sits on its hand.
+      const side = i ? 1 : -1;
+      const b = 1.9 + Math.sin(this.time * 7 + side) * 0.18;
+      const sx = side * (0.17 + 0.39 * Math.sin(b));
+      const up = 1.02 - 0.39 * Math.cos(b);
       const ct = Math.cos(this.keeperTilt);
       const sn = Math.sin(this.keeperTilt);
-      g.position.set(this.keeperX + (sx * ct - up * sn) * ks, (sx * sn + up * ct) * ks, kz + 0.1 * ks);
-      g.scale.setScalar(ks);
+      g.position.set(this.keeperX + (sx * ct - up * sn) * ks, (sx * sn + up * ct) * ks, kz + 0.02 * ks);
+      g.rotation.z = this.keeperTilt - side * (b - Math.PI);
+      g.scale.setScalar(ks * 0.75);
     });
     const cm = this.cats;
     cm.mesh.count = idx;
+    cm.hull!.count = idx;
     this.blob.count = idx;
     for (const a of [cm.mesh.instanceMatrix, cm.jersey, cm.trim, cm.fur, cm.anim, this.blob.instanceMatrix]) a.needsUpdate = true;
     this.catU.userData.u.uTime.value = this.time;
     this.catU.userData.u.uCheer.value = this.cheer;
 
     // Particles
-    const n = [0, 0, 0];
+    const n = [0, 0, 0, 0];
+    const pitch = this.camera.rotation.x; // flat shapes tilt to face the camera
     for (const b of this.bits) {
       const k = b.kind;
       const life = b.age / b.life;
-      const sz = (k === 0 ? Math.sin(life * Math.PI) : k === 1 ? 1 - life * life : Math.min(1, (1 - life) * 4)) * b.size;
-      tmpQ.setFromEuler(tmpE.set(k === 2 ? b.spin + b.age * 9 : 0, k ? b.spin + b.age * 5 : 0, k === 1 ? b.age * 4 : 0));
+      const sz = (k === 2 ? Math.min(1, (1 - life) * 4) : k === 1 ? 1 - life * life : Math.min(1, life * 5) * (1.15 - life * 0.6)) * b.size;
+      if (k === 2) tmpE.set(b.spin + b.age * 9, b.spin + b.age * 5, 0);
+      else tmpE.set(pitch, 0, k === 1 ? b.spin + b.age * 3 : b.spin);
+      tmpQ.setFromEuler(tmpE);
       tmpM.compose(tmpP.set(b.x, b.y, b.z), tmpQ, tmpS.set(sz, sz, sz));
       this.bitMesh[k].setMatrixAt(n[k], tmpM);
       this.bitMesh[k].setColorAt(n[k], b.color);
@@ -1078,10 +1185,16 @@ export class RunnerGame {
     if (menu) {
       const a = 0.5 + Math.sin(this.time * 0.25) * 0.12;
       const wide = this.camera.aspect > 1.2;
-      const far = 4.6 + R * 2.2;
-      camT.set(Math.sin(a) * far - (wide ? 1.9 : 0) * (far / 4.6), 1.9 + R * 0.8, 0.9 + Math.cos(a) * far);
-      look = [(wide ? -1.7 : 0) * (far / 4.6), 0.75, 0];
+      const far = 3.4 + R * 2.6;
+      camT.set(Math.sin(a) * far - (wide ? 1.9 : 0) * (far / 4.6), 1.15 + R * 0.9, 0.9 + Math.cos(a) * far);
+      look = [(wide ? -1.7 : 0) * (far / 4.6), 0.95, 0];
       f = 1;
+    } else if (party && this.goalClock < HIT) {
+      // Power shot: low, over the front row's shoulders, pushing in as the ball charges.
+      const k = Math.min(1, this.goalClock / CHARGE);
+      camT.set(this.shotFrom.x + 2.2 - k * 0.6, 3.1 - k * 0.5, this.shotFrom.z + 5.6 - k * 1.2);
+      look = [this.shotFrom.x * 0.5 + 0.8, 1.3, -(this.level.length + 10)];
+      f = 1 - Math.pow(0.0002, dt);
     } else if (party) {
       const k = Math.min(1, this.goalClock / 2.2);
       camT.set(this.cx * 0.3, 6.5 + R * 0.7 - k * 2, -this.d + 9 + R - k * 3);
@@ -1089,7 +1202,7 @@ export class RunnerGame {
     } else {
       const x = this.cx * 0.5;
       camT.set(x, 6.5 + R * 0.7, -this.d + 8.5 + R * 0.9);
-      look = [x * 0.6, 0.5, -this.d - 7];
+      look = [x * 0.6, 0.8, -this.d - 7];
     }
     this.snapCam = false;
     c.lerp(camT, f);
@@ -1103,6 +1216,7 @@ export class RunnerGame {
     this.sun.position.set(-16, 30, c.z - 16 + 14);
     const w = this.world!;
     w.follow.position.set(c.x, 0, c.z);
+    w.time.value = this.time;
     if (w.dragon) {
       const a = this.time * 0.35;
       w.dragon.position.set(Math.sin(a) * 34, 17 + Math.sin(a * 2) * 2, -this.d - 55 + Math.cos(a) * 26);
@@ -1127,14 +1241,14 @@ export class RunnerGame {
     this.labels.style.display = inPlay ? 'block' : 'none';
     if (!inPlay) return;
     const R = radiusZ(this.team.length);
-    this.place(this.countLabel, this.cx, 1.5 + Math.min(5, R) * 0.2, -this.d + R * 0.3, this.state === 'end' ? '' : String(this.count));
+    this.place(this.countLabel, this.cx, 1.9 + Math.min(5, R) * 0.2, -this.d + R * 0.3, this.state === 'end' || this.state === 'goal' ? '' : String(this.count));
     for (const r of this.rivals) {
       const vis = r.count > 0 && -r.d > -this.d - 70;
-      this.place(r.label, 0, r.captain ? 2.4 : 1.4, -r.d, vis ? (r.captain ? `${where(this.cur).world.captain} · ${r.count}` : String(r.count)) : '');
+      this.place(r.label, 0, r.captain ? 2.7 : 1.8, -r.d, vis ? (r.captain ? `${where(this.cur).world.captain} · ${r.count}` : String(r.count)) : '');
     }
     const wh = where(this.cur);
     const showK = this.keeperHp > 0 && this.d > this.level.length - 40;
-    this.place(this.keeperLabel, this.keeperX, wh.final ? 4.3 : 3.5, -(this.level.length + 8.5), showK ? (wh.final ? `${wh.world.keeper} · ${this.keeperHp}` : String(this.keeperHp)) : '');
+    this.place(this.keeperLabel, this.keeperX, wh.final ? 4.4 : 3.6, -(this.level.length + 8.5), showK ? (wh.final ? `${wh.world.keeper} · ${this.keeperHp}` : String(this.keeperHp)) : '');
     this.bar.style.left = `${Math.min(100, (this.d / this.level.length) * 100)}%`;
   }
 

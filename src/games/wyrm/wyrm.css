@@ -1,4 +1,4 @@
-/* Gem Wyrm HUD and menus. Builds on the shared Camalot look (src/core/theme.css: .cm-panel, .cm-btn, .cm-key, --cm-*).
+/* Wyrmrise HUD and menus. Builds on the shared Camalot look (src/core/theme.css: .cm-panel, .cm-btn, .cm-key, --cm-*).
    Only layout and the game's own focus marker (.f, set by keys, pointer, or touch) live here. */
 .wy {
   position: fixed; inset: 0; overflow: hidden; background: var(--cm-stage, #0b0e14);

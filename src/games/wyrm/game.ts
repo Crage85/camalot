@@ -1,4 +1,4 @@
-// Gem Wyrm: screens, input, HUD, sound, and the run loop. Talks to the platform only through the Camalot object.
+// Wyrmrise: screens, input, HUD, sound, and the run loop. Talks to the platform only through the Camalot object.
 import './wyrm.css';
 import type { Camalot, LoopHandle, SfxName, SfxOptions } from '../../core/contract';
 import {
@@ -313,7 +313,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
     const arrows = touchSeen ? 'Tap the arrows to change.' : `${key('← →')} change`;
     show(`
       <div class="cm-panel wy-card wy-menu">
-        <h1 class="cm-title">Gem Wyrm</h1>
+        <h1 class="cm-title">Wyrmrise</h1>
         <div class="wy-level"><span>Level <b class="num">${lv.level}</b> ${esc(evo.name)}</span><span class="wy-stars"><b>★</b></span><span class="num">${totalStars(save)}/${MAX_STARS}</span>
           <div class="wy-bar"><i style="width:${Math.round((lv.into / lv.need) * 100)}%"></i></div></div>
         ${pick('arena', 'Place', esc(arena.name), placeExtra, `${esc(arena.blurb)} ${arrows}`)}
@@ -321,14 +321,14 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
         ${pick('skin', 'Wyrm', esc(skin.name), skinStatus(skin), buyable ? `${touchSeen ? 'Tap' : key('Enter')} to buy for ${(skin.unlock as { cost: number }).cost} coins` : arrows, buyable ? 'buy' : '')}
         <div class="wy-row">
           <button class="cm-btn" data-f data-act="big" data-help="Answer a question. Start longer, with a gem magnet.">
-            <span>Start big</span>${startBonus === 'big' ? '<span class="wy-done">Ready</span>' : QUIZ}</button>
-          <button class="cm-btn" data-f data-act="dragon" data-help="Answer a hard math question on paper. Start huge, with magnet, double gems, and a bubble.">
+            <span>Head start</span>${startBonus === 'big' ? '<span class="wy-done">Ready</span>' : QUIZ}</button>
+          <button class="cm-btn" data-f data-act="dragon" data-help="Answer a hard math question on paper. Start huge, with magnet, double gems, and a ward.">
             <span>Dragon start</span>${startBonus === 'dragon' ? '<span class="wy-done">Ready</span>' : BIGQUIZ}</button>
         </div>
         <button class="cm-btn main" data-f data-act="play" data-help="${esc(touchSeen ? 'Drag anywhere to steer. Hold Boost to go fast.' : `${key('← →')} or pointer to steer. ${key('Space')} or hold click to boost.`)}">
           <span>Play</span>${key('Enter')}
         </button>
-        <button class="cm-btn" data-f data-act="book" data-help="Your wyrm's growth, awards, and wyrm collection."><span>Wyrm book</span><span class="sub num">${save.awards.length}/${AWARDS.length} awards</span></button>
+        <button class="cm-btn" data-f data-act="book" data-help="Your wyrm's evolution, awards, and wyrm collection."><span>Codex</span><span class="sub num">${save.awards.length}/${AWARDS.length} awards</span></button>
         <div class="cm-help wy-help"></div>
         <div class="wy-foot"><span>Coins <b class="num">${save.coins}</b></span><span>Wyrms <b class="num">${save.owned.length}/${SKINS.length}</b></span></div>
       </div>`,
@@ -372,7 +372,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
   }
   async function preBonus(kind: 'big' | 'dragon') {
     if (startBonus !== kind) {
-      const ok = kind === 'big' ? await bonus('Start big with a gem magnet') : await bonus('Dragon start: begin huge with three potions', true);
+      const ok = kind === 'big' ? await bonus('Head start with a gem magnet') : await bonus('Dragon start: begin huge with three potions', true);
       if (ok) { startBonus = kind; sfx('unlock'); }
     }
     menu();
@@ -386,7 +386,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
     save.skin = skin.id;
     void store();
     sfx('buy');
-    world.confetti(sim.player.segs[0], sim.player.segs[1], 60);
+    world.fanfare(sim.player.segs[0], sim.player.segs[1], 60);
     world.puff(sim.player);
     menu();
     focusOn('[data-lr="skin"]');
@@ -411,8 +411,8 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
     const tabBtn = (id: string, label: string) => `<button class="cm-btn ${tab === id ? 'main' : ''}" data-f data-act="${id}"><span>${label}</span></button>`;
     show(`
       <div class="cm-panel wy-card wy-book">
-        <h2 class="cm-title">Wyrm book</h2>
-        <div class="wy-row">${tabBtn('grow', 'Growth')}${tabBtn('awards', 'Awards')}${tabBtn('wyrms', 'Wyrms')}<button class="cm-btn" data-f data-act="back"><span>Back</span>${key('Esc')}</button></div>
+        <h2 class="cm-title">Codex</h2>
+        <div class="wy-row">${tabBtn('grow', 'Evolution')}${tabBtn('awards', 'Awards')}${tabBtn('wyrms', 'Wyrms')}<button class="cm-btn" data-f data-act="back"><span>Back</span>${key('Esc')}</button></div>
         ${body}
       </div>`,
       { grow: () => book('grow'), awards: () => book('awards'), wyrms: () => book('wyrms'), back: () => { menu(); focusOn('[data-act="book"]'); } });
@@ -498,7 +498,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
     const len = lengthScore(sim.player.mass);
     show(`
       <div class="cm-panel wy-card">
-        <h2 class="cm-title">Popped!</h2>
+        <h2 class="cm-title">Defeated</h2>
         <div class="wy-stats"><span>Length</span><b class="big num">${len}</b></div>
         <button class="cm-btn main" data-f data-act="revive" data-help="Answer a question. Keep your size. Once per run."><span>Revive</span>${QUIZ}</button>
         <button class="cm-btn" data-f data-act="finish" data-help="End the run and collect coins."><span>Finish</span></button>
@@ -550,15 +550,15 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
     const nextOk = next && stageOpen(save, next) ? next : undefined;
     const news: string[] = [];
     if (res.levelAfter > res.levelBefore) {
-      news.push(`Level up! Level ${res.levelAfter}`);
+      news.push(`Level ${res.levelAfter} reached`);
       const e = evoOf(res.levelAfter);
-      if (e > evoOf(res.levelBefore)) news.push(`Your wyrm grew into a ${EVOS[e].name}. ${EVOS[e].perk}`);
+      if (e > evoOf(res.levelBefore)) news.push(`Your wyrm evolved: ${EVOS[e].name}. ${EVOS[e].perk}`);
       for (const k of Object.keys(POTIONS) as PotionKind[]) if (POTIONS[k].level > res.levelBefore && POTIONS[k].level <= res.levelAfter) news.push(`New potion: ${POTIONS[k].label}`);
     }
     if (res.opened) news.push(`New place: ${res.opened.name}`);
     for (const k of res.newSkins) news.push(`New wyrm: ${k.name}`);
     for (const a of res.newAwards) news.push(`Award: ${a.text} (+${a.coins} coins)`);
-    const title = st ? (res.stars > 0 ? (res.stars === 3 ? 'Three stars!' : 'Goal complete!') : 'So close!') : 'Run over';
+    const title = st ? (res.stars > 0 ? (res.stars === 3 ? 'Three stars' : 'Goal cleared') : 'Not yet') : 'Run over';
     const pct = Math.round((lv.into / lv.need) * 100);
     show(`
       <div class="cm-panel wy-card wy-results">
@@ -567,7 +567,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
         <div class="wy-stats">
           <span>Length</span><b class="big num">${r.length}</b>
           ${st ? '' : `<span>Best</span><b class="num">${res.newBest ? '<span class="wy-new">New best</span>' : save.best[arena.id] ?? 0}</b>`}
-          <span>Wyrms popped</span><b class="num">${r.pops}</b>
+          <span>Takedowns</span><b class="num">${r.pops}</b>
           <span>Coins</span><b class="num">+${res.coins * mult + res.extraCoins + (hoard ? T.hoardCoins : 0)}${mult > 1 ? ` (run x${mult})` : ''}</b>
           <span>Level ${lv.level} ${esc(EVOS[evoOf(lv.level)].name)}</span><b class="num">+${res.xp} xp</b>
         </div>
@@ -670,7 +670,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
       const hearts = sim.boss ? `<span class="wy-hearts">${'<b>♥</b>'.repeat(Math.max(0, sim.boss.hearts))}${'<i>♥</i>'.repeat(BOSS_HEARTS - Math.max(0, sim.boss.hearts))}</span>` : '';
       const tl = tracker.timeLeft();
       const clock = Number.isFinite(tl) ? `<b class="num wy-clock${tl < 30 ? ' hot' : ''}">${Math.floor(tl / 60)}:${String(Math.floor(tl % 60)).padStart(2, '0')}</b>` : '';
-      gh = `<div class="top">${starRow(stars)}${clock}${hearts}</div><div>${stars >= 3 ? 'All stars!' : goalText(st, tier)}</div>${st.kind === 'boss' ? '' : `<div class="wy-bar"><i style="width:${pct}%"></i></div><span class="num sub">${Math.min(v, st.tiers[tier])} / ${st.tiers[tier]}</span>`}`;
+      gh = `<div class="top">${starRow(stars)}${clock}${hearts}</div><div>${stars >= 3 ? 'All stars' : goalText(st, tier)}</div>${st.kind === 'boss' ? '' : `<div class="wy-bar"><i style="width:${pct}%"></i></div><span class="num sub">${Math.min(v, st.tiers[tier])} / ${st.tiers[tier]}</span>`}`;
     }
     if (gh !== goalHtml) { goalHtml = gh; goalEl.innerHTML = gh; goalEl.hidden = !gh; }
     if (p.roarMax > 0) {
@@ -759,12 +759,12 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
           if (!playing) break;
           if (e.wyrm === p) {
             sfx(e.kind === 'zoom' ? 'boost' : e.kind === 'frost' ? 'crunch' : 'sparkle');
-            toast(e.kind === 'frost' ? 'Frost! The other wyrms are slow' : POTIONS[e.kind].label);
-          } else if (e.kind === 'frost') { toast(`${e.wyrm.name} froze you!`); sfx('crunch', { pitch: 0.7 }); }
+            toast(e.kind === 'frost' ? 'Frost: rivals slowed' : POTIONS[e.kind].label);
+          } else if (e.kind === 'frost') { toast(`${e.wyrm.name} froze you`); sfx('crunch', { pitch: 0.7 }); }
           break;
         case 'sprite':
           world.burst(e.x, e.z, [0xffe066, 0xfff4c2], 26, 0.8);
-          world.ring(e.x, e.z, 0xffe066, 6);
+          world.impact(e.x, e.z, 0xffe066, 2.5);
           if (playing && e.wyrm === p) { sfx('sparkle', { pitch: 1.3 }); sfx('coin'); popText(`+${T.spriteValue * 10}`, e.x, e.z, 'gold'); }
           break;
         case 'bump':
@@ -779,33 +779,35 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
           const x = e.wyrm.segs[0], z = e.wyrm.segs[1];
           world.ring(x, z, 0xffffff, T.roarRadius * 2, 0.7);
           world.ring(x, z, e.wyrm.look.accColor, T.roarRadius * 1.4, 0.5);
+          world.impact(x, z, e.wyrm.look.accColor, 5);
           world.shake(0.45);
           world.puff(e.wyrm);
-          if (playing) { roarSound(); if (e.scared) popText(e.scared === 1 ? 'Scared 1!' : `Scared ${e.scared}!`, x, z); }
+          if (playing) { roarSound(); if (e.scared) popText(`Routed ${e.scared}`, x, z); }
           break;
         }
         case 'bossHit':
           world.shake(0.7);
-          world.confetti(e.wyrm.segs[0], e.wyrm.segs[1], 50);
-          world.ring(e.wyrm.segs[0], e.wyrm.segs[1], 0xff6b6b, 16, 0.8);
-          if (playing) { sfx('explode', { volume: 0.5 }); popText(e.wyrm.hearts > 0 ? 'Ouch!' : 'Beaten!', e.wyrm.segs[0], e.wyrm.segs[1], 'gold'); if (e.wyrm.hearts > 0) toast(`${e.wyrm.name} crashed! ${e.wyrm.hearts} to go`); }
+          world.impact(e.wyrm.segs[0], e.wyrm.segs[1], 0xff5a3a, 7);
+          world.slash(e.wyrm.segs[0], e.wyrm.segs[1], 0xffd04a, 6);
+          world.fanfare(e.wyrm.segs[0], e.wyrm.segs[1], 40);
+          if (playing) { sfx('explode', { volume: 0.5 }); popText(e.wyrm.hearts > 0 ? 'Hit' : 'Defeated', e.wyrm.segs[0], e.wyrm.segs[1], 'gold'); if (e.wyrm.hearts > 0) toast(`${e.wyrm.name} is hit. ${e.wyrm.hearts} to go`); }
           break;
         case 'down': {
           const x = e.wyrm.segs[0], z = e.wyrm.segs[1];
-          world.ring(x, z, e.wyrm.look.colors[0], 8 + radiusOf(e.wyrm.mass) * 6);
+          world.dissolve(e.wyrm); // a flash, then the body turns to sparkles
           if (!playing) break;
           if (e.wyrm === p) {
             sfx('lose');
             world.shake(0.8);
-            if (tracker.stage?.kind === 'rush') { rushRespawn = 1.5; toast('Popped! Back in a moment'); } else downTimer = 1.1;
+            if (tracker.stage?.kind === 'rush') { rushRespawn = 1.5; toast('Down. Back in a moment'); } else downTimer = 1.1;
           } else if (e.by === p) {
             vary('pop'); sfx('cheer', { volume: 0.5 });
             world.shake(0.35);
-            world.confetti(x, z, 30);
-            popText('Pop!', x, z, 'gold');
-            toast(`You popped ${e.wyrm.name}!`);
+            world.slash(x, z, 0xffd04a, 3 + radiusOf(e.wyrm.mass) * 3);
+            popText('Takedown', x, z, 'gold');
+            toast(`You took down ${e.wyrm.name}`);
           } else if (nearPlayer(x, z)) sfx('pop', { volume: 0.3, pan: panOf(x), pitch: 0.8 + Math.random() * 0.3 });
-          if (e.wyrm.isBoss) { sfx('cheer'); world.confetti(x, z, 140); winTimer = 2; }
+          if (e.wyrm.isBoss) { sfx('cheer'); world.fanfare(x, z, 140); winTimer = 2; }
           break;
         }
       }
@@ -822,12 +824,12 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
     if (stars > starsShown && st?.kind !== 'boss') {
       starsShown = stars;
       sfx('star', { pitch: 0.9 + stars * 0.12 });
-      world.confetti(p.segs[0], p.segs[1], 40 + stars * 30);
+      world.fanfare(p.segs[0], p.segs[1], 40 + stars * 30);
       world.ring(p.segs[0], p.segs[1], 0xffe066, 12);
       world.puff(p);
       popText('★'.repeat(stars), p.segs[0], p.segs[1], 'gold big');
-      if (stars >= 3) { toast('Three stars!'); sfx('cheer'); winTimer = 1.6; }
-      else toast(`Star ${stars}! Next: ${goalText(st!, stars)}`);
+      if (stars >= 3) { toast('Three stars'); sfx('cheer'); winTimer = 1.6; }
+      else toast(`Star ${stars}. Next: ${goalText(st!, stars)}`);
     }
     const len = lengthScore(p.mass);
     if (p.alive && len >= nextGrow) {
@@ -835,7 +837,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
       sfx('grow');
       world.puff(p);
       world.ring(p.segs[0], p.segs[1], p.look.colors[0], 8);
-      popText(`Length ${Math.floor(len / 1000) * 1000}!`, p.segs[0], p.segs[1]);
+      popText(`Length ${Math.floor(len / 1000) * 1000}`, p.segs[0], p.segs[1]);
     }
     if (p.boosting && !wasBoosting) vary('boost', 0.7);
     wasBoosting = p.boosting;

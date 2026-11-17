@@ -1,4 +1,4 @@
-// Kitty Harvest: drive the cat farmer's tractor, harvest any crop (tough ones cut slowly), sell at the barn,
+// Skyfield Saga: drive the cat-folk farmer's machine, harvest any crop (tough ones cut slowly), sell at the barn,
 // fill orders, grow the farm, then move on to bigger farms. Knows the platform only through the Camalot contract.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -8,7 +8,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import type { Camalot, SfxName } from '../../core/contract';
 import * as D from './data';
 import * as M from './models';
-import { buildWorld, PAD, type PlotState, type World } from './world';
+import { buildWorld, PAD, SUN, type PlotState, type World } from './world';
 import './style.css';
 
 type Quality = 'auto' | 'high' | 'low';
@@ -132,8 +132,8 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   host.append(renderer.domElement);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 1400);
-  const hemi = new THREE.HemisphereLight(0xdff2ff, 0x8a9a5a, 1.5);
-  const sun = new THREE.DirectionalLight(0xfff2dc, 2.3);
+  const hemi = new THREE.HemisphereLight(0xdff2ff, 0x8a9a5a, 1.35);
+  const sun = new THREE.DirectionalLight(0xfff2dc, 2.7);
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.bias = -0.0005;
   sun.shadow.normalBias = 0.04;
@@ -142,7 +142,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
 
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 }));
   composer.addPass(new RenderPass(scene, camera));
-  composer.addPass(new UnrealBloomPass(new THREE.Vector2(4, 4), 0.2, 0.6, 1.0));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(4, 4), 0.32, 0.5, 1.0));
   composer.addPass(new OutputPass());
 
   const autoLow = () => (navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) < 1000) || (navigator.hardwareConcurrency ?? 8) <= 4;
@@ -158,47 +158,140 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   }
   addEventListener('resize', resize);
 
-  // Particles: chaff and leaves from the cutter, smoke puffs, sparkles.
-  const NP = 240;
-  const parts = new THREE.InstancedMesh(new THREE.TetrahedronGeometry(0.16), new THREE.MeshLambertMaterial(), NP);
-  parts.frustumCulled = false;
-  const pp = new Float32Array(NP * 8); // x y z vx vy vz life kind
-  let pNext = 0;
+  // Effects: leaves that swirl out of the cutter and four-point glints. Sharp shapes, flat colour, no smoke.
   const _o = new THREE.Object3D();
   const _c = new THREE.Color();
-  function puff(x: number, y: number, z: number, color: number, n: number, kind = 0, spread = 1) {
+  const leafGeo = new THREE.BufferGeometry();
+  leafGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.24, 0, 0.09, 0, 0, 0, -0.24, 0, -0.09, 0, 0.04], 3));
+  leafGeo.setIndex([0, 1, 3, 1, 2, 3]);
+  const star = new THREE.Shape();
+  for (let i = 0; i < 8; i++) star[i ? 'lineTo' : 'moveTo'](Math.sin((i / 8) * Math.PI * 2) * (i % 2 ? 0.14 : 1), Math.cos((i / 8) * Math.PI * 2) * (i % 2 ? 0.14 : 1));
+  const glintMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
+  glintMat.color.setRGB(1.5, 1.5, 1.5);
+  /** kind 0 = leaves, 1 = glints. Each particle: x y z vx vy vz life size. */
+  const pools = [new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }), glintMat].map((mat, kind) => {
+    const n = kind ? 120 : 260;
+    const im = new THREE.InstancedMesh(kind ? new THREE.ShapeGeometry(star) : leafGeo, mat, n);
+    im.frustumCulled = false;
+    for (let i = 0; i < n; i++) im.setColorAt(i, _c.set(0xffffff));
+    scene.add(im);
+    return { im, n, d: new Float32Array(n * 8), next: 0 };
+  });
+  function puff(x: number, y: number, z: number, color: number, n: number, kind = 0, spread = 1, size = 1) {
+    const P = pools[kind];
     for (let k = 0; k < n; k++) {
-      const i = pNext++ % NP, o = i * 8;
-      pp.set([x + (Math.random() - 0.5) * spread, y, z + (Math.random() - 0.5) * spread, (Math.random() - 0.5) * 3 * spread, kind ? 0.8 : 2 + Math.random() * 3.5, (Math.random() - 0.5) * 3 * spread, 1, kind], o);
-      parts.setColorAt(i, _c.set(color).offsetHSL(0, 0, (Math.random() - 0.5) * 0.12));
+      const i = P.next++ % P.n, a = Math.random() * 6.283, sp = (0.4 + Math.random()) * 2.2 * spread;
+      P.d.set([x + Math.cos(a) * spread * 0.3, y, z + Math.sin(a) * spread * 0.3, Math.cos(a) * sp, kind ? 0.6 + Math.random() : 2.5 + Math.random() * 3.5, Math.sin(a) * sp, 1, size * (0.7 + Math.random() * 0.6)], i * 8);
+      P.im.setColorAt(i, _c.set(color).offsetHSL(0, 0, (Math.random() - 0.5) * 0.14));
     }
-    if (parts.instanceColor) parts.instanceColor.needsUpdate = true;
+    if (P.im.instanceColor) P.im.instanceColor.needsUpdate = true;
   }
   function stepParts(dt: number) {
-    for (let i = 0; i < NP; i++) {
-      const o = i * 8;
-      if (pp[o + 6] <= 0) {
-        _o.scale.setScalar(0);
-      } else {
-        const smoke = pp[o + 7] === 1;
-        pp[o + 6] -= dt * (smoke ? 0.9 : 1.3);
-        if (!smoke) pp[o + 4] -= 12 * dt;
-        pp[o] += pp[o + 3] * dt * (smoke ? 0.2 : 1);
-        pp[o + 1] += pp[o + 4] * dt;
-        pp[o + 2] += pp[o + 5] * dt * (smoke ? 0.2 : 1);
-        _o.position.set(pp[o], pp[o + 1], pp[o + 2]);
-        _o.rotation.set(pp[o + 6] * 9 + i, i, pp[o + 6] * 7);
-        _o.scale.setScalar(Math.max(0, smoke ? (1.2 - pp[o + 6]) * 2 * pp[o + 6] : pp[o + 6] * 1.4));
+    pools.forEach((P, kind) => {
+      const d = P.d;
+      for (let i = 0; i < P.n; i++) {
+        const o = i * 8;
+        if (d[o + 6] <= 0) _o.scale.setScalar(0);
+        else {
+          d[o + 6] -= dt * (kind ? 2.4 : 1.15);
+          if (kind) d[o + 3] *= 1 - dt * 3, d[o + 5] *= 1 - dt * 3;
+          else {
+            // gravity, plus a turn each frame so the leaves spiral outward
+            d[o + 4] -= 9 * dt;
+            const c = Math.cos(dt * 3.2), sn = Math.sin(dt * 3.2), vx = d[o + 3];
+            d[o + 3] = vx * c - d[o + 5] * sn;
+            d[o + 5] = vx * sn + d[o + 5] * c;
+          }
+          d[o] += d[o + 3] * dt;
+          d[o + 1] += d[o + 4] * dt;
+          d[o + 2] += d[o + 5] * dt;
+          const life = Math.max(0, d[o + 6]);
+          _o.position.set(d[o], d[o + 1], d[o + 2]);
+          if (kind) {
+            _o.quaternion.copy(camera.quaternion);
+            _o.rotateZ(life * 1.5 + i);
+            _o.scale.setScalar(Math.sin(life * Math.PI) * 0.55 * d[o + 7]);
+          } else {
+            _o.rotation.set(life * 9 + i, i, life * 7);
+            _o.scale.setScalar(Math.min(1, life * 2.5) * 1.5 * d[o + 7]);
+          }
+        }
+        _o.updateMatrix();
+        P.im.setMatrixAt(i, _o.matrix);
       }
-      _o.updateMatrix();
-      parts.setMatrixAt(i, _o.matrix);
-    }
-    parts.instanceMatrix.needsUpdate = true;
+      P.im.instanceMatrix.needsUpdate = true;
+    });
   }
-  for (let i = 0; i < NP; i++) parts.setColorAt(i, _c.set(0xffffff));
-  scene.add(parts);
-  const arrow = M.mesh(M.arrowGeometry(), M.PAINT, false);
+  const arrow = new THREE.Mesh(M.arrowGeometry(), M.GLOW);
+  arrow.scale.setScalar(0.75);
   scene.add(arrow);
+
+  // Impact flash for the Unstuck landing: a ring that snaps outward on the ground.
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xfff2c0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false }));
+  ring.visible = false;
+  scene.add(ring);
+  let impactT = 1;
+  function impact(x: number, y: number, z: number) {
+    ring.position.set(x, y + 0.15, z);
+    impactT = 0;
+    puff(x, y + 0.3, z, farm.look.path, 22, 0, 3.2);
+    puff(x, y + 0.6, z, 0xfff2c0, 12, 1, 4, 2.2);
+    flash.classList.remove('on');
+    void flash.offsetWidth;
+    flash.classList.add('on');
+  }
+
+  // God rays (High): additive strips that lean along the sunlight and turn to face the camera.
+  const shaftMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+    uniforms: { col: { value: new THREE.Color() } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform vec3 col; varying vec2 vUv; void main(){ float a = smoothstep(0.0, 0.5, vUv.x) * smoothstep(1.0, 0.5, vUv.x) * smoothstep(0.0, 0.3, vUv.y) * smoothstep(1.0, 0.45, vUv.y); gl_FragColor = vec4(col * a * 0.13, 1.0); }',
+  });
+  const SHAFT_LEN = 48, sunDir = SUN.clone().normalize();
+  const shafts = Array.from({ length: 7 }, (_, i) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, SHAFT_LEN), shaftMat);
+    m.matrixAutoUpdate = false;
+    m.frustumCulled = false;
+    m.userData = { x: Math.sin(i * 2.4) * 37 + i * 11, z: Math.cos(i * 1.7) * 37 + i * 23, w: 2.5 + (i % 3) * 2 };
+    scene.add(m);
+    return m;
+  });
+  // Pollen (High): bright motes that drift on the wind in a box that follows the camera.
+  const pollenMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+    uniforms: { col: { value: new THREE.Color() }, uTime: M.uTime, uGround: { value: 0 }, uScale: { value: 40 } },
+    vertexShader: `uniform float uTime; uniform float uGround; uniform float uScale;
+      void main(){ vec3 p = position;
+        p.x += uTime * 1.3 + sin(uTime * 0.6 + position.z) * 1.5; p.y += sin(uTime * 0.8 + position.x) * 0.8; p.z += uTime * 0.5;
+        p.xz = mod(p.xz - cameraPosition.xz + 30.0, 60.0) - 30.0 + cameraPosition.xz; p.y = mod(p.y, 13.0) + uGround + 0.4;
+        vec4 mv = viewMatrix * vec4(p, 1.0); gl_PointSize = (2.0 + fract(position.x * 7.3) * 3.0) * uScale / -mv.z; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: 'uniform vec3 col; void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; gl_FragColor = vec4(col * (1.0 - d * 2.0) * 0.8, 1.0); }',
+  });
+  const pollenGeo = new THREE.BufferGeometry();
+  pollenGeo.setAttribute('position', new THREE.Float32BufferAttribute(Array.from({ length: 150 * 3 }, (_, i) => Math.random() * (i % 3 === 1 ? 13 : 60)), 3));
+  const pollen = new THREE.Points(pollenGeo, pollenMat);
+  pollen.frustumCulled = false;
+  scene.add(pollen);
+  const _x = new THREE.Vector3(), _z = new THREE.Vector3(), _p = new THREE.Vector3();
+  function stepSky(gy: number) {
+    pollenMat.uniforms.uGround.value = gy;
+    pollenMat.uniforms.uScale.value = innerHeight * 0.06;
+    for (const m of shafts) {
+      // Each strip keeps its place in the world and wraps round when the player drives 40 m away; it narrows to nothing first.
+      const u = m.userData, dx = ((((u.x - S.x) % 80) + 120) % 80) - 40, dz = ((((u.z - S.z) % 80) + 120) % 80) - 40;
+      const fade = Math.max(0, 1 - (dx * dx + dz * dz) / 1600);
+      _p.set(S.x + dx, gy, S.z + dz).addScaledVector(sunDir, SHAFT_LEN * 0.45);
+      _x.subVectors(camera.position, _p).cross(sunDir).normalize().negate();
+      _z.crossVectors(_x, sunDir);
+      m.matrix.makeBasis(_x.multiplyScalar(u.w * fade + 0.001), sunDir, _z).setPosition(_p);
+    }
+  }
+  const flash = document.createElement('div');
+  flash.className = 'tr-flash';
+  const speed = document.createElement('div');
+  speed.className = 'tr-speed';
+  document.body.append(speed, flash);
 
   // ---------- farm, vehicle, helpers ----------
   let W!: World;
@@ -220,6 +313,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   function setVehicle() {
     if (T) scene.remove(T.root);
     T = M.buildVehicle(S.vehicle);
+    T.root.traverse((o) => o.userData.ink && (o.visible = !low || !(o.parent as THREE.Mesh).userData.r)); // Low: no ink on wheels
     T.root.rotation.order = 'YXZ';
     scene.add(T.root);
   }
@@ -235,11 +329,15 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     W = buildWorld(farm, i, low);
     scene.add(W.group);
     const L = farm.look;
-    scene.fog = new THREE.Fog(L.skyLow, farm.radius * 1.1, farm.radius + 520);
-    scene.background = new THREE.Color(L.skyLow);
+    // Distance fades to a cool haze under the warm horizon.
+    const haze = new THREE.Color(L.skyLow).lerp(_c.set(L.skyTop), 0.42);
+    scene.fog = new THREE.Fog(haze, farm.radius * 1.1, farm.radius + 620);
+    scene.background = haze;
     sun.color.set(L.sun);
-    hemi.color.set(L.skyLow);
-    hemi.groundColor.set(L.grassB).multiplyScalar(0.75);
+    hemi.color.set(L.skyTop).lerp(_c.set(0xffffff), 0.55);
+    hemi.groundColor.set(L.grassB).multiplyScalar(0.5).lerp(_c.set(0x4a3a8a), 0.4);
+    shaftMat.uniforms.col.value.set(L.sun);
+    pollenMat.uniforms.col.value.set(L.sun);
     W.plots.forEach((p, pi) => {
       const row = F.crops[pi];
       if (typeof row === 'string' && row.length === p.n) {
@@ -282,7 +380,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
       const i = helpers.length;
       const cat = M.buildCat(M.HELPER_COLORS[i % M.HELPER_COLORS.length], false, true);
       cat.root.scale.setScalar(0.9);
-      cat.root.traverse((o) => (o.castShadow = true));
+      cat.root.traverse((o) => (o.castShadow = !o.userData.ink));
       scene.add(cat.root);
       helpers.push({ cat, x: S.x + (i - 1) * 1.5, z: S.z - 3, heading: 0, plot: -1, idx: -1, wait: 0, hop: 0 });
     }
@@ -295,8 +393,10 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     low = S.quality === 'low' || (S.quality === 'auto' && autoLow());
     renderer.shadowMap.enabled = !low;
     sun.castShadow = !low;
+    for (const m of shafts) m.visible = !low;
+    pollen.visible = !low;
     resize();
-    if (rebuild) loadFarm(S.farm);
+    if (rebuild) (loadFarm(S.farm), setVehicle());
     scene.traverse((o) => {
       const m = (o as THREE.Mesh).material as THREE.Material | undefined;
       if (m) m.needsUpdate = true;
@@ -348,9 +448,9 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   let lastHud = '';
   function updateHud() {
     const c = cap(), n = carried();
-    const chips = [megaT > 0 ? `Mega harvest ${Math.ceil(megaT)}s` : '', turboT > 0 ? `Turbo ${Math.ceil(turboT)}s` : '', superT > 0 ? `Super cutter ${Math.ceil(superT)}s` : '', tempHelperT > 0 ? `Helper ${Math.ceil(tempHelperT)}s` : '', chewing > 0.3 ? 'Tough crop: slow cutting' : '']
+    const chips = [megaT > 0 ? `Storm harvest ${Math.ceil(megaT)}s` : '', turboT > 0 ? `Turbo ${Math.ceil(turboT)}s` : '', superT > 0 ? `Keen blades ${Math.ceil(superT)}s` : '', tempHelperT > 0 ? `Extra hand ${Math.ceil(tempHelperT)}s` : '', chewing > 0.3 ? 'Tough crop: slow cutting' : '']
       .filter(Boolean).map((t) => `<span class="tr-chip">${t}</span>`).join('');
-    const goal = n >= c ? 'Full! Drive back to the barn.' : `${F.done < farm.orders ? `Order ${F.done + 1} of ${farm.orders}` : `Bonus order ${F.done + 1 - farm.orders}`}: ${needText()}`;
+    const goal = n >= c ? 'Trailer full. Return to the barn.' : `${F.done < farm.orders ? `Order ${F.done + 1} of ${farm.orders}` : `Bonus order ${F.done + 1 - farm.orders}`}: ${needText()}`;
     const key = [Math.floor(S.coins), n, c, chips, goal, onPad, barnOpen, nearSale, stuckShow > 0].join('|');
     if (key === lastHud) return;
     lastHud = key;
@@ -397,7 +497,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   btnBag.addEventListener('click', async () => {
     if (await bonus('No load limit until your next sale')) {
       unlimited = true;
-      toast('No load limit this trip!');
+      toast('Load limit lifted for this trip.');
     }
   });
   btnCam.addEventListener('click', () => (farCam = !farCam));
@@ -419,7 +519,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
       if (before < need && before + n >= need) {
         const gift = D.MEDAL_REWARD[m] * C.value * mult();
         S.coins += gift;
-        toast(`${D.MEDAL_NAMES[m]} medal for ${C.name}! +${fmt(gift)} coins`, 4);
+        toast(`${D.MEDAL_NAMES[m]} medal: ${C.name}. +${fmt(gift)} coins`, 4);
         sfx('star');
       }
     });
@@ -427,7 +527,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     if (hungry >= 0) {
       F.animals[hungry] += n;
       if (F.animals[hungry] >= D.animalFeed(farm, hungry)) {
-        toast(`Your ${farm.animalName.toLowerCase()} is all grown up! +3% coins on this farm.`, 4);
+        toast(`${farm.animalName} fully grown. +3% coins on this farm.`, 4);
         sfx('purr');
       }
       W.setAnimals(F.animals.map((fed, i) => fed / D.animalFeed(farm, i)));
@@ -441,13 +541,13 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
       S.coins += o.reward;
       if (F.done === farm.orders) {
         const next = D.FARMS[S.farm + 1];
-        toast(next ? `All orders done! ${next.name} is waiting. See the Map in the barn.` : 'All orders done! A Golden Season is waiting. See the Map in the barn.', 7);
+        toast(next ? `All orders complete. ${next.name} is open: see the Map in the barn.` : 'All orders complete. A Golden Season is open: see the Map in the barn.', 7);
         sfx('win');
         sfx('cheer');
         A.music('tractor', 'win');
         winT = 8;
       } else {
-        toast(`Order done! +${fmt(o.reward)} coins. A treasure chest is in the barn.`, 5);
+        toast(`Order complete. +${fmt(o.reward)} coins. A treasure chest waits in the barn.`, 5);
         sfx('levelUp');
       }
     }
@@ -459,7 +559,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   let barnOpen = false, onPad = false, pauseMode = false;
   let sale: { count: number; value: number; doubled: boolean } | null = null;
   type Tab = 'shop' | 'garage' | 'farm' | 'cats' | 'goals' | 'map';
-  const TABS: [Tab, string][] = [['shop', 'Upgrades'], ['garage', 'Garage'], ['farm', 'Farm'], ['cats', 'Cats & animals'], ['goals', 'Orders & album'], ['map', 'Map']];
+  const TABS: [Tab, string][] = [['shop', 'Upgrades'], ['garage', 'Garage'], ['farm', 'Farm'], ['cats', 'Crew & animals'], ['goals', 'Orders & album'], ['map', 'Map']];
   let tab: Tab = 'shop';
   const barnEl = document.createElement('div');
   barnEl.className = 'tr-barn';
@@ -470,18 +570,18 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   let cards: Card[] = [];
   const BONUSES: { key: string; name: string; help: string; reward: string; epic?: boolean; on: () => boolean; grant: () => void }[] = [
     { key: 'T', name: 'Turbo', help: `Answer a question: drive faster for ${D.TURBO_SECONDS} seconds.`, reward: `Turbo speed for ${D.TURBO_SECONDS} seconds`, on: () => turboT > 0, grant: () => ((turboT = D.TURBO_SECONDS), sfx('boost')) },
-    { key: 'H', name: 'Helper cat', help: `Answer a question: a helper cat joins you for ${D.TEMP_HELPER_SECONDS} seconds.`, reward: `A helper cat for ${D.TEMP_HELPER_SECONDS} seconds`, on: () => tempHelperT > 0, grant: () => ((tempHelperT = D.TEMP_HELPER_SECONDS), syncHelpers(), sfx('meow')) },
+    { key: 'H', name: 'Extra hand', help: `Answer a question: a field hand joins you for ${D.TEMP_HELPER_SECONDS} seconds.`, reward: `An extra field hand for ${D.TEMP_HELPER_SECONDS} seconds`, on: () => tempHelperT > 0, grant: () => ((tempHelperT = D.TEMP_HELPER_SECONDS), syncHelpers(), sfx('meow')) },
     { key: 'L', name: 'Big load', help: 'Answer a question: no load limit until your next sale.', reward: 'No load limit until your next sale', on: () => unlimited, grant: () => (unlimited = true) },
-    { key: 'S', name: 'Super cutter', help: `Answer a question: the cutter is ${D.SUPER_POWER} times stronger for ${D.SUPER_SECONDS} seconds.`, reward: `A cutter ${D.SUPER_POWER} times stronger for ${D.SUPER_SECONDS} seconds`, on: () => superT > 0 || megaT > 0, grant: () => ((superT = D.SUPER_SECONDS), sfx('boost')) },
-    { key: 'M', name: 'Mega harvest', epic: true, help: `Epic question: for ${D.MEGA_SECONDS / 60} minutes the cutter is ${D.MEGA_POWER} times stronger, with turbo speed.`, reward: `Mega harvest: a cutter ${D.MEGA_POWER} times stronger and turbo speed for ${D.MEGA_SECONDS / 60} minutes`, on: () => megaT > 0, grant: () => ((megaT = D.MEGA_SECONDS), sfx('boost'), sfx('cheer')) },
+    { key: 'S', name: 'Keen blades', help: `Answer a question: the cutter is ${D.SUPER_POWER} times stronger for ${D.SUPER_SECONDS} seconds.`, reward: `A cutter ${D.SUPER_POWER} times stronger for ${D.SUPER_SECONDS} seconds`, on: () => superT > 0 || megaT > 0, grant: () => ((superT = D.SUPER_SECONDS), sfx('boost')) },
+    { key: 'M', name: 'Storm harvest', epic: true, help: `Epic question: for ${D.MEGA_SECONDS / 60} minutes the cutter is ${D.MEGA_POWER} times stronger, with turbo speed.`, reward: `Storm harvest: a cutter ${D.MEGA_POWER} times stronger and turbo speed for ${D.MEGA_SECONDS / 60} minutes`, on: () => megaT > 0, grant: () => ((megaT = D.MEGA_SECONDS), sfx('boost'), sfx('cheer')) },
   ];
 
   function buildCards(): Card[] {
     const out: Card[] = [];
     if (pauseMode) {
-      out.push({ title: 'Paused', line: 'The farm waits for you.', btn: 'Keep farming', help: 'Back to the fields.', act: closeBarn });
-      out.push({ title: 'Stuck?', line: 'Hop to open ground nearby.', btn: 'Unstuck', help: 'Lifts your vehicle out and sets it down on free ground. Key: U.', act: () => (closeBarn(), unstuck()) });
-      out.push({ title: 'Picture quality', line: `Now: ${cap1(S.quality)}${S.quality === 'auto' ? ` (${low ? 'Low' : 'High'})` : ''}`, btn: 'Change', help: 'High looks best. Low runs smoother on tablets. Auto picks for this device.', act: () => {
+      out.push({ title: 'Paused', line: 'Game paused.', btn: 'Resume', help: 'Back to the fields.', act: closeBarn });
+      out.push({ title: 'Stuck?', line: 'Jump to open ground nearby.', btn: 'Unstuck', help: 'Lifts your vehicle out and sets it down on free ground. Key: U.', act: () => (closeBarn(), unstuck()) });
+      out.push({ title: 'Graphics', line: `Now: ${cap1(S.quality)}${S.quality === 'auto' ? ` (${low ? 'Low' : 'High'})` : ''}`, btn: 'Change', help: 'High adds ink outlines on everything, glow and light shafts. Low runs smoother on tablets. Auto picks for this device.', act: () => {
         S.quality = S.quality === 'auto' ? 'high' : S.quality === 'high' ? 'low' : 'auto';
         applyQuality(true);
       } });
@@ -497,9 +597,9 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
       for (const id of Object.keys(D.VEHICLES) as D.VehicleId[]) {
         const V = D.VEHICLES[id], own = S.vehicles.includes(id), here = S.farms[V.farm].open;
         const stats = `Speed x${V.speed} &middot; Load x${V.load} &middot; Cut x${V.width} &middot; Power x${V.power}`;
-        if (own) out.push({ title: V.name, line: stats, btn: S.vehicle === id ? 'Driving' : 'Drive it', off: S.vehicle === id, help: V.blurb, sound: 'select', act: () => ((S.vehicle = id), setVehicle()) });
+        if (own) out.push({ title: V.name, line: stats, btn: S.vehicle === id ? 'Driving' : 'Drive', off: S.vehicle === id, help: V.blurb, sound: 'select', act: () => ((S.vehicle = id), setVehicle()) });
         else if (here) out.push({ title: V.name, line: stats, btn: '', cost: D.vehicleCost(id), help: V.blurb, sound: 'unlock', act: () => (S.vehicles.push(id), (S.vehicle = id), setVehicle()) });
-        else out.push({ title: '???', line: `Sold at ${D.FARMS[V.farm].name}`, btn: 'Not yet', off: true, help: 'A new vehicle waits on a later farm.' });
+        else out.push({ title: 'Unknown machine', line: `Sold at ${D.FARMS[V.farm].name}`, btn: 'Locked', off: true, help: 'Reach that farm to buy it.' });
       }
     if (tab === 'farm') {
       farm.plots.forEach((p, i) => {
@@ -510,15 +610,15 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
         out.push({ title: D.BUILDS[b].name, line: max ? 'Level 3' : lv ? `Level ${lv} <span class="tr-to">&rarr;</span> <b>${lv + 1}</b>` : 'Not built', btn: max ? 'Max' : '', cost: max ? undefined : D.buildCost(farm, b, lv), off: max, help: D.BUILDS[b].help, sound: 'grow', act: () => (F.builds[b]++, syncFarm()) });
       }
       const dn = F.decor, dmax = dn >= farm.decor.length;
-      out.push({ title: 'Decoration', line: dmax ? 'All 6 placed' : `${dn} of 6 placed`, btn: dmax ? 'Done' : '', cost: dmax ? undefined : D.decorCost(farm, dn), off: dmax, help: 'A pretty thing for the barnyard. Just for looks.', sound: 'sparkle', act: () => (F.decor++, syncFarm()) });
+      out.push({ title: 'Decoration', line: dmax ? 'All 6 placed' : `${dn} of 6 placed`, btn: dmax ? 'Done' : '', cost: dmax ? undefined : D.decorCost(farm, dn), off: dmax, help: 'A landmark for the yard. Style only.', sound: 'sparkle', act: () => (F.decor++, syncFarm()) });
     }
     if (tab === 'cats') {
       const hn = S.helpers.length, hmax = hn >= D.HELPER_MAX;
-      out.push({ title: 'Hire a helper cat', line: `${hn} of ${D.HELPER_MAX} cats`, btn: hmax ? 'Full' : '', cost: hmax ? undefined : D.helperCost(hn), off: hmax, help: 'A cat friend who works with you on every farm, for good.', sound: 'meow', act: () => (S.helpers.push('picker'), syncHelpers()) });
-      S.helpers.forEach((j, i) => out.push({ title: `Cat ${i + 1}: ${D.JOBS[j].name}`, line: D.JOBS[j].help, btn: 'Change job', help: 'Picker, Hauler or Seller. Change any time.', sound: 'meow', act: () => void (S.helpers[i] = j === 'picker' ? 'hauler' : j === 'hauler' ? 'seller' : 'picker') }));
+      out.push({ title: 'Hire a field hand', line: `${hn} of ${D.HELPER_MAX} crew`, btn: hmax ? 'Full' : '', cost: hmax ? undefined : D.helperCost(hn), off: hmax, help: 'Joins your crew on every farm. Permanent.', sound: 'meow', act: () => (S.helpers.push('picker'), syncHelpers()) });
+      S.helpers.forEach((j, i) => out.push({ title: `${D.CREW_NAMES[i]}: ${D.JOBS[j].name}`, line: D.JOBS[j].help, btn: 'Change job', help: 'Picker, Hauler or Seller. Change any time.', sound: 'meow', act: () => void (S.helpers[i] = j === 'picker' ? 'hauler' : j === 'hauler' ? 'seller' : 'picker') }));
       const room = F.builds.pen * D.BUILDS.pen.per, an = F.animals.length;
-      F.animals.forEach((fed, i) => out.push({ title: `${farm.animalName} ${i + 1}`, line: fed >= D.animalFeed(farm, i) ? 'Grown up: +3% coins here' : `Growing: ${fed} / ${D.animalFeed(farm, i)} crops`, btn: fed >= D.animalFeed(farm, i) ? 'Happy' : 'Growing', off: true, help: 'Animals grow as you sell crops on this farm.' }));
-      out.push({ title: `Raise a ${farm.animalName.toLowerCase()}`, line: room ? `${an} of ${room} in the pen` : 'Build an animal pen first (Farm tab)', btn: an >= room ? (room >= 6 ? 'Full' : 'No room') : '', cost: an >= room ? undefined : D.animalCost(farm, an), off: an >= room, help: 'A baby animal. It grows as you sell crops here, then adds coins to every sale.', sound: 'pop', act: () => (F.animals.push(0), syncFarm()) });
+      F.animals.forEach((fed, i) => out.push({ title: `${farm.animalName} ${i + 1}`, line: fed >= D.animalFeed(farm, i) ? 'Grown: +3% coins here' : `Growing: ${fed} / ${D.animalFeed(farm, i)} crops`, btn: fed >= D.animalFeed(farm, i) ? 'Grown' : 'Growing', off: true, help: 'Animals grow as you sell crops on this farm.' }));
+      out.push({ title: `Raise a ${farm.animalName.toLowerCase()}`, line: room ? `${an} of ${room} in the pen` : 'Build an animal pen first (Farm tab)', btn: an >= room ? (room >= 6 ? 'Full' : 'No room') : '', cost: an >= room ? undefined : D.animalCost(farm, an), off: an >= room, help: 'Starts young. Grows as you sell crops here, then adds coins to every sale.', sound: 'pop', act: () => (F.animals.push(0), syncFarm()) });
     }
     if (tab === 'goals') {
       out.push({ title: F.done < farm.orders ? `Order ${F.done + 1} of ${farm.orders}` : `Bonus order ${F.done + 1 - farm.orders}`, line: `${cap1(needText())}. Pays ${fmt(order().reward)}.`, btn: 'In progress', off: true, help: 'Sell these crops to fill the order. Finish all the orders to open the next farm.' });
@@ -543,7 +643,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
         const line = `${f.region} &middot; ${D.farmCrops(f).map((c) => D.CROPS[c].name).join(', ')}`;
         if (i === S.farm) out.push({ title: f.name, line, btn: 'You are here', off: true, help: `${Math.min(fs.done, f.orders)} of ${f.orders} orders done.` });
         else if (fs.open) out.push({ title: f.name, line, btn: 'Travel', help: 'Drive to this farm. Everything you own comes along.', sound: 'whoosh', act: () => travel(i) });
-        else if (prev && prev.done >= D.FARMS[i - 1].orders) out.push({ title: f.name, line, btn: '', cost: D.farmCost(f), help: 'Move to this bigger farm. Your upgrades, vehicles and cats come along.', sound: 'unlock', act: () => ((fs.open = true), travel(i)) });
+        else if (prev && prev.done >= D.FARMS[i - 1].orders) out.push({ title: f.name, line, btn: '', cost: D.farmCost(f), help: 'Move to this bigger farm. Your upgrades, vehicles and crew come along.', sound: 'unlock', act: () => ((fs.open = true), travel(i)) });
         else out.push({ title: f.name, line: f.region, btn: 'Locked', off: true, help: `Finish all ${D.FARMS[i - 1].orders} orders at ${D.FARMS[i - 1].name} first.` });
       });
       const last = S.farms[D.FARMS.length - 1];
@@ -627,7 +727,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     sfx('whoosh');
     loadFarm(i, true);
     wasOnPad = false;
-    toast(`Welcome to ${D.FARMS[i].name}!`, 5);
+    toast(`Arrived: ${D.FARMS[i].name}.`, 5);
     save();
   }
   function buyPlot(i: number, paid = false) {
@@ -639,10 +739,11 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     F.plots[i] = true;
     syncFarm();
     const p = W.plots[i].sign.position;
-    puff(p.x, p.y + 2, p.z, 0xffd84f, 30, 0, 3);
+    puff(p.x, p.y + 2, p.z, 0xffd84f, 20, 0, 3);
+    puff(p.x, p.y + 2.5, p.z, 0xfff2c0, 14, 1, 4, 2);
     if (!paid) {
       sfx('unlock');
-      toast(`${farm.plots[i].name} is yours!`);
+      toast(`${farm.plots[i].name} claimed.`);
       save();
     }
   }
@@ -806,6 +907,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     dirty = true;
     const kind = p.def.crops[p.kind[i]];
     if (shrinking.length % (low ? 3 : 1) === 0) puff(p.pos[i * 5], p.pos[i * 5 + 1] + 0.5, p.pos[i * 5 + 2], D.CROPS[kind].color, byCat ? 4 : 3, 0, 0.8);
+    if (shrinking.length % 5 === 0) puff(p.pos[i * 5], p.pos[i * 5 + 1] + 1, p.pos[i * 5 + 2], 0xfff2c0, 1, 1, 0.6);
     if (snipCd <= 0) {
       sfx(byCat ? 'pop' : 'snip', 0.85 + (Object.keys(D.CROPS).indexOf(kind) % 5) * 0.07, byCat ? 0.3 : 0.45);
       snipCd = 0.07;
@@ -813,9 +915,10 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     if (p.aliveCount === 0) {
       const gift = p.value * mult() * (D.SWEEP_BONUS + F.builds.greenhouse * D.BUILDS.greenhouse.per);
       S.coins += gift;
-      toast(`Clean sweep of ${p.def.name}! +${fmt(gift)} coins. It grows back after your next sale.`, 4);
+      toast(`Clean sweep: ${p.def.name}. +${fmt(gift)} coins. It regrows after your next sale.`, 4);
       sfx('star');
       puff(S.x, W.groundY(S.x, S.z) + 2, S.z, 0xffd84f, 40, 0, 4);
+      puff(S.x, W.groundY(S.x, S.z) + 2.5, S.z, 0xfff2c0, 18, 1, 5, 2);
     }
     return kind;
   }
@@ -829,7 +932,8 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     S.bestSale = Math.max(S.bestSale, value);
     unlimited = false;
     sfx('coin');
-    puff(PAD.x, 1.5, PAD.z, 0xffd84f, 30, 0, 3);
+    puff(PAD.x, 1.5, PAD.z, 0xffd84f, 20, 0, 3);
+    puff(PAD.x, 2.2, PAD.z, 0xffe28a, 16, 1, 4, 1.8);
     // Emptied plots grow back after a sale.
     let regrew = false;
     for (const p of W.plots)
@@ -899,7 +1003,8 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     stuckT = stuckShow = 0;
     keys.clear();
     sfx('whoosh');
-    puff(S.x, W.groundY(S.x, S.z) + 0.4, S.z, 0xf4f0e8, 18, 1, 2.6);
+    puff(S.x, W.groundY(S.x, S.z) + 0.4, S.z, farm.look.path, 14, 0, 2.6);
+    puff(S.x, W.groundY(S.x, S.z) + 1, S.z, 0x8ff4ff, 8, 1, 3, 1.6);
     updateHud();
   }
   function stepHop(dt: number) {
@@ -917,7 +1022,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     anchorZ = S.z;
     sfx('thud', 1.1, 0.7);
     sfx('pop');
-    puff(S.x, W.groundY(S.x, S.z) + 0.2, S.z, farm.look.path, 24, 1, 3);
+    impact(S.x, W.groundY(S.x, S.z), S.z);
     dirty = true;
   }
 
@@ -940,7 +1045,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
             continue;
           }
           if (room <= 0) {
-            if (Math.abs(v) > 0.5) hint('Your trailer is full! Sell at the barn.');
+            if (Math.abs(v) > 0.5) hint('Trailer full. Sell at the barn.');
             continue;
           }
           const kind = d.crops[p.kind[i]], tough = D.CROPS[kind].tough * mult();
@@ -961,7 +1066,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
       sfx('crunch', 0.9, 0.5);
       bumpCd = 0.4;
     }
-    if (toughest && slow < top() * 0.35) hint('Tough crop! It cuts slowly. A stronger Harvester (barn) cuts it faster.');
+    if (toughest && slow < top() * 0.35) hint('Tough crop: slow cutting. Upgrade the Harvester in the barn.');
   }
 
   function stepHelpers(dt: number, t: number) {
@@ -1017,10 +1122,10 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
         h.heading = Math.atan2(dx, dz);
       }
       h.hop = Math.max(0, h.hop - dt * 3);
-      const walking = dist > 0.4 ? Math.abs(Math.sin(t * 12 + hi)) * 0.15 : 0;
+      const walking = dist > 0.4 ? Math.abs(Math.sin(t * 11 + hi)) * 0.06 : 0;
       h.cat.root.position.set(h.x, W.groundY(h.x, h.z) + walking + Math.sin(h.hop * Math.PI) * 0.6, h.z);
       h.cat.root.rotation.y = h.heading;
-      M.animateCat(h.cat, t, hi + 1);
+      M.animateCat(h.cat, t, hi + 1, dist > 0.4 ? 1 : 0);
     });
   }
 
@@ -1050,7 +1155,8 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
       camera.position.set(camFree[0], camFree[1], camFree[2]);
       camera.lookAt(camFree[3], camFree[4], camFree[5]);
     }
-    sun.position.set(S.x + 26, gy + 46, S.z + 34);
+    sun.position.set(S.x + SUN.x, gy + SUN.y, S.z + SUN.z);
+    stepSky(gy);
     sun.target.position.set(S.x, gy, S.z);
     W.sky.position.copy(camera.position);
   }
@@ -1064,7 +1170,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     const roll = Math.atan2(W.groundY(S.x + sz, S.z - sx) - W.groundY(S.x - sz, S.z + sx), 2);
     T.root.rotation.set(-pitch, S.heading, roll);
     const sp = Math.min(1, Math.abs(v) / 6);
-    T.body.position.y = Math.sin(t * 31) * 0.012 + Math.abs(Math.sin(t * 9)) * 0.05 * sp + chewing * Math.sin(t * 50) * 0.02;
+    T.body.position.y = T.lift * (1 + Math.sin(t * 2.2) * 0.25) + Math.sin(t * 31) * 0.012 + Math.abs(Math.sin(t * 9)) * 0.05 * sp + chewing * Math.sin(t * 50) * 0.02;
     T.body.rotation.z = Math.sin(t * 6.3) * 0.012 * sp;
     for (const w of T.wheels) w.rotation.x += (v * dt) / w.userData.r;
     T.reel.rotation.x += dt * (5 + Math.abs(v) * 1.5 + chewing * 10);
@@ -1077,13 +1183,13 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     T.cat.root.rotation.z = Math.sin(t * 4) * 0.04 * sp;
     M.animateCat(T.cat, t);
     T.flap.forEach((f, i) => {
-      if (f.userData.side) f.rotation.z = f.userData.side * (0.25 + Math.sin(t * (4 + sp * 6)) * 0.35);
-      else f.position.y = Math.abs(Math.sin(t * (6 + sp * 6) + i * 1.5)) * 0.25 * (0.2 + sp);
+      if (f.userData.side) f.rotation.z = f.userData.side * (0.2 + Math.sin(t * (3 + sp * 4) + i * 0.2) * 0.38);
+      else f.rotation.y = Math.sin(t * 1.3) * 0.12 + Math.sin(t * 9) * 0.02 * sp; // the sail works in the wind
     });
     if (T.exhaust && dt > 0 && (smokeCd -= dt * (1 + sp * 2 + chewing * 2)) <= 0) {
       smokeCd = 0.22;
       const e = T.exhaust.clone().applyMatrix4(T.root.matrixWorld);
-      puff(e.x, e.y, e.z, S.vehicle === 'dragon' ? 0xffb8e8 : chewing > 0.5 ? 0x8a8a96 : 0xdedee6, 1, 1, 0.1);
+      puff(e.x, e.y, e.z, S.vehicle === 'dragon' || chewing > 0.5 ? 0xffb040 : 0x8ff4ff, 1, 1, 0.15, 0.42);
     }
     for (let i = shrinking.length - 1; i >= 0; i--) {
       const s = shrinking[i];
@@ -1122,6 +1228,15 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     }
     W.update(t);
     stepParts(dt);
+    if (impactT < 1) {
+      impactT = Math.min(1, impactT + dt * 3.2);
+      const e = 1 - Math.pow(1 - impactT, 3);
+      ring.scale.setScalar(1 + e * 7);
+      (ring.material as THREE.MeshBasicMaterial).opacity = 1 - impactT;
+    }
+    ring.visible = impactT < 1;
+    const fast = (turboT > 0 || megaT > 0) && Math.abs(v) > 3 && !paused;
+    if (fast !== speed.classList.contains('on')) speed.classList.toggle('on', fast);
   }
 
   // ---------- loop ----------
@@ -1171,7 +1286,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
         low = true;
         S.quality = 'low';
         applyQuality(true);
-        toast('Picture quality set to Low so the game runs smoothly. Change it in Pause.', 5);
+        toast('Graphics set to Low to keep the game smooth. Change it in Pause.', 5);
       }
     }
     engine.setLevel(paused ? 0 : S.vehicle === 'wagon' ? 0 : 0.15 + Math.min(0.3, Math.abs(v) / 14) + chewing * 0.1);
@@ -1186,10 +1301,10 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   updateHud();
   A.music('tractor', 'play');
   if (!raw) toast('Drive with the arrow keys, or tap where to go. Any crop can be cut: tough ones just take longer.', 7);
-  else if ((raw as { v?: number }).v === 1) toast('Welcome back! Your coins and upgrades came along to the new farm.', 6);
+  else if ((raw as { v?: number }).v === 1) toast('Welcome back. Your coins and upgrades carried over.', 6);
   if (import.meta.env.DEV)
     (window as unknown as Record<string, unknown>).__tr = { S, cam: (a: number[] | null) => (camFree = a), go: (x: number, z: number, h: number) => ((S.x = x), (S.z = z), (S.heading = h), (v = 0), (hop = null), (hopY = 0), (camInit = false)),
-      W: () => W, R: TRACTOR_R, unstuck, closeBarn, veh: (id: D.VehicleId) => ((S.vehicle = id), setVehicle()), state: () => ({ v, hop: !!hop, hopY, stuckT, stuckShow, paused }), sync: () => (setVehicle(), syncFarm(), syncHelpers()), travel, drive: (sec: number, ks: string[]) => {
+      W: () => W, R: TRACTOR_R, info: () => (renderer.render(scene, camera), { calls: renderer.info.render.calls, tris: renderer.info.render.triangles }), unstuck, closeBarn, veh: (id: D.VehicleId) => ((S.vehicle = id), setVehicle()), state: () => ({ v, hop: !!hop, hopY, stuckT, stuckShow, paused }), sync: () => (setVehicle(), syncFarm(), syncHelpers()), travel, drive: (sec: number, ks: string[]) => {
       ks.forEach((k) => keys.add(k));
       for (let i = 0; i < sec * 60 && !paused; i++) tick(1 / 60, performance.now() / 1000 + i / 60);
       keys.clear();
