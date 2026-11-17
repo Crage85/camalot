@@ -807,7 +807,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     const kind = p.def.crops[p.kind[i]];
     if (shrinking.length % (low ? 3 : 1) === 0) puff(p.pos[i * 5], p.pos[i * 5 + 1] + 0.5, p.pos[i * 5 + 2], D.CROPS[kind].color, byCat ? 4 : 3, 0, 0.8);
     if (snipCd <= 0) {
-      sfx(byCat ? 'pop' : 'snip', 0.85 + (Object.keys(D.CROPS).indexOf(kind) % 5) * 0.07, byCat ? 0.4 : 0.7);
+      sfx(byCat ? 'pop' : 'snip', 0.85 + (Object.keys(D.CROPS).indexOf(kind) % 5) * 0.07, byCat ? 0.3 : 0.45);
       snipCd = 0.07;
     }
     if (p.aliveCount === 0) {
@@ -1174,7 +1174,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
         toast('Picture quality set to Low so the game runs smoothly. Change it in Pause.', 5);
       }
     }
-    engine.setLevel(paused ? 0 : S.vehicle === 'wagon' ? 0 : 0.25 + Math.min(0.5, Math.abs(v) / 14) + chewing * 0.2);
+    engine.setLevel(paused ? 0 : S.vehicle === 'wagon' ? 0 : 0.15 + Math.min(0.3, Math.abs(v) / 14) + chewing * 0.1);
     engine.setPitch(0.7 + Math.abs(v) / 12 + chewing * 0.25);
     stepVisuals(paused ? 0 : dt, t);
     stepCamera(dt);

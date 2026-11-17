@@ -210,7 +210,7 @@ export async function runTrail(camalot: Camalot): Promise<void> {
   let ski: LoopHandle | null = null, wind: LoopHandle | null = null;
   let mood: MusicMood = 'menu';
   const setMood = (m: MusicMood) => audio.music('trail', (mood = m));
-  const WIND = { clear: 0.12, snow: 0.3, storm: 0.75 };
+  const WIND = { clear: 0.12, snow: 0.3, storm: 0.55 };
 
   // ---------------- input ----------------
   const keys = new Set<string>();
@@ -590,9 +590,9 @@ export async function runTrail(camalot: Camalot): Promise<void> {
       save.stats.claims++;
       save.stats.bigLoop = Math.max(save.stats.bigLoop, pct);
       view.celebrate(h, pct >= 2);
-      sfx('sparkle', 0.9, 1 + Math.min(0.5, pct * 0.08));
-      sfx('coin', 0.6);
-      if (pct >= 3) sfx('cheer', 0.7);
+      sfx('sparkle', 0.6, 1 + Math.min(0.5, pct * 0.08));
+      sfx('coin', 0.4);
+      if (pct >= 3) sfx('cheer', 0.5);
       const marks = sim.marksOwned();
       if (marks > marksHad) sfx('star');
       marksHad = marks;
@@ -601,13 +601,13 @@ export async function runTrail(camalot: Camalot): Promise<void> {
       if (e.who.human) {
         state = 'dying';
         dyingT = 1.2;
-        sfx('thud');
-        sfx('pop', 0.7, 0.7);
+        sfx('thud', 0.7);
+        sfx('pop', 0.5, 0.7);
         say(e.how === 'cut' ? `${e.by!.name} crossed your track` : e.how === 'bump' ? `Bonk! You bumped ${e.by!.name}` : e.how === 'wiped' ? `${e.by!.name} looped your land` : 'Oops! Tumble!');
       } else if (e.by?.human) {
         save.stats.catches++;
-        sfx('pop');
-        sfx('star', 0.8);
+        sfx('pop', 0.7);
+        sfx('star', 0.6);
         say(e.who.champ ? `You caught the champion, ${e.who.name}!` : `You caught ${e.who.name}!`);
       } else if (near(e.who) > 0.2) sfx('pop', near(e.who) * 0.35, 1.3);
     }
@@ -784,7 +784,7 @@ export async function runTrail(camalot: Camalot): Promise<void> {
 
     if ((toastT -= dt) <= 0) toast.hidden = true;
     if (h && state === 'play') {
-      ski?.setLevel(h.air > 0 ? 0.05 : Math.min(1, 0.45 + Math.abs(h.turnVel) * 0.12));
+      ski?.setLevel(h.air > 0 ? 0.05 : Math.min(0.7, 0.45 + Math.abs(h.turnVel) * 0.12));
       ski?.setPitch(0.9 + Math.abs(h.turnVel) * 0.05 + (h.air > 0 ? 0.3 : 0));
     }
     if (h && !inMenu && (hudT -= dt) <= 0) {

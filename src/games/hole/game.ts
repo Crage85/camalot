@@ -156,7 +156,7 @@ export async function run(cm: Camalot) {
       // Combo bonus goes into the item's own "+N"; the banner only marks milestones, so it never reads x1060.
       const bonus = combo >= 5 ? Math.min(20, combo) : 0;
       h.score += bonus;
-      if (combo >= 5 && combo % 5 === 0) { if (COMBO_AT.includes(combo)) pop(`Combo x${combo}!`); sfx('cascade', 1 + Math.min(1, combo / 60)); }
+      if (combo >= 5 && combo % 5 === 0) { if (COMBO_AT.includes(combo)) pop(`Combo x${combo}!`); sfx('cascade', 1 + Math.min(1, combo / 60), 0.6); }
       bump('combo', combo, true);
       scorePop(o.score * (h.rushT > 0 ? 2 : 1) + bonus, o.diag, o.kind);
       if (o.diag >= TIER_AT[1] || o.diag > h.R * 0.4) sizeJump();
@@ -165,10 +165,10 @@ export async function run(cm: Camalot) {
       if (now - lastGulp < 45) return;
       lastGulp = now;
       // Gulp sizes: tiny things pop, bigger things gulp lower and louder, houses crunch, halls thud.
-      if (o.diag < 0.45) sfx('pop', 1.35 - o.diag, 0.5);
-      else if (o.diag < 1.5) sfx('gulp', 1.3 - o.diag * 0.3, 0.7);
-      else if (o.diag < 4.5) { sfx('crunch', 1.2 - o.diag * 0.1); sfx('gulp', 0.75, 0.9); }
-      else { sfx('thud', 0.8); sfx('gulp', 0.5, 1); }
+      if (o.diag < 0.45) sfx('pop', 1.35 - o.diag, 0.35);
+      else if (o.diag < 1.5) sfx('gulp', 1.3 - o.diag * 0.3, 0.5);
+      else if (o.diag < 4.5) { sfx('crunch', 1.2 - o.diag * 0.1, 0.7); sfx('gulp', 0.75, 0.6); }
+      else { sfx('thud', 0.8, 0.8); sfx('gulp', 0.5, 0.7); }
     },
     holeEaten(victim: Hole, by: Hole) {
       if (victim.player) {
