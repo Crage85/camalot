@@ -193,26 +193,28 @@ export function buildCat(c: CatColors, farmer = false, pack = false, seated = fa
     part(cyl(0.125, 0.14, 0.16, 8), INKY, [0, hy + 0.03, 0], [0, 0, 0], [1, 1, 0.75]),
     part(cyl(0.132, 0.132, 0.05, 8), LEATHER, [0, hy + 0.13, 0], [0, 0, 0], [1, 1, 0.75]),
     part(box(0.05, 0.05, 0.02), BRASS, [0, hy + 0.13, 0.1]),
-    part(cyl(0.18, 0.118, 0.42, 8), c.extra, [0, hy + 0.36, 0], [0, 0, 0], [1, 1, 0.68]),
+    part(cyl(0.2, 0.118, 0.42, 8), c.extra, [0, hy + 0.36, 0], [0, 0, 0], [1, 1, 0.66]),
     part(box(0.06, 0.38, 0.02), CREAM, [0, hy + 0.36, 0.1], [-0.08, 0, 0]),
     part(cyl(0.05, 0.055, 0.12, 6), c.fur, [0, hy + 0.59, 0]),
     part(cyl(0.08, 0.13, 0.08, 8), farmer ? 0xd8344a : CREAM, [0, hy + 0.57, 0], [0, 0, 0], [1, 1, 0.85]),
-    // head: fur, muzzle, nose, fringe
+  ];
+  // The head is built at full size, then shrunk as one piece: about a seventh of her height, narrower than the shoulders.
+  const Hd: G[] = [
     part(ball(0.17, 14, 12), c.fur, [0, hd, 0], [0, 0, 0], [1, 0.97, 0.95]),
     part(ball(0.075, 8, 6), c.belly, [0, hd - 0.065, 0.115], [0, 0, 0], [1.15, 0.7, 0.75]),
     part(ball(0.016, 6, 4), 0x7a4050, [0, hd - 0.04, 0.172]),
     part(cone(0.07, 0.2, 4), hair, [0, hd - 0.02, -0.15], [-2.5, 0, 0]),
   ];
-  for (const k of [-1, 0, 1]) P.push(part(cone(0.055, 0.17, 4), hair, [k * 0.075, hd + 0.105, 0.125], [2.45, 0, k * 0.45]));
+  for (const k of [-1, 0, 1]) Hd.push(part(cone(0.055, 0.17, 4), hair, [k * 0.075, hd + 0.105, 0.125], [2.45, 0, k * 0.45]));
   for (const s of [-1, 1]) {
-    P.push(
+    Hd.push(
       // ears
       part(cone(0.075, 0.21, 4), c.fur, [s * 0.1, hd + 0.2, -0.01], [0, 0, -s * 0.3]), part(cone(0.04, 0.13, 4), 0xb87a78, [s * 0.1, hd + 0.19, 0.016], [0, 0, -s * 0.3]),
       // almond eyes: dark rim tilted up at the outer corner, iris, highlight, lash line
-      part(ball(0.04, 8, 6), INKY, [s * 0.072, hd + 0.008, 0.14], [0, 0, s * 0.3], [1.3, 0.78, 0.4]),
-      part(ball(0.026, 8, 6), c.eye, [s * 0.07, hd + 0.006, 0.153], [0, 0, 0], [1, 1, 0.4]),
+      part(ball(0.04, 8, 6), INKY, [s * 0.072, hd + 0.008, 0.14], [0, 0, s * 0.34], [1.4, 0.6, 0.4]),
+      part(ball(0.026, 8, 6), c.eye, [s * 0.07, hd + 0.006, 0.153], [0, 0, 0], [1, 0.8, 0.4]),
       part(ball(0.011, 6, 4), 0xffffff, [s * 0.07 + 0.012, hd + 0.02, 0.164]),
-      part(box(0.1, 0.014, 0.02), INKY, [s * 0.078, hd + 0.044, 0.142], [0, 0, s * 0.36]),
+      part(box(0.1, 0.014, 0.02), INKY, [s * 0.078, hd + 0.036, 0.142], [0, 0, s * 0.36]),
     );
     if (seated)
       P.push(
@@ -223,11 +225,15 @@ export function buildCat(c: CatColors, farmer = false, pack = false, seated = fa
     else P.push(part(cyl(0.046, 0.04, 0.46, 6), c.extra, [s * 0.218, hy + 0.3, 0], [0, 0, s * 0.14]), part(ball(0.045, 6, 5), c.fur, [s * 0.255, hy + 0.06, 0]));
   }
   if (farmer)
+    Hd.push(
+      // goggles pushed up on the forehead
+      part(cyl(0.172, 0.172, 0.04, 12), LEATHER, [0, hd + 0.1, 0], [0.16, 0, 0]),
+      part(cyl(0.038, 0.038, 0.03, 8), BRASS, [-0.06, hd + 0.14, 0.132], [H - 0.35, 0, 0]), part(cyl(0.038, 0.038, 0.03, 8), BRASS, [0.06, hd + 0.14, 0.132], [H - 0.35, 0, 0]),
+      part(cyl(0.026, 0.026, 0.034, 8), 0x23465a, [-0.06, hd + 0.141, 0.136], [H - 0.35, 0, 0]), part(cyl(0.026, 0.026, 0.034, 8), 0x23465a, [0.06, hd + 0.141, 0.136], [H - 0.35, 0, 0]),
+    );
+  if (farmer)
     P.push(
-      // goggles pushed up on the forehead, and a long scarf that trails behind
-      part(cyl(0.172, 0.172, 0.04, 12), LEATHER, [0, hd + 0.08, 0], [0.16, 0, 0]),
-      part(cyl(0.038, 0.038, 0.03, 8), BRASS, [-0.06, hd + 0.118, 0.14], [H - 0.35, 0, 0]), part(cyl(0.038, 0.038, 0.03, 8), BRASS, [0.06, hd + 0.118, 0.14], [H - 0.35, 0, 0]),
-      part(cyl(0.026, 0.026, 0.034, 8), 0x23465a, [-0.06, hd + 0.119, 0.144], [H - 0.35, 0, 0]), part(cyl(0.026, 0.026, 0.034, 8), 0x23465a, [0.06, hd + 0.119, 0.144], [H - 0.35, 0, 0]),
+      // a long scarf that trails behind
       part(box(0.1, 0.5, 0.025), 0xd8344a, [0.06, hy + 0.46, -0.27], [0.75, 0, 0.12]), part(box(0.09, 0.36, 0.025), 0xb82a40, [-0.05, hy + 0.5, -0.22], [0.95, 0, -0.1]),
     );
   if (pack)
@@ -235,6 +241,7 @@ export function buildCat(c: CatColors, farmer = false, pack = false, seated = fa
       part(rbox(0.25, 0.3, 0.13, 0.04), LEATHER, [0, hy + 0.36, -0.17]), part(cyl(0.06, 0.06, 0.32, 8), 0xe8c050, [0, hy + 0.55, -0.17], [0, 0, H]),
       part(box(0.07, 0.07, 0.02), BRASS, [0, hy + 0.4, -0.24]),
     );
+  P.push(merge(Hd).translate(0, -hd, 0).scale(0.86, 0.9, 0.86).translate(0, hd - 0.03, 0));
   root.add(mesh(merge(P), MAT, true, 0.02));
   const legs: THREE.Mesh[] = [];
   if (!seated) {
@@ -656,7 +663,7 @@ export function treeGeometry(kind: TreeKind): G {
     case 'pine': case 'snowpine': {
       trunk(1.2, 0.25);
       const snow = kind === 'snowpine';
-      [[1.5, 2.0, 1.9, 0x3f8f5a], [1.15, 1.7, 2.9, 0x4fa86a], [0.75, 1.4, 3.8, 0x5fbf7a]].forEach(([r, h, y, c]) => {
+      [[1.5, 2.0, 1.9, 0x1f5f48], [1.15, 1.7, 2.9, 0x2f7d54], [0.75, 1.4, 3.8, 0x4a9c62]].forEach(([r, h, y, c]) => {
         P.push(part(cone(r, h, 8), c, [0, y, 0]));
         if (snow) P.push(part(cone(r * 0.72, h * 0.6, 8), 0xffffff, [0, y + h * 0.22, 0]));
       });
@@ -664,14 +671,19 @@ export function treeGeometry(kind: TreeKind): G {
     }
     case 'oak': case 'autumn': {
       trunk(1.6, 0.3);
-      const cs = kind === 'oak' ? [0x4fa85a, 0x5fbf6a, 0x74d07a] : [0xf28c2a, 0xe8504a, 0xffc21a];
-      P.push(part(ico(1.5, 1), cs[0], [0, 2.9, 0]), part(ico(1.1, 1), cs[1], [0.9, 2.5, 0.4]), part(ico(1.0, 1), cs[2], [-0.8, 2.7, -0.4]), part(ico(0.9, 1), cs[1], [0.1, 3.8, 0.2]));
+      // a wide layered canopy: dark underside, mid body, lit crown
+      const cs = kind === 'oak' ? [0x2a7448, 0x44a058, 0x86d066] : [0xa83a2a, 0xe66a26, 0xffb838];
+      P.push(
+        part(ico(1.55, 1), cs[0], [0, 2.75, 0], [0, 0, 0], [1.2, 0.72, 1.15]), part(ico(0.75, 1), cs[0], [-0.7, 2.3, 1.0], [0, 1, 0], [1, 0.8, 1]), part(ico(0.75, 1), cs[0], [0.8, 2.25, -0.95], [0, 2, 0], [1, 0.8, 1]),
+        part(ico(1.15, 1), cs[1], [1.0, 3.05, 0.4], [0, 0.5, 0], [1.05, 0.78, 1]), part(ico(1.05, 1), cs[1], [-0.95, 3.15, -0.4], [0, 1.2, 0], [1.05, 0.78, 1]),
+        part(ico(1.0, 1), cs[2], [0.15, 3.75, 0.15], [0, 2.1, 0], [1.15, 0.66, 1.1]),
+      );
       break;
     }
     case 'birch':
       trunk(2.6, 0.18, 0xf4ede2);
       P.push(part(box(0.2, 0.08, 0.2), 0x55555f, [0.05, 1.0, 0.1]), part(box(0.2, 0.08, 0.2), 0x55555f, [-0.05, 1.8, -0.08]));
-      P.push(part(ico(1.0, 1), 0x9fdc6a, [0, 3.2, 0], [0, 0, 0], [1, 1.3, 1]), part(ico(0.7, 1), 0xb8e87a, [0.4, 2.6, 0.3]));
+      P.push(part(ico(1.0, 1), 0x5cae4a, [0, 3.2, 0], [0, 0, 0], [0.95, 1.35, 0.95]), part(ico(0.7, 1), 0x3d8a44, [0.45, 2.55, 0.3]), part(ico(0.6, 1), 0xa6dc62, [-0.15, 3.95, -0.1], [0, 1, 0], [1, 1.1, 1]));
       break;
     case 'palm':
       for (let i = 0; i < 5; i++) P.push(part(cyl(0.2 - i * 0.02, 0.24 - i * 0.02, 0.85, 7), i % 2 ? 0xb8854f : 0xa0703f, [i * 0.1, 0.4 + i * 0.78, 0], [0, 0, -0.06]));
@@ -682,8 +694,8 @@ export function treeGeometry(kind: TreeKind): G {
       P.push(part(ball(0.2, 6, 4), 0x7a5a3a, [0.55, 3.75, 0.15]), part(ball(0.2, 6, 4), 0x7a5a3a, [0.4, 3.75, -0.15]));
       break;
     case 'shroom':
-      P.push(part(cyl(0.35, 0.5, 2.4, 9), 0xfff1dc, [0, 1.2, 0]), part(new THREE.SphereGeometry(1.7, 14, 7, 0, Math.PI * 2, 0, H), 0xff6fa8, [0, 2.2, 0], [0, 0, 0], [1, 0.7, 1]), part(cyl(1.6, 1.6, 0.1, 14), 0xffe0ec, [0, 2.2, 0]));
-      for (let i = 0; i < 7; i++) P.push(part(ball(0.22, 6, 4), 0xffffff, [Math.cos(i * 0.9) * 1.1, 2.9 - (i % 2) * 0.25, Math.sin(i * 0.9) * 1.1], [0, 0, 0], [1, 0.5, 1]));
+      P.push(part(cyl(0.3, 0.5, 2.4, 9), 0xcdbfe0, [0, 1.2, 0]), part(new THREE.SphereGeometry(1.7, 14, 7, 0, Math.PI * 2, 0, H), 0x8a2470, [0, 2.2, 0], [0, 0, 0], [1, 0.55, 1]), part(cyl(1.6, 1.45, 0.12, 14), 0x7ff0e0, [0, 2.17, 0]));
+      P.push(part(new THREE.SphereGeometry(1.0, 12, 5, 0, Math.PI * 2, 0, H), 0xc03a8a, [0, 2.62, 0], [0, 0, 0], [1, 0.55, 1]), part(cyl(0.42, 0.34, 0.1, 9), 0x5a3a8a, [0, 1.75, 0]));
       break;
     case 'crystaltree':
       trunk(1.4, 0.22, 0x6a4a9a);
