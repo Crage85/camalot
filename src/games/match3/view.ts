@@ -186,7 +186,7 @@ export class BoardView {
       this.place(this.tiles, n, this.wx(x), this.wy(y), 0, 1.04);
       this.tiles.setColorAt(n, this.col.set(look.tiles[(x + y) % 2]));
       this.place(this.bases, n, this.wx(x), this.wy(y), 0, 1.18);
-      this.bases.setColorAt(n, this.col.set(look.frame));
+      this.bases.setColorAt(n, this.col.set(look.frame).multiplyScalar(0.5)); // deep metal, not candy
       n++;
     });
     this.tiles.count = this.bases.count = n;
@@ -217,7 +217,7 @@ export class BoardView {
       if (c.trail && !c.hole) this.place(this.trail, n.trail++, x, y, 0.0, 1.1);
       if (c.dust) {
         this.place(this.dust, n.dust, x, y, 0.03, 1.15);
-        this.dust.setColorAt(n.dust++, this.col.set(c.dust > 1 ? 0xc85cff : 0xffc4ff));
+        this.dust.setColorAt(n.dust++, this.col.set(c.dust > 1 ? 0x6a24b8 : 0xa860e0));
       }
       if (c.crate) {
         this.place(this.crates, n.crate, x, y, 0, 1.12);

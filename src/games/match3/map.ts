@@ -20,7 +20,7 @@ function landmark(kind: string, c: number, p: V3, s: number): BufferGeometry[] {
   const dark = new Color(c).multiplyScalar(0.75).getHex();
   switch (kind) {
     case 'pine': return [part(cyl(0.08, 0.1, 0.4, 8), 0x7a5a3c, at(0, 0.2, 0), [0, 0, 0], s), part(new ConeGeometry(0.5, 0.8, 10), dark, at(0, 0.7, 0), [0, 0, 0], s), part(new ConeGeometry(0.38, 0.7, 10), c, at(0, 1.15, 0), [0, 0, 0], s), part(new ConeGeometry(0.2, 0.3, 10), 0xffffff, at(0, 1.4, 0), [0, 0, 0], s)];
-    case 'tree': return [part(cyl(0.09, 0.12, 0.6, 8), 0x8a5a3a, at(0, 0.3, 0), [0, 0, 0], s), part(sph(0.5), (y) => (y > 0.1 ? 0x7fdc6a : c), at(0, 0.95, 0), [0, 0, 0], s), part(sph(0.3), 0x8fe87a, at(0.3, 0.75, 0.15), [0, 0, 0], s)];
+    case 'tree': return [part(cyl(0.07, 0.1, 0.4, 6), 0x4a3424, at(0, 0.2, 0), [0, 0, 0], s), part(new ConeGeometry(0.34, 1.5, 6), (y) => (y > 0.2 ? c : dark), at(0, 1.05, 0), [0, 0, 0], s), part(new ConeGeometry(0.24, 0.9, 6), dark, at(0.3, 0.7, 0.12), [0, 0, 0], s)];
     case 'palm': return [part(cyl(0.07, 0.1, 1.3, 8), 0xb8894a, at(0.08, 0.65, 0), [0, 0, -0.12], s), ...[0, 1, 2, 3, 4].map((k) => part(sph(0.4), c, at(0.16 + Math.cos(k * 1.257) * 0.35, 1.3, Math.sin(k * 1.257) * 0.35), [0, -k * 1.257, -0.3], [s, 0.12 * s, 0.4 * s])), part(sph(0.1), 0x7a5a3c, at(0.16, 1.22, 0.05), [0, 0, 0], s)];
     case 'tower': return [part(cyl(0.3, 0.36, 1.3, 12), 0xf6f0ff, at(0, 0.65, 0), [0, 0, 0], s), part(new ConeGeometry(0.45, 0.7, 12), c, at(0, 1.65, 0), [0, 0, 0], s), part(sph(0.07), 0xffe066, at(0, 2.05, 0), [0, 0, 0], s)];
     case 'cactus': return [part(cyl(0.16, 0.18, 1.0, 10), c, at(0, 0.5, 0), [0, 0, 0], s), part(sph(0.16), c, at(0, 1.0, 0), [0, 0, 0], s), part(cyl(0.09, 0.09, 0.4, 8), dark, at(-0.3, 0.75, 0), [0, 0, 0], s), part(cyl(0.09, 0.09, 0.3, 8), dark, at(-0.2, 0.55, 0), [0, 0, Math.PI / 2], s), part(sph(0.07), 0xff8fc0, at(0, 1.18, 0), [0, 0, 0], s)];
@@ -59,8 +59,8 @@ export class MapView {
   private state: number[] = [];
 
   constructor() {
-    this.scene.add(new HemisphereLight(0xffffff, 0x8a7ab0, 1.0));
-    const sun = new DirectionalLight(0xfff4e0, 1.5);
+    this.scene.add(new HemisphereLight(0xc8d0ff, 0x2a2060, 0.75));
+    const sun = new DirectionalLight(0xffe2b0, 1.15);
     sun.position.set(-5, 10, 6);
     this.halo.rotation.x = -Math.PI / 2;
     (this.halo.material as MeshBasicMaterial).color.setRGB(2.4, 1.6, 0.8);

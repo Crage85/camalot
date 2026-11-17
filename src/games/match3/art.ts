@@ -135,7 +135,7 @@ export const ringTexture = () => canvasTex(128, (g, s) => {
 
 // ---------- pieces: six spell gems, each readable by outline as well as colour ----------
 
-export const PIECE_COLORS = [0xe0264e, 0xf07a14, 0xf2c21a, 0x1fae5a, 0x1f7fe8, 0x8a4be8];
+export const PIECE_COLORS = [0xe0264e, 0xf06a14, 0xffd21a, 0x1fae5a, 0x1f7fe8, 0x8a4be8];
 export const PIECE_NAMES = ['Flame Crystal', 'Sun Sigil', 'Star Prism', 'Leaf Rune', 'Tide Orb', 'Moon Sigil'];
 const LIGHT = [0xffa0a8, 0xffc878, 0xfff3a8, 0x90f5a8, 0x90d4ff, 0xd8b8ff];
 const DARK = [0x8a0c34, 0x9a3c00, 0xa86a00, 0x0a6034, 0x0c3c9a, 0x45189a];
@@ -195,7 +195,7 @@ export function pieceGeometry(color: number): BufferGeometry {
     case 1: { // sun sigil: a six-rayed disc
       const parts = [
         part(facet(new CylinderGeometry(0.33, 0.33, 0.14, 6)), shade(C, D, 0.33), [0, 0, 0], [Math.PI / 2, 0, 0]),
-        part(facet(new CylinderGeometry(0.17, 0.31, 0.1, 6)), core(L, C, 0.3), [0, 0, 0.12], [Math.PI / 2, 0, 0]),
+        part(facet(new CylinderGeometry(0.17, 0.31, 0.1, 6)), core(0xff9a3a, C, 0.3), [0, 0, 0.12], [Math.PI / 2, 0, 0]),
         part(facet(new OctahedronGeometry(0.13, 0)), 0xfff3c8, [0, 0, 0.17], [0, 0, 0], [1, 1, 0.5]),
       ];
       for (let k = 0; k < 6; k++) {
@@ -206,7 +206,7 @@ export function pieceGeometry(color: number): BufferGeometry {
     }
     case 2: // star prism: a four-point star
       return merge([
-        part(cut(starShape(0.47, 0.16, 4), 0.08, 0.13, 0.03, 1), core(L, D, 0.5), [0, 0, -0.04]),
+        part(cut(starShape(0.47, 0.16, 4), 0.08, 0.13, 0.03, 1), core(0xffe23a, 0xe09a00, 0.5), [0, 0, -0.04]),
         part(facet(new OctahedronGeometry(0.15, 0)), 0xfffbe0, [0, 0, 0.14], [0, 0, 0], [1, 1, 0.5]),
         ...glint(-0.09, 0.2, 0.15, 0.6),
       ]);

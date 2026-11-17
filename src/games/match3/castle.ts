@@ -88,7 +88,7 @@ const _a = new Color(), _b = new Color();
 const mix = (a: number, b: number, t: number) => _a.set(a).lerp(_b.set(b), Math.max(0, Math.min(1, t))).getHex();
 /** Vertical gradient over the part's own height. */
 const grad = (lo: number, hi: number, y0: number, y1: number) => (y: number) => mix(lo, hi, (y - y0) / (y1 - y0));
-const RAINBOW = [0xff5c8a, 0xff9a2e, 0xffd23f, 0x4fd16b, 0x3fa2ff, 0xa56bff];
+const RAINBOW = [0xe0264e, 0xf06a14, 0xffd21a, 0x1fae5a, 0x1f7fe8, 0x8a4be8]; // the six gem colours
 const GOLD = 0xffd23f, WHITE = 0xffffff, WOOD = 0xb07a45, DARKWOOD = 0x7a4f2c, STONE = 0xcfc6e6, GLOW = 0xfff0a8;
 type Col = number | ((y: number, x: number) => number);
 type Add = (g: BufferGeometry, color: Col, p?: V3, r?: V3, s?: number | V3) => void;
@@ -251,7 +251,10 @@ function itemGeometry(id: string, d: number): BufferGeometry {
       break;
     }
     case 'arch':
-      if (d === 0) RAINBOW.forEach((c, k) => A(torus(1.7 - k * 0.14, 0.08, Math.PI, 28), c));
+      if (d === 0) { // a dark rune arch set with one crystal of each gem colour
+        A(torus(1.5, 0.1, Math.PI, 6), grad(SHADE, MOON, 0, 1.6));
+        RAINBOW.forEach((c, k) => { const a = ((k + 0.5) / 6) * Math.PI; A(gem(0.2), c, [Math.cos(a) * 1.5, Math.sin(a) * 1.5, 0], [0, 0, a - Math.PI / 2], [1, 1.7, 1]); });
+      }
       if (d === 1) { A(torus(1.4, 0.25, Math.PI, 16), grad(0x8a80a8, 0xd0c8e0, 0, 1.6)); A(box(0.6, 0.3, 0.6), 0x9a90b0, [-1.4, 0.15, 0]); A(box(0.6, 0.3, 0.6), 0x9a90b0, [1.4, 0.15, 0]); }
       if (d === 2) { A(torus(1.4, 0.16, Math.PI, 16), 0xbff0ff); for (const x of [-1, -0.4, 0.4, 1]) A(gem(0.24), 0xe0c8ff, [x, Math.sqrt(1.96 - x * x) + 0.1, 0]); }
       if (d === 0) for (const x of [-1.35, 1.35]) A(gem(0.3), MOON, [x, 0.2, 0], [0, 0.6, 0], [1, 1.5, 1]);
