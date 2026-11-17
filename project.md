@@ -33,7 +33,7 @@ Next number: D18
 
 **D1.** Name is Camalot: a family pun on Camelot. The hub game is a castle; each game is a room.
 **D2.** Retries, power-ups, revives, boosts, and currency come from answering school questions, never from money, ads, or streaks.
-**D3.** Model routing (Craig ruling 2026-11-16, overrides the global roster for this project): orchestrator Opus 5.5 on high; sub-agents Opus 5.5 on medium; Fable 5.2 on medium for graphics, game design, and balance work (Craig 2026-11-16: "use some Fable 5.2 agents to make better looking games").
+**D3.** Model routing follows the global roster in `~/.claude/CLAUDE.md` (Craig ruling 2026-11-17, replaces the 2026-11-16 project override). For Camalot that means: original 3D models, 3D art direction, and original music go to `fable-worker` (Fable 5.2, high); tweaks to those go to `opus-worker`; mechanical edits go to `haiku-worker`; game design, balance, UI, and everyday building follow the roster table.
 **D4.** Genre research is a quick pass per genre, not the full /research process. Wrong features are cheap to fix later.
 **D5.** All six games are built at the same time, each standalone, on one shared platform (player select, saves, question card). Games code against `src/core/contract.ts`.
 **D6.** Devices: a laptop with trackpad and keyboard (no mouse) and tablets. Every game plays fully with keyboard alone, with the trackpad, and with touch.
