@@ -160,6 +160,9 @@ const EMBLEM: Record<string, (part: Part, g: THREE.Group) => void> = {
   },
   // A claimed peak: snow cap, gold banner, pines.
   trail(part, g) {
+    // Peak plus banner is taller than the other emblems; shrink and center it so the card does not crop it.
+    g.scale.setScalar(0.82);
+    g.position.y = -0.12;
     part(g, cone(0.75, 1.1, 5), C.navy, [-0.7, -0.55, -0.4]);
     part(g, cone(1.05, 1.9, 5), C.ice, [0.1, -0.15, 0]);
     part(g, cone(0.44, 0.8, 5), C.ivory, [0.1, 0.41, 0]);
