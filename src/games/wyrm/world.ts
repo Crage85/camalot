@@ -89,6 +89,8 @@ export class World {
   private time = 0;
   private haloK = 1;
   private size = new THREE.Vector2(1, 1);
+  // what the camera can see this frame, around its target: half-width, distance north (-z), distance south (+z)
+  private view = { x: 0, z: 0, w: 1e9, n: 1e9, s: 1e9 };
 
   constructor(canvas: HTMLCanvasElement, low: boolean) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -250,7 +252,13 @@ export class World {
     p.x[i] = x; p.y[i] = y; p.z[i] = z; p.vx[i] = vx; p.vy[i] = vy; p.vz[i] = vz;
     p.life[i] = life; p.size[i] = size; p.col[i] = col; p.g[i] = grav;
   }
+  /** True when a point (with padding) is inside what the camera shows. */
+  private seen(x: number, z: number, pad: number) {
+    const v = this.view, dz = z - v.z;
+    return Math.abs(x - v.x) < v.w + pad && dz > -v.n - pad && dz < v.s + pad;
+  }
   burst(x: number, z: number, colors: number[], n: number, size: number) {
+    if (!this.seen(x, z, 10)) return;
     if (this.low) n = Math.ceil(n / 2);
     for (let k = 0; k < n; k++) {
       const a = Math.random() * 6.28, sp = 2 + Math.random() * 7;
@@ -259,6 +267,7 @@ export class World {
   }
   /** A fountain of stars and confetti for big moments. */
   confetti(x: number, z: number, n = 90) {
+    if (!this.seen(x, z, 10)) return;
     const cols = [0xffe066, 0xff6b9a, 0x5cc8ff, 0x7ee081, 0xb18cff, 0xffffff];
     for (let k = 0; k < n; k++) {
       const a = Math.random() * 6.28, sp = 1 + Math.random() * 6;
@@ -267,7 +276,7 @@ export class World {
   }
   /** An expanding ring on the ground. */
   ring(x: number, z: number, col: number, size: number, dur = 0.6) {
-    if (this.ringList.length < MAX_RINGS) this.ringList.push({ x, z, t: 0, dur, size, col });
+    if (this.ringList.length < MAX_RINGS && this.seen(x, z, size)) this.ringList.push({ x, z, t: 0, dur, size, col });
   }
   shake(amount: number) { this.trauma = Math.min(1, this.trauma + amount); }
   private fxOf(w: Wyrm): WyrmFx {
@@ -296,10 +305,49 @@ export class World {
     const t = this.time;
     const c = this.tmpC, M = this.tmpM, M2 = this.tmpM2, Q = this.tmpQ, E = this.tmpE, V = this.tmpV, S = this.tmpS;
 
+    // ---- what the camera sees (from last frame's camera, with margin): only that is drawn ----
+    const vh = menu ? 110 : this.camH, vw = this.view;
+    vw.x = this.camTarget.x; vw.z = this.camTarget.z;
+    vw.w = menu ? vh : vh * 1.9 + 12; vw.n = menu ? vh : vh * 1.25 + 12; vw.s = menu ? vh : vh * 0.8 + 12;
+
+    // ---- gems ----
+    const gm = this.gems.instanceMatrix.array as Float32Array;
+    const gc = this.gems.instanceColor!.array as Float32Array;
+    const hm = this.halos.instanceMatrix.array as Float32Array;
+    const hc = this.halos.instanceColor!.array as Float32Array;
+    const n = sim.gemCount;
+    const allHalos = !this.low, hk = this.haloK;
+    let gi = 0;
+    for (let i = 0; i < n; i++) {
+      const x = sim.gx[i], z = sim.gz[i];
+      if (!this.seen(x, z, 2)) continue;
+      const v = sim.gv[i];
+      const ph = sim.gph[i];
+      const tw = 1 + Math.max(0, Math.sin(t * 2.2 + ph * 7) - 0.9) * 2.5; // now and then a gem twinkles
+      const sz = (0.36 + 0.14 * Math.sqrt(v)) * tw;
+      const a = t * 1.5 + ph, ca = Math.cos(a) * sz, sa = Math.sin(a) * sz;
+      const y = 0.5 + sz + Math.sin(t * 2.5 + ph) * 0.14;
+      const o = gi * 16;
+      gm[o] = ca; gm[o + 1] = 0; gm[o + 2] = -sa; gm[o + 3] = 0;
+      gm[o + 4] = 0; gm[o + 5] = sz * 1.1; gm[o + 6] = 0; gm[o + 7] = 0;
+      gm[o + 8] = sa; gm[o + 9] = 0; gm[o + 10] = ca; gm[o + 11] = 0;
+      gm[o + 12] = x; gm[o + 13] = y; gm[o + 14] = z; gm[o + 15] = 1;
+      const hs = allHalos || v >= 3 ? sz * (hk < 1 ? 1.7 : 2.6) : 0;
+      hm[o] = hs; hm[o + 1] = 0; hm[o + 2] = 0; hm[o + 3] = 0;
+      hm[o + 4] = 0; hm[o + 5] = 1; hm[o + 6] = 0; hm[o + 7] = 0;
+      hm[o + 8] = 0; hm[o + 9] = 0; hm[o + 10] = hs; hm[o + 11] = 0;
+      hm[o + 12] = x; hm[o + 13] = 0.06; hm[o + 14] = z; hm[o + 15] = 1;
+      const col = sim.gc[i] === 255 ? c.setHex(sim.gcol[i]) : this.gemPalette[sim.gc[i]];
+      const tb = tw * tw;
+      const ci = gi * 3;
+      gc[ci] = col.r * tb; gc[ci + 1] = col.g * tb; gc[ci + 2] = col.b * tb;
+      hc[ci] = col.r * hk; hc[ci + 1] = col.g * hk; hc[ci + 2] = col.b * hk;
+      gi++;
+    }
     // ---- wyrms ----
     const bodyM = this.body.instanceMatrix.array as Float32Array;
     const bodyC = this.body.instanceColor!.array as Float32Array;
-    let bi = 0, wi = 0, finN = 0, wingN = 0, orbN = 0, bubbleN = 0, haloN = sim.gemCount;
+    let bi = 0, finN = 0, wingN = 0, orbN = 0, bubbleN = 0, haloN = gi;
     let leader: Wyrm | null = null;
     for (const w of sim.wyrms) if (w.alive && !w.isBoss && (!leader || w.mass > leader.mass)) leader = w;
     for (const h of this.heads) h.mesh.count = 0;
@@ -315,6 +363,7 @@ export class World {
       f.pop = Math.max(0, f.pop - dt * 2.5);
       const puff = 1 + Math.sin(f.pop * Math.PI) * 0.25;
       const s = w.segs;
+      if (!this.seen(w.cx, w.cz, w.br + r * 3)) { if (w === leader) leader = null; continue; }
       // tail first so the head end draws on top where they overlap
       for (let i = w.n - 1; i >= 1; i--) {
         const taper = i > w.n * 0.7 ? 1 - ((i - w.n * 0.7) / (w.n * 0.3)) * 0.6 : 1;
@@ -412,44 +461,14 @@ export class World {
         this.crown.scale.setScalar(HR * 0.95);
         this.crown.rotation.y = t;
       }
-      wi++;
     }
-    this.crown.visible = !!leader && wi > 1;
+    this.crown.visible = !!leader && sim.wyrms.length > 1;
     this.body.count = bi;
     this.fins.count = finN;
 
-    // ---- gems ----
-    const gm = this.gems.instanceMatrix.array as Float32Array;
-    const gc = this.gems.instanceColor!.array as Float32Array;
-    const hm = this.halos.instanceMatrix.array as Float32Array;
-    const hc = this.halos.instanceColor!.array as Float32Array;
-    const n = sim.gemCount;
-    const allHalos = !this.low, hk = this.haloK;
-    for (let i = 0; i < n; i++) {
-      const v = sim.gv[i];
-      const ph = sim.gph[i];
-      const tw = 1 + Math.max(0, Math.sin(t * 2.2 + ph * 7) - 0.9) * 2.5; // now and then a gem twinkles
-      const sz = (0.36 + 0.14 * Math.sqrt(v)) * tw;
-      const a = t * 1.5 + ph, ca = Math.cos(a) * sz, sa = Math.sin(a) * sz;
-      const x = sim.gx[i], z = sim.gz[i], y = 0.5 + sz + Math.sin(t * 2.5 + ph) * 0.14;
-      const o = i * 16;
-      gm[o] = ca; gm[o + 1] = 0; gm[o + 2] = -sa; gm[o + 3] = 0;
-      gm[o + 4] = 0; gm[o + 5] = sz * 1.1; gm[o + 6] = 0; gm[o + 7] = 0;
-      gm[o + 8] = sa; gm[o + 9] = 0; gm[o + 10] = ca; gm[o + 11] = 0;
-      gm[o + 12] = x; gm[o + 13] = y; gm[o + 14] = z; gm[o + 15] = 1;
-      const hs = allHalos || v >= 3 ? sz * (hk < 1 ? 1.7 : 2.6) : 0;
-      hm[o] = hs; hm[o + 1] = 0; hm[o + 2] = 0; hm[o + 3] = 0;
-      hm[o + 4] = 0; hm[o + 5] = 1; hm[o + 6] = 0; hm[o + 7] = 0;
-      hm[o + 8] = 0; hm[o + 9] = 0; hm[o + 10] = hs; hm[o + 11] = 0;
-      hm[o + 12] = x; hm[o + 13] = 0.06; hm[o + 14] = z; hm[o + 15] = 1;
-      const col = sim.gc[i] === 255 ? c.setHex(sim.gcol[i]) : this.gemPalette[sim.gc[i]];
-      const tb = tw * tw;
-      gc[i * 3] = col.r * tb; gc[i * 3 + 1] = col.g * tb; gc[i * 3 + 2] = col.b * tb;
-      hc[i * 3] = col.r * hk; hc[i * 3 + 1] = col.g * hk; hc[i * 3 + 2] = col.b * hk;
-    }
     // sprite gems: a golden gem with little wings that runs away
     for (const sp of sim.sprites) {
-      if (!sp.alive) continue;
+      if (!sp.alive || !this.seen(sp.x, sp.z, 3)) continue;
       const tired = sp.tired > 0;
       const y = (tired ? 0.9 : 1.5) + Math.sin(t * 6 + sp.x) * 0.2;
       this.orbs.setMatrixAt(orbN, M.makeRotationY(t * 4).scale(S.set(0.5, 0.7, 0.5)).setPosition(sp.x, y, sp.z));
@@ -465,7 +484,7 @@ export class World {
     }
     let pn = 0;
     for (const p of sim.potions) {
-      if (!p.alive) continue;
+      if (!p.alive || !this.seen(p.x, p.z, 4)) continue;
       const y = 1.3 + Math.sin(t * 2 + p.x) * 0.25;
       const m = M.compose(V.set(p.x, y, p.z), Q.setFromAxisAngle(V.set(0, 1, 0), t), S.set(1.15, 1.15, 1.15));
       this.bottles.setMatrixAt(pn, m);
@@ -479,7 +498,7 @@ export class World {
       this.halos.setColorAt(haloN++, c);
     }
     this.bottles.count = this.corks.count = this.beams.count = pn;
-    this.gems.count = n;
+    this.gems.count = gi;
     this.halos.count = haloN;
     this.wings.count = wingN;
     this.orbs.count = orbN;
@@ -514,8 +533,11 @@ export class World {
     }
     this.rings.count = rn;
     for (const m of [this.body, this.fins, this.wings, this.orbs, this.gems, this.halos, this.bottles, this.corks, this.beams, this.bubbles, this.sparks, this.rings, ...this.heads.map((h) => h.mesh)]) {
+      // upload only the instances in use: the gem buffers hold 20000
+      m.instanceMatrix.clearUpdateRanges();
+      m.instanceMatrix.addUpdateRange(0, m.count * 16);
       m.instanceMatrix.needsUpdate = true;
-      if (m.instanceColor) m.instanceColor.needsUpdate = true;
+      if (m.instanceColor) { m.instanceColor.clearUpdateRanges(); m.instanceColor.addUpdateRange(0, m.count * 3); m.instanceColor.needsUpdate = true; }
     }
 
     // ---- camera: north up, leads the wyrm a little, zooms out as it grows, shakes on big hits ----
