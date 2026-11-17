@@ -9,18 +9,15 @@
 
 ## Where we are
 
-All six games are at v2 (new graphics, late game, balance, music and sound) on `main`. Question bank reworked (per-device memory, multiple-choice normal math, epic pencil math, ~155 grammar/history and 259 spelling per grade; all keys re-checked). `npm run build` passes; every page loads with no console errors (`node shots/smoke.mjs` against `npx vite preview`). Play: `Play Camalot.bat`. Listen: `npm run dev`, then `http://localhost:5173/audio-lab.html`. Nothing published. Tested only in headless Chromium.
+All six games are at v2 (new graphics, late game, balance, music and sound) on `main`. Question bank reworked (per-device memory, multiple-choice normal math, epic pencil math, ~155 grammar/history and 259 spelling per grade; all keys re-checked). `npm run build` passes; every page loads with no console errors (`node shots/smoke.mjs` against `npx vite preview`). Play: `Play Camalot.bat`. Listen: `npm run dev`, then `http://localhost:5173/audio-lab.html`. Published 2026-11-16: https://crage85.github.io/camalot/ (repo `Crage85/camalot`, public; history squashed to one clean commit, old local history kept on branch `pre-publish-backup`, never push it). Live smoke test passed. Tested only in headless Chromium. `main` now has a remote: future changes go on a branch and a PR.
 
 ## Next
 
-1. Craig answers Q13 (cross-device saves) and Q14 (public link), then publish to GitHub Pages.
-2. Real-device check on the laptop and tablets: frame rate on Low, touch, trackpad, spelling voice, music.
-3. Polish: Munch Hollow camera too close when the hole is huge and the combo counter runs to 1000+; Whisker Castle can show a negative star count with a forced save; Kitty Cup Run arch can cross the camera near the goal; volume card does not pause games.
+1. Real-device check on the laptop and tablets: frame rate on Low, touch, trackpad, spelling voice, music.
+2. Polish: Munch Hollow camera too close when the hole is huge and the combo counter runs to 1000+; Whisker Castle can show a negative star count with a forced save; Kitty Cup Run arch can cross the camera near the goal; volume card does not pause games.
 
 ## Waiting on Craig
 
-- **Q13** saves across tablet and laptop: A cloud save (Firebase, one family sign-in per device), B per device, C transfer code. CC pick A.
-- **Q14** public link: A public with nothing personal in site or repo, B private repo with GitHub Pro. CC pick A. Remove the girls' names from project files before publishing.
 - Listen to the music in the audio lab: keep or change each theme.
 - Play-test feel and difficulty. All balance numbers come from computer players, not kids.
 - Rules CC picked (keep or change):
