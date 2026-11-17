@@ -6,26 +6,43 @@
     <title>Camalot</title>
     <style>
       html, body { margin: 0; min-height: 100%; }
+      /* Dusk sky: stars over a night-to-violet fall, a rose glow where the castle floats, then the stage colour. */
       body {
-        background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--cm-mana-deep) 35%, var(--cm-stage)), var(--cm-stage) 70%) fixed, var(--cm-stage);
+        background:
+          radial-gradient(1.5px 1.5px at 20px 30px, #fff 50%, transparent 51%) 0 0 / 170px 130px repeat-x,
+          radial-gradient(1px 1px at 90px 80px, #cfe0ff 50%, transparent 51%) 0 0 / 110px 150px repeat-x,
+          radial-gradient(ellipse 760px 280px at 50% 330px, #ff8f6bb3, #d6508a66 45%, transparent 75%) no-repeat,
+          linear-gradient(#070b2a, #1b1c63 150px, #5a2f86 300px, #2a1b5e 440px, var(--cm-stage) 600px) no-repeat,
+          var(--cm-stage);
         color: var(--cm-ink);
         font: 500 18px/1.4 var(--cm-ui);
       }
-      .hub { box-sizing: border-box; max-width: 1100px; margin: 0 auto; padding: 16px; }
+      .hub { box-sizing: border-box; max-width: 1180px; margin: 0 auto; padding: 16px; }
       .hub * { box-sizing: border-box; }
-      .hub-top { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 20px; }
-      .hub-top .cm-title { font-size: 32px; margin-right: auto; }
+      .hub-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding-block: 14px; }
+      .hub-top .cm-title { font-size: 40px; font-weight: 900; letter-spacing: 0.14em; margin-right: auto; }
       .hub-player { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
       .hub-player span { white-space: nowrap; }
-      .hub-player .cm-dot { width: 24px; height: 24px; }
+      .hub-player .cm-dot { width: 26px; height: 26px; }
       .hub-name { font-weight: 700; }
       .hub-grade { color: var(--cm-ink-dim); }
-      .hub-games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-      .hub-game { width: 100%; min-height: 150px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 6px; padding: 20px 22px 24px; text-align: left; }
-      .hub-game .cm-dot { width: 32px; height: 32px; margin-bottom: auto; }
-      .hub-game-name { font: 700 28px/1.1 var(--cm-display); letter-spacing: 0.03em; }
-      .hub-game-tag { font-size: 18px; font-weight: 500; }
-      @media (max-width: 520px) { .hub-games { grid-template-columns: 1fr; } .hub-game { min-height: 110px; } }
+      /* the sun sits behind the castle: a hard-edged disc with one rim, anime style */
+      .hub-sky { background: radial-gradient(circle closest-side at 50% 50%, #fff3c4 0 66%, #ffc978 67% 74%, #ff9a6a00 75%); }
+      #sky { display: block; width: 100%; height: clamp(200px, 36vh, 420px); }
+      .hub-games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .hub-game { width: 100%; min-height: 136px; justify-content: flex-start; gap: 14px; padding: 12px 20px 12px 14px; text-align: left; }
+      .hub-game img { width: 112px; height: 112px; flex: none; }
+      .hub-game-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+      .hub-game-name { font: 700 26px/1.1 var(--cm-display); letter-spacing: 0.05em; color: var(--cm-gold-hi); }
+      .hub-game:focus-visible .hub-game-name { color: inherit; }
+      .hub-game-tag { font-size: 17px; font-weight: 500; line-height: 1.3; }
+      @media (max-width: 980px) { .hub-games { grid-template-columns: 1fr 1fr; } }
+      @media (max-width: 620px) {
+        .hub-games { grid-template-columns: 1fr; }
+        .hub-top .cm-title { font-size: 32px; }
+        .hub-game { min-height: 104px; }
+        .hub-game img { width: 84px; height: 84px; }
+      }
     </style>
   </head>
   <body>
@@ -34,14 +51,15 @@
         <h1 class="cm-title">Camalot</h1>
         <div class="hub-player" id="player"></div>
       </header>
+      <div class="hub-sky"><canvas id="sky" aria-hidden="true"></canvas></div>
       <main>
         <ul class="hub-games">
-          <li><a class="cm-btn hub-game" href="games/wyrm/index.html"><span class="cm-dot" style="--sw: #5fd35f"></span><span class="hub-game-name">Wyrm</span><span class="hub-game-tag">Eat the glowing gems</span></a></li>
-          <li><a class="cm-btn hub-game" href="games/hole/index.html"><span class="cm-dot" style="--sw: #b36bff"></span><span class="hub-game-name">Hole</span><span class="hub-game-tag">Swallow the kingdom</span></a></li>
-          <li><a class="cm-btn hub-game" href="games/tractor/index.html"><span class="cm-dot" style="--sw: #ffa530"></span><span class="hub-game-name">Tractor</span><span class="hub-game-tag">Farm with a cat</span></a></li>
-          <li><a class="cm-btn hub-game" href="games/match3/index.html"><span class="cm-dot" style="--sw: #ff4a4a"></span><span class="hub-game-name">Match</span><span class="hub-game-tag">Match three, build a castle</span></a></li>
-          <li><a class="cm-btn hub-game" href="games/runner/index.html"><span class="cm-dot" style="--sw: #4a9cff"></span><span class="hub-game-name">Runner</span><span class="hub-game-tag">Run the gates to the goal</span></a></li>
-          <li><a class="cm-btn hub-game" href="games/trail/index.html"><span class="cm-dot" style="--sw: #8fe8ff"></span><span class="hub-game-name">Trail</span><span class="hub-game-tag">Ski to claim the mountain</span></a></li>
+          <li><a class="cm-btn hub-game" href="games/wyrm/index.html"><img data-art="wyrm" alt="" width="112" height="112" /><span class="hub-game-text"><span class="hub-game-name">Wyrmrise</span><span class="hub-game-tag">Devour gems. Outgrow every rival.</span></span></a></li>
+          <li><a class="cm-btn hub-game" href="games/hole/index.html"><img data-art="hole" alt="" width="112" height="112" /><span class="hub-game-text"><span class="hub-game-name">Riftmaw</span><span class="hub-game-tag">Open the rift. Swallow a kingdom.</span></span></a></li>
+          <li><a class="cm-btn hub-game" href="games/tractor/index.html"><img data-art="tractor" alt="" width="112" height="112" /><span class="hub-game-text"><span class="hub-game-name">Skyfield Saga</span><span class="hub-game-tag">Harvest the high fields. Build your rig.</span></span></a></li>
+          <li><a class="cm-btn hub-game" href="games/match3/index.html"><img data-art="match3" alt="" width="112" height="112" /><span class="hub-game-text"><span class="hub-game-name">Spellpaw</span><span class="hub-game-tag">Chain matches. Raise your castle.</span></span></a></li>
+          <li><a class="cm-btn hub-game" href="games/runner/index.html"><img data-art="runner" alt="" width="112" height="112" /><span class="hub-game-text"><span class="hub-game-name">Neko Strike</span><span class="hub-game-tag">Grow the squad. Strike at goal.</span></span></a></li>
+          <li><a class="cm-btn hub-game" href="games/trail/index.html"><img data-art="trail" alt="" width="112" height="112" /><span class="hub-game-text"><span class="hub-game-name">Frostclaim</span><span class="hub-game-tag">Carve the mountain. Claim it all.</span></span></a></li>
         </ul>
       </main>
     </div>

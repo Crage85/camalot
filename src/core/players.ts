@@ -10,14 +10,14 @@ export interface StoredPlayer extends Player {
 const PLAYERS = 'camalot.players';
 const LAST = 'camalot.lastPlayer';
 
-// Player colours: the voxel look's tier colours t3 to t8 (design-os styles/voxel).
+// Player colours: six jewel tones that hold dark text (4.5:1 or better against --cm-btn-ink).
 export const COLORS = [
-  { name: 'Green', hex: '#5fd35f' },
-  { name: 'Blue', hex: '#4a9cff' },
-  { name: 'Purple', hex: '#b36bff' },
-  { name: 'Orange', hex: '#ffa530' },
-  { name: 'Red', hex: '#ff4a4a' },
-  { name: 'Sky', hex: '#8fe8ff' },
+  { name: 'Jade', hex: '#3fcf8e' },
+  { name: 'Sapphire', hex: '#5a94ff' },
+  { name: 'Amethyst', hex: '#b07bff' },
+  { name: 'Amber', hex: '#ffa63d' },
+  { name: 'Ruby', hex: '#ff5d62' },
+  { name: 'Frost', hex: '#8fe3ff' },
 ];
 
 export function listPlayers(): StoredPlayer[] {

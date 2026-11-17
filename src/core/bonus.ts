@@ -62,12 +62,12 @@ function runCard(player: Player, req: BonusRequest): Promise<BonusResult> {
     const frame = (q: Question | null, tryNo: number, title?: string) => {
       const panel = el('div', epic ? 'cm-panel cm-card cm-card-epic' : 'cm-panel cm-card');
       panel.tabIndex = -1;
-      panel.append(el('p', 'cm-label', epic ? 'Big bonus' : 'Bonus'), el('h2', 'cm-card-reward', title ?? req.reward));
+      panel.append(el('p', 'cm-label', epic ? 'Epic bonus' : 'Bonus'), el('h2', 'cm-card-reward', title ?? req.reward));
       const body = el('div', 'cm-card-body');
       if (q) {
         const meta = el('p', 'cm-card-meta');
         meta.append(el('span', 'cm-card-chip', SUBJECT_NAME[q.subject]), ` Try ${tryNo} of ${TRIES}`);
-        if (epic) panel.append(el('p', 'cm-card-epic-note', 'Big bonus: grab paper and a pencil.'));
+        if (epic) panel.append(el('p', 'cm-card-epic-note', 'Epic reward. Take your time.'));
         panel.append(meta, el('p', 'cm-card-prompt', q.prompt));
       }
       const close = el('button', 'cm-btn cm-card-close');
@@ -82,7 +82,7 @@ function runCard(player: Player, req: BonusRequest): Promise<BonusResult> {
 
     const win = () => {
       audio.sfx('levelUp');
-      const { panel, body } = frame(null, 0, 'You got it!');
+      const { panel, body } = frame(null, 0, 'Bonus earned');
       panel.classList.add('cm-card-win');
       panel.querySelector('.cm-card-close')!.remove(); // any key or tap already returns to the game
       body.append(el('p', 'cm-card-earned', req.reward));
@@ -123,7 +123,7 @@ function runCard(player: Player, req: BonusRequest): Promise<BonusResult> {
         next.innerHTML = 'Next try <span class="cm-key">Enter</span>';
         next.addEventListener('click', () => ask(tryNo + 1));
       } else {
-        box.append(el('p', 'cm-card-kind', 'Good try. The bonus waits for next time.'));
+        box.append(el('p', 'cm-card-kind', 'Out of tries. The bonus will be back.'));
         next.innerHTML = 'Back to game <span class="cm-key">Enter</span>';
         next.addEventListener('click', () => finish(false));
       }
