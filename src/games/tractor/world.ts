@@ -149,8 +149,12 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
 
   // ---------- things you bump into ----------
   const circles = new Map<number, Spot[]>();
-  const solid = (x: number, z: number, r: number, h = 2) => {
-    const s = { x, z, r, h };
+  const things: { x: number; z: number; r: number; kind: string }[] = []; // every solid, for the stuck test
+  let reach: Uint8Array | null = null; // drivable grid joined to the pad; rebuilt after anything new is placed
+  const solid = (x: number, z: number, r: number, kind = 'thing') => {
+    const s = { x, z, r, h: 2 };
+    things.push({ x, z, r, kind });
+    reach = null;
     for (let cx = Math.floor((x - r) / 8); cx <= Math.floor((x + r) / 8); cx++)
       for (let cz = Math.floor((z - r) / 8); cz <= Math.floor((z + r) / 8); cz++) {
         const k = cx * 1000 + cz;
@@ -169,6 +173,79 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
         for (const s of circles.get(cx * 1000 + cz) ?? []) if ((s.x - x) ** 2 + (s.z - z) ** 2 < (s.r + r) ** 2) return 1;
     if (land(x, z) < -0.6 && deckAt(x, z) === null) return 2;
     return 0;
+  };
+  /** How far a vehicle of radius r at x, z sits inside things (0 = free). A move that lowers it is always allowed. */
+  const overlap = (x: number, z: number, r: number) => {
+    let d = Math.max(0, Math.hypot(x, z) - farm.radius - 6);
+    d = Math.max(d, Math.min(BARN.hw + r - Math.abs(x - BARN.x), BARN.hd + r - Math.abs(z - BARN.z)));
+    for (let cx = Math.floor((x - r) / 8); cx <= Math.floor((x + r) / 8); cx++)
+      for (let cz = Math.floor((z - r) / 8); cz <= Math.floor((z + r) / 8); cz++)
+        for (const s of circles.get(cx * 1000 + cz) ?? []) d = Math.max(d, s.r + r - Math.hypot(s.x - x, s.z - z));
+    const h = land(x, z);
+    if (h < -0.6 && deckAt(x, z) === null) d = Math.max(d, -0.6 - h + 0.01);
+    return d;
+  };
+  /**
+   * One step of driving from x, z toward nx, nz. Takes the whole step if it is free, else slides along one axis.
+   * Root-cause fix for getting stuck: the old code tested x and z apart and then took both, so a diagonal step
+   * could land inside a rock; from inside, every later step was blocked for good.
+   * Returns the new spot and what was hit (0 = nothing, else a `blocked` code).
+   */
+  const move = (x: number, z: number, nx: number, nz: number, r: number): [number, number, number] => {
+    const cur = overlap(x, z, r);
+    const ok = (px: number, pz: number) => {
+      const o = overlap(px, pz, r);
+      return o <= 0 || o < cur - 1e-6;
+    };
+    if (ok(nx, nz)) return [nx, nz, 0];
+    const hit = blocked(nx, nz, r) || 1;
+    if (ok(nx, z)) return [nx, z, hit];
+    if (ok(x, nz)) return [x, nz, hit];
+    return [x, z, hit];
+  };
+  /**
+   * The bump-out spot: nearest place a vehicle of radius r can drive from (free with a margin, and joined to the
+   * barn pad by open ground, so never water, a closed-in pocket, or off the farm), facing the most open ground.
+   */
+  const RG = 0.5, RN = Math.ceil(((farm.radius + 6) * 2) / RG) + 1, RO = -(RN - 1) * RG * 0.5;
+  const rescue = (x: number, z: number, r: number, heading: number): [number, number, number] => {
+    const at = (i: number) => RO + i * RG;
+    if (!reach) {
+      // Flood fill from the pad over every grid point the vehicle fits on.
+      reach = new Uint8Array(RN * RN); // 0 unseen, 1 reachable, 2 blocked
+      const i0 = Math.round((PAD.x - RO) / RG), j0 = Math.round((PAD.z - RO) / RG);
+      const q = [j0 * RN + i0];
+      reach[q[0]] = 1;
+      for (let k = 0; k < q.length; k++) {
+        const i = q[k] % RN, j = (q[k] - i) / RN;
+        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const a = i + di, b = j + dj, c = b * RN + a;
+          if (a < 0 || b < 0 || a >= RN || b >= RN || reach[c]) continue;
+          reach[c] = blocked(at(a), at(b), r) ? 2 : 1;
+          if (reach[c] === 1) q.push(c);
+        }
+      }
+    }
+    const ci = Math.round((x - RO) / RG), cj = Math.round((z - RO) / RG);
+    let best: [number, number] | null = null, bd = Infinity;
+    for (let ring = 0; ring < RN && !best; ring++)
+      for (let j = cj - ring; j <= cj + ring; j++)
+        for (let i = ci - ring; i <= ci + ring; i += Math.abs(j - cj) === ring || ring === 0 ? 1 : ring * 2) {
+          if (i < 0 || j < 0 || i >= RN || j >= RN || reach[j * RN + i] !== 1) continue;
+          const px = at(i), pz = at(j), d = Math.hypot(px - x, pz - z);
+          if (d < bd && !blocked(px, pz, r + 0.5)) (bd = d), (best = [px, pz]);
+        }
+    const [px, pz] = best ?? [PAD.x, PAD.z - 9];
+    // Face the direction with the longest open run; ties go to the old heading.
+    let bh = heading, bs = -Infinity;
+    for (let k = 0; k < 16; k++) {
+      const h = heading + (k * Math.PI) / 8;
+      let run = 0;
+      while (run < 8 && !blocked(px + Math.sin(h) * (run + 0.5), pz + Math.cos(h) * (run + 0.5), r)) run += 0.5;
+      const s = run - Math.abs(Math.atan2(Math.sin(h - heading), Math.cos(h - heading))) * 0.05;
+      if (s > bs) (bs = s), (bh = h);
+    }
+    return [px, pz, bh];
   };
 
   // Roads: pad to every plot, over a bridge when needed.
@@ -239,7 +316,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     m.rotation.z = Math.atan2(b.hB - b.hA, b.len);
     m.receiveShadow = true;
     group.add(m);
-    for (const s of [-1, 1]) for (let a = -b.len / 2; a <= b.len / 2; a += 1.2) solid(b.x + b.ax * a + b.az * 2.5 * s, b.z + b.az * a - b.ax * 2.5 * s, 0.35);
+    for (const s of [-1, 1]) for (let a = -b.len / 2; a <= b.len / 2; a += 1.2) solid(b.x + b.ax * a + b.az * 2.5 * s, b.z + b.az * a - b.ax * 2.5 * s, 0.35, 'bridge');
   }
 
   // ---------- plots ----------
@@ -253,20 +330,20 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     // Things in the way, placed the same every time.
     const obs: number[][] = []; // x, z, clear radius
     const rnd = (k: number) => hash(farmIdx * 977 + pi * 131 + k);
-    const scatterIn = (count: number, list: number[][], clear: number, r: number, k0: number) => {
+    const scatterIn = (count: number, list: number[][], clear: number, r: number, k0: number, kind: string) => {
       for (let i = 0, tries = 0; i < count && tries < 200; tries++) {
         const col = Math.floor(rnd(k0 + tries * 2) * cols), row = Math.floor(rnd(k0 + tries * 2 + 1) * rows);
         const x = x0 + col * SP, z = z0 + row * SP;
         if (!inShape(def, col, row, cols, rows) || wet(x, z) > 0.05 || obs.some((o) => Math.hypot(o[0] - x, o[1] - z) < o[2] + clear + 2.6)) continue;
         obs.push([x, z, clear]);
         list.push([x, z, rnd(k0 + tries) * 6.28, 0.85 + rnd(k0 - tries) * 0.5]);
-        solid(x, z, r);
+        solid(x, z, r, kind);
         i++;
       }
     };
-    scatterIn(def.rocks, rocks, 1.3, 1.1, 10);
-    scatterIn(def.bales, bales, 1.2, 1.0, 500);
-    scatterIn(def.trees, plotTrees, 1.5, 0.7, 900);
+    scatterIn(def.rocks, rocks, 1.3, 1.1, 10, 'rock');
+    scatterIn(def.bales, bales, 1.2, 1.0, 500, 'bale');
+    scatterIn(def.trees, plotTrees, 1.5, 0.7, 900, 'tree');
     const fenceRows: number[] = [];
     for (let f = 0; f < def.fences; f++) {
       const row = Math.round(((f + 1) / (def.fences + 1)) * rows), gate = 3 + Math.floor(rnd(70 + f) * (cols - 8));
@@ -275,7 +352,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
         if (col >= gate && col < gate + 4) continue; // the gate
         if (!inShape(def, col, Math.min(rows - 1, row), cols, rows)) continue;
         const x = x0 + col * SP, z = z0 + row * SP - SP / 2;
-        solid(x, z, 0.5);
+        solid(x, z, 0.5, 'fence');
         if (col % 2 === 0 && !(col + 1 >= gate && col + 1 < gate + 4)) fencesAt.push([x + SP / 2, z, 0, SP]);
       }
     }
@@ -383,8 +460,8 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     obj.position.set(x, groundY(x, z), z);
     obj.rotation.y = rot;
     group.add(obj);
-    const spot = cur?.spot ?? (id === 'pen' ? { x, z, r: 0, h: 0 } : solid(x, z, id === 'market' ? 2.3 : id === 'greenhouse' ? 3 : 2));
-    if (id === 'pen' && !cur) for (let a = 0; a < 6.28; a += 0.22) solid(x + Math.sin(a) * 4.4, z + Math.cos(a) * 4.4, 0.6);
+    const spot = cur?.spot ?? (id === 'pen' ? { x, z, r: 0, h: 0 } : solid(x, z, id === 'market' ? 2.3 : id === 'greenhouse' ? 3 : 2, 'building'));
+    if (id === 'pen' && !cur) for (let a = 0; a < 6.28; a += 0.22) solid(x + Math.sin(a) * 4.4, z + Math.cos(a) * 4.4, 0.6, 'pen');
     if (!cur && (id === 'silo' || id === 'windmill')) tall.push({ x, z, r: 3, h: 9 });
     built.set(id, { obj, lv, spot });
   }
@@ -397,7 +474,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
       m.rotation.y = Math.atan2(-x, -z);
       m.scale.setScalar(1.15);
       group.add(m);
-      solid(x, z, 1.1);
+      solid(x, z, 1.1, 'decor');
       decor.push(m);
     }
   }
@@ -429,7 +506,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     const k = farm.trees[Math.floor(hash(i * 7 + 2) * farm.trees.length)];
     if (!byKind.has(k)) byKind.set(k, []);
     byKind.get(k)!.push([x, z, hash(i) * 6.28, 0.8 + hash(i * 5) * 0.7]);
-    if (r < farm.radius + 6) solid(x, z, 0.6);
+    if (r < farm.radius + 6) solid(x, z, 0.6, 'tree');
     made++;
   }
   if (plotTrees.length) byKind.set(farm.trees[0], [...(byKind.get(farm.trees[0]) ?? []), ...plotTrees]);
@@ -438,7 +515,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
     const x = (hash(i + 4000 + farmIdx) - 0.5) * farm.radius * 2, z = (hash(i + 4100 + farmIdx) - 0.5) * farm.radius * 2;
     if (free(x, z, 3) && Math.hypot(x, z) < farm.radius) {
       rocks.push([x, z, hash(i) * 6.28, 0.7 + hash(i + 9) * 0.9]);
-      solid(x, z, 1.0);
+      solid(x, z, 1.0, 'rock');
     }
   }
   instanced(M.rockGeometry(), M.MAT, rocks);
@@ -530,7 +607,7 @@ export function buildWorld(farm: D.Farm, farmIdx: number, low: boolean) {
       if (m.material && m.material !== M.MAT && m.material !== M.PAINT && m.material !== M.CROP_MAT && m.material !== M.TREE_MAT) (m.material as THREE.Material).dispose();
     });
   }
-  return { group, farm, plots, groundY, blocked, route, setCrop, drawPlot, setBuild, setDecor, setAnimals, update, dispose, tall, sky, water };
+  return { group, farm, plots, groundY, blocked, overlap, move, rescue, things, route, setCrop, drawPlot, setBuild, setDecor, setAnimals, update, dispose, tall, sky, water };
 }
 export type World = ReturnType<typeof buildWorld>;
 

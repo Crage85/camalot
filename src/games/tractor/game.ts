@@ -259,6 +259,8 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
       camInit = false;
     }
     syncFarm();
+    // An old save, or a rebuild with more trees (picture quality), can put the vehicle inside something: move it out.
+    if (W.overlap(S.x, S.z, TRACTOR_R) > 0) [S.x, S.z, S.heading] = W.rescue(S.x, S.z, TRACTOR_R, S.heading);
     helpers.forEach((h) => ((h.x = S.x + 2), (h.z = S.z - 3), (h.plot = -1)));
   }
   function storeCrops() {
@@ -314,6 +316,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     <div class="tr-toast cm-panel" data-toast hidden></div>
     <div class="tr-goal cm-panel" data-goal></div>
     <div class="tr-btns">
+      <button type="button" class="cm-btn good tr-unstuck" data-unstuck hidden>Unstuck<span class="cm-key">U</span></button>
       <button type="button" class="cm-btn good" data-bag hidden>Big load<span class="cm-key">Q</span></button>
       <button type="button" class="cm-btn main" data-barnbtn hidden>Barn<span class="cm-key">B</span></button>
       <button type="button" class="cm-btn main" data-buybtn hidden></button>
@@ -323,9 +326,9 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   document.body.append(hud);
   const q = <E extends HTMLElement>(sel: string, root: ParentNode = hud) => root.querySelector(sel) as E;
   const elCoins = q('[data-coins]'), elLoad = q('[data-load]'), elLoadBar = q('[data-loadbar]'), elChips = q('[data-chips]'), elGoal = q('[data-goal]'), elToast = q('[data-toast]');
-  const btnBag = q<HTMLButtonElement>('[data-bag]'), btnBarn = q<HTMLButtonElement>('[data-barnbtn]'), btnBuy = q<HTMLButtonElement>('[data-buybtn]'), btnCam = q<HTMLButtonElement>('[data-cam]'), btnPause = q<HTMLButtonElement>('[data-pause]');
+  const btnBag = q<HTMLButtonElement>('[data-bag]'), btnBarn = q<HTMLButtonElement>('[data-barnbtn]'), btnBuy = q<HTMLButtonElement>('[data-buybtn]'), btnCam = q<HTMLButtonElement>('[data-cam]'), btnPause = q<HTMLButtonElement>('[data-pause]'), btnUnstuck = q<HTMLButtonElement>('[data-unstuck]');
   // HUD buttons must not keep keyboard focus, or Space/Enter would press them while driving.
-  for (const b of [btnBag, btnBarn, btnBuy, btnCam, btnPause]) b.addEventListener('mousedown', (e) => e.preventDefault());
+  for (const b of [btnBag, btnBarn, btnBuy, btnCam, btnPause, btnUnstuck]) b.addEventListener('mousedown', (e) => e.preventDefault());
 
   let toastTimer = 0, toastCd = 0;
   function toast(text: string, secs = 3) {
@@ -348,7 +351,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     const chips = [megaT > 0 ? `Mega harvest ${Math.ceil(megaT)}s` : '', turboT > 0 ? `Turbo ${Math.ceil(turboT)}s` : '', superT > 0 ? `Super cutter ${Math.ceil(superT)}s` : '', tempHelperT > 0 ? `Helper ${Math.ceil(tempHelperT)}s` : '', chewing > 0.3 ? 'Tough crop: slow cutting' : '']
       .filter(Boolean).map((t) => `<span class="tr-chip">${t}</span>`).join('');
     const goal = n >= c ? 'Full! Drive back to the barn.' : `${F.done < farm.orders ? `Order ${F.done + 1} of ${farm.orders}` : `Bonus order ${F.done + 1 - farm.orders}`}: ${needText()}`;
-    const key = [Math.floor(S.coins), n, c, chips, goal, onPad, barnOpen, nearSale].join('|');
+    const key = [Math.floor(S.coins), n, c, chips, goal, onPad, barnOpen, nearSale, stuckShow > 0].join('|');
     if (key === lastHud) return;
     lastHud = key;
     elCoins.textContent = fmt(S.coins);
@@ -361,6 +364,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     btnBag.hidden = !(n >= c && !unlimited);
     btnBarn.hidden = !onPad || barnOpen;
     btnBuy.hidden = nearSale < 0;
+    btnUnstuck.hidden = stuckShow <= 0;
     if (nearSale >= 0) btnBuy.innerHTML = `Buy ${farm.plots[nearSale].name} <i class="tr-coin"></i>${fmt(D.plotCost(farm, farm.plots[nearSale]))}<span class="cm-key">B</span>`;
   }
 
@@ -476,6 +480,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     const out: Card[] = [];
     if (pauseMode) {
       out.push({ title: 'Paused', line: 'The farm waits for you.', btn: 'Keep farming', help: 'Back to the fields.', act: closeBarn });
+      out.push({ title: 'Stuck?', line: 'Hop to open ground nearby.', btn: 'Unstuck', help: 'Lifts your vehicle out and sets it down on free ground. Key: U.', act: () => (closeBarn(), unstuck()) });
       out.push({ title: 'Picture quality', line: `Now: ${cap1(S.quality)}${S.quality === 'auto' ? ` (${low ? 'Low' : 'High'})` : ''}`, btn: 'Change', help: 'High looks best. Low runs smoother on tablets. Auto picks for this device.', act: () => {
         S.quality = S.quality === 'auto' ? 'high' : S.quality === 'high' ? 'low' : 'auto';
         applyQuality(true);
@@ -642,6 +647,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     }
   }
   btnBuy.addEventListener('click', () => nearSale >= 0 && buyPlot(nearSale));
+  btnUnstuck.addEventListener('click', () => unstuck());
 
   async function barnAction(b: HTMLButtonElement) {
     if (b.disabled) return;
@@ -723,6 +729,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
         return moveFocus(...dirs[k]);
       }
       if (k === 'Escape' || (pauseMode && k === 'p')) return closeBarn();
+      if (pauseMode && k === 'u') return closeBarn(), unstuck();
       if (k === 'Enter' || k === ' ') {
         const a = document.activeElement;
         e.preventDefault();
@@ -750,6 +757,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     else if (k === 'b' && nearSale >= 0) buyPlot(nearSale);
     else if (k === 'p' || k === 'Escape') openBarn(true);
     else if (k === 'q' && !btnBag.hidden) btnBag.click();
+    else if (k === 'u') unstuck();
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', ' '].includes(k)) {
       e.preventDefault();
       keys.add(k);
@@ -837,6 +845,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   }
 
   const fwd = new THREE.Vector3();
+  /** Returns true while she is trying to drive (keys or a tap target). */
   function stepTractor(dt: number) {
     let throttle = 0, steer = 0;
     if (keys.has('ArrowUp') || keys.has('w')) throttle += 1;
@@ -863,12 +872,10 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     const turnRate = 2.4 * (0.35 + 0.65 * Math.min(1, Math.abs(v) / 4 + (throttle === 0 ? 1 : 0)));
     S.heading += steer * turnRate * dt * (v < -0.1 ? -1 : 1);
     const nx = S.x + Math.sin(S.heading) * v * dt, nz = S.z + Math.cos(S.heading) * v * dt;
-    const bx = W.blocked(nx, S.z, TRACTOR_R), bz = W.blocked(S.x, nz, TRACTOR_R);
-    if (!bx) S.x = nx;
-    if (!bz) S.z = nz;
-    if ((bx || bz) && Math.abs(v) > 0.05) {
+    let hit: number;
+    [S.x, S.z, hit] = W.move(S.x, S.z, nx, nz, TRACTOR_R);
+    if (hit && Math.abs(v) > 0.05) {
       if (Math.abs(v) > 2.5 && bumpCd <= 0) {
-        const hit = bx || bz;
         sfx(hit === 2 ? 'splash' : 'thud', 1, 0.6);
         if (hit === 2) puff(nx, 0, nz, 0xbfeaff, 14, 0, 1.5);
         if (hit === 3) hint('This is the edge of the farm.');
@@ -877,6 +884,41 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
       v *= 0.5;
     }
     if (Math.abs(v) > 0.05) dirty = true;
+    return throttle !== 0;
+  }
+
+  // ---------- un-stuck: a hop to the nearest free spot she can drive away from ----------
+  let hop: { fx: number; fz: number; fh: number; tx: number; tz: number; th: number; t: number } | null = null;
+  let hopY = 0, stuckT = 0, stuckShow = 0, anchorX = S.x, anchorZ = S.z;
+  function unstuck() {
+    if (hop || paused) return;
+    const [tx, tz, th] = W.rescue(S.x, S.z, TRACTOR_R, S.heading);
+    hop = { fx: S.x, fz: S.z, fh: S.heading, tx, tz, th, t: 0 };
+    v = 0;
+    target = null;
+    stuckT = stuckShow = 0;
+    keys.clear();
+    sfx('whoosh');
+    puff(S.x, W.groundY(S.x, S.z) + 0.4, S.z, 0xf4f0e8, 18, 1, 2.6);
+    updateHud();
+  }
+  function stepHop(dt: number) {
+    const h = hop!;
+    h.t = Math.min(1, h.t + dt / D.HOP_SECONDS);
+    const e = h.t * h.t * (3 - 2 * h.t);
+    S.x = h.fx + (h.tx - h.fx) * e;
+    S.z = h.fz + (h.tz - h.fz) * e;
+    S.heading = h.fh + Math.atan2(Math.sin(h.th - h.fh), Math.cos(h.th - h.fh)) * e;
+    hopY = Math.sin(h.t * Math.PI) * (D.HOP_HEIGHT + Math.hypot(h.tx - h.fx, h.tz - h.fz) * 0.15);
+    if (h.t < 1) return;
+    hop = null;
+    hopY = 0;
+    anchorX = S.x;
+    anchorZ = S.z;
+    sfx('thud', 1.1, 0.7);
+    sfx('pop');
+    puff(S.x, W.groundY(S.x, S.z) + 0.2, S.z, farm.look.path, 24, 1, 3);
+    dirty = true;
   }
 
   function stepCutting(dt: number, t: number) {
@@ -1017,7 +1059,7 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   function stepVisuals(dt: number, t: number) {
     M.uTime.value = t;
     const gy = W.groundY(S.x, S.z), sx = Math.sin(S.heading), sz = Math.cos(S.heading);
-    T.root.position.set(S.x, gy, S.z);
+    T.root.position.set(S.x, gy + hopY, S.z);
     const pitch = Math.atan2(W.groundY(S.x + sx * 1.5, S.z + sz * 1.5) - W.groundY(S.x - sx * 1.5, S.z - sz * 1.5), 3);
     const roll = Math.atan2(W.groundY(S.x + sz, S.z - sx) - W.groundY(S.x - sz, S.z + sx), 2);
     T.root.rotation.set(-pitch, S.heading, roll);
@@ -1096,7 +1138,13 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
     superT = Math.max(0, superT - dt);
     megaT = Math.max(0, megaT - dt);
     if (tempHelperT > 0 && (tempHelperT = Math.max(0, tempHelperT - dt)) === 0) syncHelpers();
-    stepTractor(dt);
+    if (hop) stepHop(dt);
+    else if (stepTractor(dt)) {
+      // Trying to drive but barely moving for a while: light up the Unstuck button.
+      if (Math.hypot(S.x - anchorX, S.z - anchorZ) > D.STUCK_MOVE) (anchorX = S.x), (anchorZ = S.z), (stuckT = 0);
+      else stuckT += dt;
+    } else (anchorX = S.x), (anchorZ = S.z), (stuckT = 0);
+    stuckShow = stuckT > D.STUCK_SECONDS ? 4 : stuckShow - dt;
     stepCutting(dt, t);
     stepHelpers(dt, t);
     onPad = Math.hypot(S.x - PAD.x, S.z - PAD.z) < PAD.r;
@@ -1140,7 +1188,8 @@ export async function runGame(camalot: Camalot, host: HTMLElement) {
   if (!raw) toast('Drive with the arrow keys, or tap where to go. Any crop can be cut: tough ones just take longer.', 7);
   else if ((raw as { v?: number }).v === 1) toast('Welcome back! Your coins and upgrades came along to the new farm.', 6);
   if (import.meta.env.DEV)
-    (window as unknown as Record<string, unknown>).__tr = { S, cam: (a: number[] | null) => (camFree = a), go: (x: number, z: number, h: number) => ((S.x = x), (S.z = z), (S.heading = h), (camInit = false)), sync: () => (setVehicle(), syncFarm(), syncHelpers()), travel, drive: (sec: number, ks: string[]) => {
+    (window as unknown as Record<string, unknown>).__tr = { S, cam: (a: number[] | null) => (camFree = a), go: (x: number, z: number, h: number) => ((S.x = x), (S.z = z), (S.heading = h), (v = 0), (hop = null), (hopY = 0), (camInit = false)),
+      W: () => W, R: TRACTOR_R, unstuck, closeBarn, veh: (id: D.VehicleId) => ((S.vehicle = id), setVehicle()), state: () => ({ v, hop: !!hop, hopY, stuckT, stuckShow, paused }), sync: () => (setVehicle(), syncFarm(), syncHelpers()), travel, drive: (sec: number, ks: string[]) => {
       ks.forEach((k) => keys.add(k));
       for (let i = 0; i < sec * 60 && !paused; i++) tick(1 / 60, performance.now() / 1000 + i / 60);
       keys.clear();
