@@ -531,7 +531,7 @@ export class World {
         const belly = 1;
         bodyC[bi * 3] = (col.r + (0.75 - col.r) * ice) * bright * belly; bodyC[bi * 3 + 1] = (col.g + (0.95 - col.g) * ice) * bright * belly; bodyC[bi * 3 + 2] = (col.b + (1 - col.b) * ice) * bright * belly;
         bi++;
-        // back fins from the Sprout stage on
+        // back fins from the Whelp stage on
         if (w.evo >= 1 && i % 3 === 0 && i > 2 && i < w.n * 0.75 && finN < 900) {
           const fs = sc * (0.5 + Math.min(w.evo, 4) * 0.1);
           this.fins.setMatrixAt(finN, M.compose(V.set(px, sc * 1.35, pz), Q.setFromEuler(E.set(0, -Math.atan2(dz, dx), 1.0)), S.set(fs, fs * (1 + 0.15 * Math.sin(t * 5 + i)), fs * 0.3)));
@@ -593,12 +593,14 @@ export class World {
         const wa = Math.atan2(s[k * 2 - 1] - s[k * 2 + 1], s[k * 2 - 2] - s[k * 2]);
         const wsz = r * (0.8 + (Math.min(w.evo, 6) - 2) * 0.28);
         const flap = 0.25 + 0.5 * Math.sin(t * (w.boosting ? 18 : 8) + w.id);
-        c.copy(cols[cols.length - 1]).lerp(this.tmpC2.setHex(w.look.accColor), 0.35).multiplyScalar(0.9); // membrane: body colour with a touch of the accent
+        c.copy(cols[cols.length - 1]).lerp(this.tmpC2.setHex(w.look.accColor), 0.15).multiplyScalar(0.6); // membrane: a deep shade of the body colour, never pastel
         for (const side of [1, -1]) {
           this.wings.setMatrixAt(wingN, M.compose(V.set(s[k * 2], r * 1.25, s[k * 2 + 1]), Q.setFromEuler(this.tmpE2.set(-flap * side, -wa, 0)), S.set(wsz, wsz, wsz * side)));
           this.wings.setColorAt(wingN++, c);
         }
       }
+      // a boss smoulders: a slow red pulse on the ground under its head
+      if (w.isBoss) this.auras.push(hx, hz, HR * (2.6 + Math.sin(t * 2) * 0.3), 0xff2a1a);
       // aura from the Ancient stage on
       if (w.evo >= 5) {
         this.auras.push(hx, hz, HR * (2.3 + Math.sin(t * 3) * 0.15), w.look.accColor, hx, hz, HR * (1.7 - Math.sin(t * 3) * 0.1), w.look.colors[0]);
