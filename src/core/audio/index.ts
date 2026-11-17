@@ -2,7 +2,7 @@ import type { AudioApi, LoopHandle, LoopName, MusicMood, MusicTrack } from '../c
 import { readLocal, writeLocal } from '../store';
 import { ICON, el, openDialog } from '../ui';
 import { MusicPlayer } from './music';
-import { DUCK, SFX, buildLoop, type LoopVoice } from './sfx';
+import { buildLoop, createSfx, type LoopVoice, type SfxPlayer } from './sfx';
 import { createMixer, type Mixer } from './synth';
 
 // The shared audio service. Browsers only allow sound after a tap or key press, so the AudioContext
@@ -14,11 +14,13 @@ interface Settings {
   mute: boolean;
 }
 const DEFAULTS: Settings = { music: 0.7, sfx: 0.8, mute: false };
-const LOOP_GAIN = 0.3;
+/** Loop level 1. Raised from 0.3 when the sfx bus came down, so loops end about 4 dB quieter than before, not 8. */
+export const LOOP_GAIN = 0.45;
 
 let ctx: AudioContext | null = null;
 let mix: Mixer | null = null;
 let player: MusicPlayer | null = null;
+let playSfx: SfxPlayer | null = null;
 let settings: Settings = { ...DEFAULTS };
 let settingsKey = '';
 let resuming = false; // a resume() is in flight; sounds scheduled now play when it lands
@@ -38,6 +40,7 @@ function unlock(): void {
     ctx = new AudioContext({ latencyHint: 'interactive' });
     mix = createMixer(ctx);
     player = new MusicPlayer(ctx, mix);
+    playSfx = createSfx(ctx, mix);
     applyVolume();
     for (const build of pendingLoops.splice(0)) build();
   }
@@ -73,24 +76,8 @@ export const audio: AudioApi = {
     player?.stop();
   },
   sfx(name, opts) {
-    if (!ctx || !mix || (ctx.state !== 'running' && !resuming) || settings.mute) return;
-    const t = ctx.currentTime + 0.005;
-    let out: AudioNode = mix.sfx;
-    if (opts?.volume !== undefined || opts?.pan) {
-      const g = ctx.createGain();
-      g.gain.value = Math.max(0, Math.min(1, opts.volume ?? 1));
-      if (opts.pan) {
-        const p = ctx.createStereoPanner();
-        p.pan.value = Math.max(-1, Math.min(1, opts.pan));
-        g.connect(p).connect(mix.sfx);
-      } else g.connect(mix.sfx);
-      out = g;
-      setTimeout(() => g.disconnect(), 4000);
-    }
-    // A little random pitch so repeats do not sound robotic.
-    SFX[name](ctx, out, t, (opts?.pitch ?? 1) * (0.97 + Math.random() * 0.06));
-    const duck = DUCK[name];
-    if (duck) mix.duck(t, duck * (opts?.volume ?? 1));
+    if (!ctx || !playSfx || (ctx.state !== 'running' && !resuming) || settings.mute) return;
+    playSfx(name, opts);
   },
   loop(name: LoopName): LoopHandle {
     let voice: LoopVoice | null = null;
@@ -128,6 +115,12 @@ export const audio: AudioApi = {
     return mix?.sfx ?? null;
   },
 };
+
+/** Audio lab only: plays one chosen song of a track and holds it (no rotation). */
+export function audition(track: MusicTrack, song: number, mood: MusicMood): void {
+  wanted = null;
+  if (ctx?.state === 'running') player?.play(track, mood, song);
+}
 
 /** Loads this player's volumes. Called when the player is known or changes. */
 export function setAudioPlayer(playerId: string): void {

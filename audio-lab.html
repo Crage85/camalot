@@ -9,13 +9,15 @@
       h1, h2 { font-family: var(--cm-display); }
       .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 12px; }
       .row > b { width: 110px; }
+      .row.song { margin-left: 24px; font-size: 15px; }
+      .row.song > b { width: 190px; }
       input[type='range'] { width: 220px; }
     </style>
   </head>
   <body>
     <!-- Dev-only listening page. Not part of the build. Open with: npm run dev, then http://localhost:5173/audio-lab.html -->
     <h1>Camalot audio lab</h1>
-    <p>Tap any button to hear it. The music keeps looping; "win" plays the short sting and goes back to the menu mood.</p>
+    <p>Tap any button to hear it. A song row keeps looping that one song; "win" plays the short sting and goes back to the menu mood. The "rotate" buttons play a track the way a game does: the next song starts when one ends, and when play begins from the menu.</p>
     <div class="row" id="top"></div>
     <h2>Music</h2>
     <div id="music"></div>
@@ -25,10 +27,10 @@
     <div id="loops"></div>
     <script type="module">
       import '/src/core/theme.css';
-      import { audio, soundButton } from '/src/core/audio/index.ts';
+      import { LOOP_GAIN, audio, audition, soundButton } from '/src/core/audio/index.ts';
       import { Track, FORM_BARS, STEPS, parseSection } from '/src/core/audio/music.ts';
-      import { THEMES } from '/src/core/audio/songs.ts';
-      import { SFX } from '/src/core/audio/sfx.ts';
+      import { SONGS } from '/src/core/audio/songs.ts';
+      import { SFX, SFX_MIX, buildLoop, createSfx } from '/src/core/audio/sfx.ts';
       import { createMixer } from '/src/core/audio/synth.ts';
 
       const btn = (text, fn, parent) => {
@@ -43,15 +45,26 @@
       top.append(soundButton());
       btn('Stop music', () => audio.stopMusic(), top);
 
+      // One row per song. A row holds its song (no rotation); the "rotate" buttons play the track the
+      // way a game does, so the songs follow each other.
       const MOODS = ['menu', 'play', 'intense', 'win'];
-      for (const track of Object.keys(THEMES)) {
-        const row = document.createElement('div');
-        row.className = 'row';
-        const th = THEMES[track];
-        row.innerHTML = `<b>${track}</b>`;
-        for (const mood of MOODS) btn(mood, () => audio.music(track, mood), row);
-        row.append(` ${th.bpm} bpm, ${th.lead.join(' + ')}, ${th.comp[0]}, ${th.bass[0]}`);
-        document.getElementById('music').append(row);
+      const NOTE = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+      for (const track of Object.keys(SONGS)) {
+        const h = document.createElement('div');
+        h.className = 'row';
+        h.innerHTML = `<b>${track}</b>`;
+        btn('rotate: menu', () => audio.music(track, 'menu'), h);
+        btn('rotate: play', () => audio.music(track, 'play'), h);
+        document.getElementById('music').append(h);
+        SONGS[track].forEach((th, song) => {
+          const row = document.createElement('div');
+          row.className = 'row song';
+          row.innerHTML = `<b>${song + 1}. ${th.title}</b>`;
+          for (const mood of MOODS) btn(mood, () => audition(track, song, mood), row);
+          const mode = th.scale[3] === 6 ? 'lydian' : th.scale[6] === 10 ? 'mixolydian' : 'major';
+          row.append(` ${NOTE[th.key % 12]} ${mode}, ${th.bpm} bpm${th.swing ? ' shuffle' : ''}, ${th.lead.join(' + ')}, ${th.comp.join(' ')}, ${th.bass.join(' ')}`);
+          document.getElementById('music').append(row);
+        });
       }
       for (const name of Object.keys(SFX)) btn(name, () => audio.sfx(name), document.getElementById('sfx'));
       for (const name of ['engine', 'ski', 'wind', 'waves', 'crowd']) {
@@ -66,30 +79,74 @@
       }
 
       // ---- offline render checks (used by shots/audio/check.mjs) ----
-      const stats = (buf, from = 0, to = buf.length) => {
+      const SR = 44100;
+      /** The same render through a rough loudness filter (the K-weighting of ITU-R BS.1770: the ear hears highs more than lows). */
+      const kweight = async (buf) => {
+        const c = new OfflineAudioContext(buf.numberOfChannels, buf.length, buf.sampleRate);
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        const hs = c.createBiquadFilter();
+        hs.type = 'highshelf';
+        hs.frequency.value = 1500;
+        hs.gain.value = 4;
+        const hp = c.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.value = 38;
+        hp.Q.value = 0.5;
+        src.connect(hs).connect(hp).connect(c.destination);
+        src.start();
+        return c.startRendering();
+      };
+      const db = (power) => +(10 * Math.log10(Math.max(power, 1e-12))).toFixed(1);
+      /**
+       * peak: sample peak. loud: loudness over the whole window. loud100: the loudest 100 ms.
+       * len: seconds until the sound has dropped 20 dB under its peak. jump: biggest sample-to-sample step.
+       */
+      const stats = async (buf, from = 0, to = buf.length / SR) => {
+        const k = await kweight(buf);
+        const a = Math.round(from * SR), b = Math.min(buf.length, Math.round(to * SR));
+        const n = buf.numberOfChannels;
         let peak = 0, sum = 0, jump = 0;
-        for (let ch = 0; ch < buf.numberOfChannels; ch++) {
-          const d = buf.getChannelData(ch);
-          for (let i = from; i < to; i++) {
-            const a = Math.abs(d[i]);
-            if (a > peak) peak = a;
-            sum += d[i] * d[i];
-            if (i > from) jump = Math.max(jump, Math.abs(d[i] - d[i - 1]));
+        const ms = new Float64Array(b - a);
+        for (let ch = 0; ch < n; ch++) {
+          const d = buf.getChannelData(ch), kd = k.getChannelData(ch);
+          for (let i = a; i < b; i++) {
+            const v = Math.abs(d[i]);
+            if (v > peak) peak = v;
+            if (i > a) jump = Math.max(jump, Math.abs(d[i] - d[i - 1]));
+            ms[i - a] += (kd[i] * kd[i]) / n;
+            sum += (kd[i] * kd[i]) / n;
           }
         }
-        const db = (x) => +(20 * Math.log10(Math.max(x, 1e-9))).toFixed(1);
-        return { peak: db(peak), rms: db(Math.sqrt(sum / ((to - from) * buf.numberOfChannels))), jump: +jump.toFixed(4) };
+        let last = a;
+        for (let ch = 0; ch < n; ch++) {
+          const d = buf.getChannelData(ch);
+          for (let i = b - 1; i > last; i--) if (Math.abs(d[i]) > peak * 0.1) { last = i; break; }
+        }
+        const win = Math.round(0.1 * SR), hop = Math.round(0.01 * SR);
+        let max = 0, run = 0;
+        for (let i = 0; i < ms.length; i++) {
+          run += ms[i] - (i >= win ? ms[i - win] : 0);
+          if (i >= win - 1 && (i - win + 1) % hop === 0 && run / win > max) max = run / win;
+        }
+        return { peak: db(peak * peak), loud: db(sum / (b - a)), loud100: db(max), len: +((last - a) / SR).toFixed(2), jump: +jump.toFixed(4) };
       };
-      const SR = 44100;
+      const TEMPO = { menu: 0.92, play: 1, intense: 1.1, win: 1 };
+      /** Schedules `secs` of a song from time 0.05, all at once. Only for short renders. */
+      const quickMusic = (ctx, mix, track, song, mood, secs) => {
+        const tr = new Track(ctx, mix, track, song);
+        const sd = tr.stepDur(mood);
+        for (let i = 0; i * sd < secs; i++) tr.step(mood, i % (FORM_BARS * STEPS), 0.05 + i * sd);
+      };
       /** Renders the whole loop plus 2 bars of the next pass, music volume at `vol` (1 = slider at max). */
-      window.renderMusic = async (track, mood, vol = 1) => {
-        const th = THEMES[track];
-        const sd = 60 / (th.bpm * { menu: 0.92, play: 1, intense: 1.1, win: 1 }[mood]) / 4;
+      window.renderMusic = async (track, song, mood, vol = 1) => {
+        const th = SONGS[track][song];
+        const sd = 60 / (th.bpm * TEMPO[mood]) / 4;
         const steps = mood === 'win' ? 2 * STEPS : (FORM_BARS + 2) * STEPS;
         const ctx = new OfflineAudioContext(2, Math.ceil((steps * sd + (mood === 'win' ? 2.5 : 0)) * SR), SR);
         const mix = createMixer(ctx);
         mix.music.gain.value = vol * vol;
-        const tr = new Track(ctx, mix, track);
+        const tr = new Track(ctx, mix, track, song);
         const loop = mood === 'win' ? steps : FORM_BARS * STEPS;
         // Schedule one bar at a time, pausing the render just before each bar, the way the live player
         // works. Building every note up front makes the offline render crawl.
@@ -99,29 +156,51 @@
         bar(0);
         for (let k = 1; k * STEPS < steps; k++) void ctx.suspend(k * STEPS * sd - 0.05).then(() => { try { bar(k); } catch (e) { console.error('bar', k, e); } return ctx.resume(); });
         const buf = await ctx.startRendering();
-        const out = { track, mood, seconds: +(loop * sd).toFixed(1), ...stats(buf) };
+        const out = { track, song, title: th.title, mood, seconds: +(loop * sd).toFixed(1), ...(await stats(buf)) };
         if (mood !== 'win') {
           // The wrap: compare 60 ms around the loop point with the loudest step-to-step jump elsewhere.
-          const w = Math.round((0.05 + loop * sd) * SR);
-          const m = Math.round(0.03 * SR);
-          out.wrapJump = stats(buf, w - m, w + m).jump;
-          out.wrapRms = stats(buf, w - m * 4, w + m * 4).rms;
+          const w = 0.05 + loop * sd;
+          out.wrapJump = (await stats(buf, w - 0.03, w + 0.03)).jump;
+          out.wrapLoud = (await stats(buf, w - 0.12, w + 0.12)).loud;
         }
         return out;
       };
-      window.renderSfx = async (name, withMusic = false) => {
+      /** One sound effect through the real sfx door, sfx slider at max. `level` overrides its mix level. */
+      window.renderSfx = async (name, withMusic = false, level) => {
         const ctx = new OfflineAudioContext(2, SR * 3, SR);
         const mix = createMixer(ctx);
-        if (withMusic) {
-          const tr = new Track(ctx, mix, 'runner');
-          for (let i = 0; i < 80; i++) tr.step('intense', i, 0.05 + i * tr.stepDur('intense'));
-        }
-        SFX[name](ctx, mix.sfx, withMusic ? 1 : 0.05, 1);
-        return { name, ...stats(await ctx.startRendering()) };
+        if (withMusic) quickMusic(ctx, mix, 'runner', 0, 'intense', 3);
+        const keep = SFX_MIX[name][0];
+        if (level !== undefined) SFX_MIX[name][0] = level;
+        createSfx(ctx, mix)(name, undefined, withMusic ? 1 : 0.045);
+        SFX_MIX[name][0] = keep;
+        return { name, ...(await stats(await ctx.startRendering(), withMusic ? 0 : 0.05)) };
       };
+      window.renderLoop = async (name, level = 1) => {
+        const ctx = new OfflineAudioContext(2, SR * 12, SR);
+        const mix = createMixer(ctx);
+        buildLoop(ctx, mix.sfx, name).level.value = level * LOOP_GAIN;
+        return { name, ...(await stats(await ctx.startRendering(), 1)) };
+      };
+      /** Busy play: music (runner, play mood) with a burst of sound effects `gap` seconds apart, from second 2. */
+      window.renderBusy = async (seq, gap, musicVol, sfxVol) => {
+        const one = async (withMusic, withSfx) => {
+          const ctx = new OfflineAudioContext(2, SR * 6, SR);
+          const mix = createMixer(ctx);
+          mix.music.gain.value = musicVol ** 2;
+          mix.sfx.gain.value = sfxVol ** 2;
+          if (withMusic) quickMusic(ctx, mix, 'runner', 0, 'play', 6);
+          const play = createSfx(ctx, mix);
+          if (withSfx) seq.forEach((n, i) => play(n, undefined, 2 + i * gap));
+          return stats(await ctx.startRendering(), 2, 2 + seq.length * gap + 0.4);
+        };
+        return { music: await one(true, false), sfx: await one(false, true), both: await one(true, true) };
+      };
+      window.songList = () => Object.entries(SONGS).flatMap(([track, list]) => list.map((th, song) => [track, song, th.title, th.trim]));
+      window.sfxNames = () => Object.keys(SFX);
       /** How many melody notes that start on a beat are notes of the bar's chord. */
       window.melodyCheck = () =>
-        Object.entries(THEMES).map(([name, th]) => {
+        Object.entries(SONGS).flatMap(([name, list]) => list.map((th) => {
           let on = 0, hit = 0;
           for (const sec of [th.A, th.B])
             for (const bar of parseSection(sec))
@@ -131,8 +210,9 @@
                 const rel = (((idx - bar.chord[step < 8 ? 0 : 1]) % 7) + 7) % 7;
                 if (rel === 0 || rel === 2 || rel === 4) hit++;
               }
-          return `${name}: ${hit}/${on} beat notes are chord notes`;
-        });
+          return `${name} / ${th.title}: ${hit}/${on} beat notes are chord notes`;
+        }));
+      window.labAudio = audio; // for the live rotation check
       window.labReady = true;
     </script>
   </body>

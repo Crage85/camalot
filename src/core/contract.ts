@@ -84,7 +84,7 @@ export interface Camalot {
 
 // ---- Audio (implemented in src/core/audio/, all sound made in code with WebAudio) ----
 
-/** One music theme per game plus the hub. */
+/** One music track per game plus the hub. Each track holds several songs that the module rotates. */
 export type MusicTrack = 'hub' | GameId;
 /** Each theme has these arrangements; switching crossfades on the beat. */
 export type MusicMood = 'menu' | 'play' | 'intense' | 'win';

@@ -1,8 +1,9 @@
 import type { MusicMood, MusicTrack } from '../contract';
-import { THEMES, type Section, type Theme } from './songs';
+import { readLocal, writeLocal } from '../store';
+import { SONGS, type Section, type Theme } from './songs';
 import { DRUM, INST, mtof, tone, type DrumName, type InstName, type Mixer } from './synth';
 
-// The music engine. A theme is compiled once per mood into a grid of events (32 bars x 16 steps);
+// The music engine. A song is compiled once per mood into a grid of events (32 bars x 16 steps);
 // a lookahead scheduler then hands each step to WebAudio with an exact start time.
 
 type Ctx = BaseAudioContext;
@@ -125,6 +126,8 @@ function compile(th: Theme, mood: LoopMood): Grid {
         at(step).push({ inst: compInst, midi: tri[step % 4 ? 2 : 0], len: 1, vel: cv * 0.7 }, { inst: compInst, midi: tri[1] + 12, len: 1, vel: cv * 0.45 });
       } else if (style === 'broken' && step % 4 === 0) {
         at(step).push({ inst: compInst, midi: [tri[0], tri[2], tri[1], tri[2]][step / 4], len: 3, vel: cv });
+      } else if (style === 'chord' && step % 4 === 0) {
+        for (const m of tri) at(step).push({ inst: compInst, midi: m, len: 2, vel: cv * (step % 8 ? 0.45 : 0.6) });
       }
       // Intense adds a fast sparkle line on top.
       if (hot) at(step).push({ inst: compInst, midi: tri[[0, 1, 2, 1][step % 4]] + 12, len: 1, vel: 0.35 });
@@ -142,6 +145,9 @@ function compile(th: Theme, mood: LoopMood): Grid {
       } else if (bs === 'bounce') {
         const k = [0, 3, 6, 8, 11, 14].indexOf(step);
         if (k >= 0) bass(bassNote + [0, 0, 7, 0, 12, 7][k], 2, k === 0 || k === 3 ? 1 : 0.8);
+      } else if (bs === 'walk') {
+        // A note on every beat, stepping up the chord: root, third, fifth, sixth.
+        if (step % 4 === 0) bass(bassNote + note(th, root + [0, 2, 4, 5][step / 4]) - note(th, root), 3, step ? 0.85 : 1);
       } else if (step % 2 === 0) bass(bassNote + (step % 4 ? 12 : 0), 2, step % 4 ? 0.7 : 1);
 
       // Drums, with a fill in the last bar of each section and a crash on the next downbeat.
@@ -179,15 +185,15 @@ function compileSting(th: Theme): Grid {
   return g;
 }
 
-/** One theme wired to a mixer: owns its bus and plays single steps at exact times. */
+/** One song wired to a mixer: owns its bus and plays single steps at exact times. */
 export class Track {
   readonly theme: Theme;
   readonly bus: GainNode;
   private grids = new Map<string, Grid>();
   private buses = new Map<string, AudioNode>();
 
-  constructor(private ctx: Ctx, private mix: Mixer, readonly name: MusicTrack) {
-    this.theme = THEMES[name];
+  constructor(private ctx: Ctx, private mix: Mixer, readonly name: MusicTrack, readonly song = 0) {
+    this.theme = SONGS[name][song];
     this.bus = ctx.createGain();
     this.bus.gain.value = this.theme.trim;
     this.bus.connect(mix.music);
@@ -233,17 +239,37 @@ export class Track {
     return n;
   }
 
-  /** Fades out and disconnects. */
-  release(t: number): void {
-    this.bus.gain.setTargetAtTime(0, t, 0.12);
-    setTimeout(() => this.bus.disconnect(), 1500);
+  /** Fades out and disconnects. With `ring`, the notes already playing ring out instead (a song change on the bar line). */
+  release(t: number, ring = false): void {
+    if (!ring) this.bus.gain.setTargetAtTime(0, t, 0.12);
+    setTimeout(() => this.bus.disconnect(), ring ? 5000 : 1500);
   }
+}
+
+/** The next song of a track's rotation. Kept per device, so a new page carries on where the last one stopped. */
+const lastSong: Partial<Record<MusicTrack, number>> = {}; // also in memory: storage can be off (private browsing)
+function nextSong(name: MusicTrack): number {
+  const key = `camalot.audio.song.${name}`;
+  const prev = lastSong[name] ?? readLocal<number>(key);
+  const song = typeof prev === 'number' && Number.isInteger(prev) && prev >= 0 ? (prev + 1) % SONGS[name].length : 0;
+  writeLocal(key, (lastSong[name] = song));
+  return song;
 }
 
 const LOOKAHEAD = 0.25; // seconds of music kept scheduled ahead of the clock
 const TICK_MS = 50;
+/** Leaving the menu after this many seconds of play on the current song counts as a new run, not a pause. */
+const FRESH_S = 15;
 
-/** Live playback: keeps the next quarter second scheduled; mood changes land on bar lines. */
+/**
+ * Live playback: keeps the next quarter second scheduled; mood changes land on bar lines.
+ *
+ * Song rotation (each track has several songs, played in order, so the same one never comes twice in a row):
+ * - a song that reaches the end of its loop hands over to the next one;
+ * - a new run or level (play or intense begins from the menu) starts the next song, unless the current
+ *   song has had under FRESH_S seconds of play (a pause or a question card, then it carries on);
+ * - any other mood change keeps the current song.
+ */
 export class MusicPlayer {
   private track: Track | null = null;
   private mood: LoopMood = 'menu';
@@ -252,18 +278,24 @@ export class MusicPlayer {
   private pos = 0; // step inside the 32-bar loop
   private next = 0; // context time of the next step
   private timer = 0;
+  private played = 0; // seconds the current song has spent in play or intense
+  private fresh = true; // the next start from the menu is a new run: nothing played yet, or a level was just won
+  private held = false; // audio lab: stay on one song
 
   constructor(private ctx: AudioContext, private mix: Mixer) {}
 
-  play(name: MusicTrack, mood: MusicMood): void {
-    if (this.track?.name !== name) {
+  /** `song` is for the audio lab: it plays that song and stops the rotation. */
+  play(name: MusicTrack, mood: MusicMood, song?: number): void {
+    if (this.track?.name !== name || (song !== undefined && this.track.song !== song)) {
       this.track?.release(this.ctx.currentTime);
-      this.track = new Track(this.ctx, this.mix, name);
-      this.pos = 0;
+      this.track = new Track(this.ctx, this.mix, name, song ?? nextSong(name));
+      this.pos = this.played = 0;
+      this.fresh = true;
       this.sting = -1;
       this.next = this.ctx.currentTime + 0.08;
       if (mood !== 'win') this.mood = mood;
     }
+    this.held = song !== undefined;
     this.want = mood;
     if (!this.timer) this.timer = window.setInterval(() => this.tick(), TICK_MS);
     this.tick();
@@ -276,9 +308,22 @@ export class MusicPlayer {
     this.timer = 0;
   }
 
+  /** The next song takes over on this step; the old one's last notes ring out. */
+  private rotate(): void {
+    if (this.held || !this.track) return;
+    this.track.release(this.ctx.currentTime, true);
+    this.track = new Track(this.ctx, this.mix, this.track.name, nextSong(this.track.name));
+    this.pos = this.played = 0;
+  }
+
+  private setMood(mood: LoopMood): void {
+    if (this.mood === 'menu' && mood !== 'menu' && (this.fresh || this.played > FRESH_S)) this.rotate();
+    this.fresh = false;
+    this.mood = mood;
+  }
+
   private tick(): void {
-    const tr = this.track;
-    if (!tr || this.ctx.state !== 'running') return;
+    if (!this.track || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
     if (this.next < now) this.next = now + 0.05; // the page was frozen; pick up from here
     while (this.next < now + LOOKAHEAD) {
@@ -287,20 +332,28 @@ export class MusicPlayer {
         if (this.want === 'win' && this.pos % 4 === 0) {
           this.sting = 0;
           this.want = 'menu';
-        } else if (this.want !== 'win' && this.want !== this.mood && this.pos % STEPS === 0) this.mood = this.want;
+        } else if (this.want !== 'win' && this.want !== this.mood && this.pos % STEPS === 0) this.setMood(this.want);
       }
+      const tr = this.track;
       if (this.sting >= 0) {
         tr.step('win', this.sting, this.next);
         this.next += tr.stepDur('play');
         if (++this.sting === 2 * STEPS) {
+          // After a win the song starts over in the menu mood, and the next run gets a new song.
           this.sting = -1;
           this.pos = 0;
-          this.mood = this.want === 'win' ? 'menu' : this.want;
+          this.mood = 'menu';
+          this.fresh = true;
         }
       } else {
+        const sd = tr.stepDur(this.mood);
         tr.step(this.mood, this.pos, this.next);
-        this.next += tr.stepDur(this.mood);
-        this.pos = (this.pos + 1) % (FORM_BARS * STEPS);
+        this.next += sd;
+        if (this.mood !== 'menu') this.played += sd;
+        if (++this.pos === FORM_BARS * STEPS) {
+          this.pos = 0;
+          this.rotate();
+        }
       }
     }
   }
