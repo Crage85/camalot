@@ -1,4 +1,4 @@
-// Munch Hollow props for the six newer maps. Each array runs smallest to largest; the boss is last.
+// Riftmaw props for the six newer maps. Each array runs smallest to largest; the boss is last.
 import { G, SWAY, FLAG, SPIN, SPINY, at, tree, pine, house, tower, castle, mountain, type Part, type PropDef } from './parts';
 
 const PI = Math.PI;
@@ -55,7 +55,7 @@ export const DESERT: PropDef[] = [
     ['ball', G | 0xffe08a, 0, 1.1, 0, 0.26, 0.3, 0.26],
     ['cone', 0xc9a13e, 0, 1.3, 0, 0.26, 0.14, 0.26],
   ] },
-  { name: 'palmling', label: 'baby palms', count: 75, parts: palm(0.3) },
+  { name: 'palmling', label: 'young palms', count: 75, parts: palm(0.3) },
   { name: 'cart', label: 'caravan carts', count: 35, place: 'road', parts: [
     ['box', 0xb07a46, 0, 0.55, 0, 1.4, 0.3, 0.9],
     ['cyl', 0xfff6e8, 0, 0.85, 0, 0.9, 1.3, 0.9, 0, 0, PI / 2],
@@ -693,20 +693,19 @@ export const DRAGON: PropDef[] = [
     ['box', 0xf5ecd8, 0, 3.1, 0, 0.2, 0.2, 1.6],
   ] },
   { name: 'dragon', label: 'sleeping dragons', count: 3, place: 'landmark', parts: at([
-    ['ball', 0x6fcf97, 0, 1.3, -0.2, 4.0, 2.6, 3.6],
-    ['ball', 0xfff3b0, 0, 0.9, 0.9, 2.8, 1.6, 1.6],
-    ['ball', 0x6fcf97, 0.4, 0.9, 2.3, 2.0, 1.6, 1.8],
-    ['ball', 0x7fd8a6, 0.4, 0.7, 3.1, 1.2, 0.8, 1.0],
+    ['ball', 0x8a2a3a, 0, 1.3, -0.2, 4.0, 2.6, 3.6],
+    ['ball', 0xd9a441, 0, 0.9, 0.9, 2.8, 1.6, 1.6],
+    ['ball', 0x8a2a3a, 0.4, 0.9, 2.3, 2.0, 1.6, 1.8],
+    ['ball', 0xa03a48, 0.4, 0.7, 3.1, 1.2, 0.8, 1.0],
     ['box', 0x2b2233, -0.05, 1.15, 3.12, 0.35, 0.06, 0.04, 0, 0, 0.2],
     ['box', 0x2b2233, 0.85, 1.15, 3.12, 0.35, 0.06, 0.04, 0, 0, -0.2],
-    ['ball', 0xff9eb5, -0.3, 0.9, 3.1, 0.3, 0.16, 0.08], ['ball', 0xff9eb5, 1.1, 0.9, 3.1, 0.3, 0.16, 0.08],
     ['cone', 0xffe9a8, -0.1, 1.75, 2.0, 0.26, 0.6, 0.26, -0.6], ['cone', 0xffe9a8, 0.9, 1.75, 2.0, 0.26, 0.6, 0.26, -0.6],
-    ['cone', 0xb39ddb, -1.3, 2.3, -0.5, 2.0, 0.16, 1.6, 0, 0, 0.35], ['cone', 0xb39ddb, 1.3, 2.3, -0.5, 2.0, 0.16, 1.6, 0, 0, -0.35],
+    ['cone', 0x4a2a6a, -1.3, 2.3, -0.5, 2.0, 0.16, 1.6, 0, 0, 0.35], ['cone', 0x4a2a6a, 1.3, 2.3, -0.5, 2.0, 0.16, 1.6, 0, 0, -0.35],
     ['cone', 0xffe9a8, 0, 2.6, -0.8, 0.35, 0.5, 0.35, -0.4], ['cone', 0xffe9a8, 0, 2.5, -1.5, 0.35, 0.5, 0.35, -0.8],
-    ['ball', 0x6fcf97, -1.7, 0.4, -1.6, 1.2, 0.8, 1.2], ['ball', 0x6fcf97, -2.4, 0.3, -0.6, 0.9, 0.6, 0.9],
-    ['ball', 0x7fd8a6, -2.5, 0.25, 0.4, 0.7, 0.5, 0.7], ['cone', 0xffe9a8, -2.4, 0.5, 1.0, 0.3, 0.4, 0.3, 0.6],
-    ['ball', 0x5cbf86, -1.2, 0.3, 1.4, 0.9, 0.6, 0.9], ['ball', 0x5cbf86, 1.5, 0.3, 1.2, 0.9, 0.6, 0.9],
-    ['oct', G | 0xc9e8ff, 1.6, 3.0, 2.8, 0.25, 0.25, 0.25], ['oct', G | 0xc9e8ff, 2.0, 3.6, 2.6, 0.35, 0.35, 0.35],
+    ['ball', 0x8a2a3a, -1.7, 0.4, -1.6, 1.2, 0.8, 1.2], ['ball', 0x8a2a3a, -2.4, 0.3, -0.6, 0.9, 0.6, 0.9],
+    ['ball', 0xa03a48, -2.5, 0.25, 0.4, 0.7, 0.5, 0.7], ['cone', 0xffe9a8, -2.4, 0.5, 1.0, 0.3, 0.4, 0.3, 0.6],
+    ['ball', 0x6a2030, -1.2, 0.3, 1.4, 0.9, 0.6, 0.9], ['ball', 0x6a2030, 1.5, 0.3, 1.2, 0.9, 0.6, 0.9],
+    ['oct', G | 0xff7a2a, 1.6, 3.0, 2.8, 0.25, 0.25, 0.25], ['oct', G | 0xff7a2a, 2.0, 3.6, 2.6, 0.35, 0.35, 0.35],
   ], 0.45, -0.98, 1.4) },
   { name: 'volcano', label: 'volcanoes', count: 1, place: 'landmark', parts: [
     ...mountain(0x4a3d5a, 0x5a4a6a, LAVA),
@@ -746,7 +745,7 @@ export const SKY: PropDef[] = [
     ['cone', G | 0xc9a0ff, -0.15, 0.25, 0.1, 0.18, 0.5, 0.18, 0, -0.3, PI / 2],
     ['cone', G | 0x8fd3ff, -0.15, 0.17, -0.1, 0.18, 0.5, 0.18, 0, 0.3, PI / 2],
   ] },
-  { name: 'rocket', label: 'toy rockets', count: 65, near: true, parts: [
+  { name: 'rocket', label: 'signal rockets', count: 65, near: true, parts: [
     ['cyl', 0xc9c3d6, 0, 0.02, 0, 0.8, 0.04, 0.8],
     ['cone', G | 0xffb04a, 0, 0.16, 0, 0.18, 0.24, 0.18, PI],
     ['cyl', 0xffffff, 0, 0.58, 0, 0.3, 0.6, 0.3],

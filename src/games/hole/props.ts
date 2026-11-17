@@ -1,4 +1,4 @@
-// Munch Hollow places: the prop lists for the first three places, and the table of all nine.
+// Riftmaw places: the prop lists for the first three places, and the table of all nine.
 import { G, SWAY, FLAG, SPIN, at, tree, pine, house, tower, castle, mountain, type MapDef, type Part, type PropDef } from './parts';
 import { DESERT, CAT, CANDY, PARK, DRAGON, SKY } from './props2';
 export { build, rimWith, type MapDef, type MapId, type Part, type PropDef } from './parts';
@@ -73,30 +73,30 @@ const KINGDOM: PropDef[] = [
     ['cyl', 0xc9c3d6, 0, 3, 0, 4.6, 6, 4.6],
     ['cyl', 0xb3abc6, 0, 0.3, 0, 5.0, 0.6, 5.0],
     ...[0, 1, 2, 3, 4, 5, 6, 7].map((i): Part => ['box', 0xc9c3d6, Math.cos(i * 0.785) * 2.15, 6.3, Math.sin(i * 0.785) * 2.15, 0.7, 0.7, 0.7, 0, -i * 0.785, 0]),
-    ['cone', 0x7e57c2, 0, 8.0, 0, 4.4, 3.2, 4.4],
-    ['cyl', 0x5d4630, 0, 10.0, 0, 0.1, 1.2, 0.1],
-    ['box', FLAG | 0xff8fc8, 0.4, 10.3, 0, 0.7, 0.45, 0.06],
+    ['cone', 0x7e57c2, 0, 9.3, 0, 4.4, 5.8, 4.4],
+    ['cyl', 0x5d4630, 0, 12.6, 0, 0.1, 1.2, 0.1],
+    ['box', FLAG | 0xc8323c, 0.5, 12.8, 0, 0.9, 0.5, 0.06], ['box', FLAG | 0xc8323c, 0, 4.6, 2.36, 0.9, 2.0, 0.04], ['oct', G | 0x9fe8ff, 0, 13.4, 0, 0.4, 0.8, 0.4],
     ['box', 0x3a2f4a, 0, 3.6, 2.3, 0.7, 1.1, 0.1],
     ['box', 0x8d5a3a, 0, 0.9, 2.3, 1.2, 1.8, 0.1],
   ] },
   { name: 'dragon', count: 4, parts: [
-    ['ball', 0x6fcf97, 0, 1.6, 0, 3.4, 3.0, 3.6],
-    ['ball', 0xfff3b0, 0, 1.5, 1.25, 2.2, 2.2, 1.2],
-    ['ball', 0x6fcf97, 0, 3.9, 0.8, 2.1, 1.8, 2.0],
-    ['ball', 0x7fd8a6, 0, 3.6, 1.7, 1.3, 0.9, 1.1],
-    ['cone', 0xffe9a8, -0.5, 4.9, 0.5, 0.3, 0.7, 0.3, -0.3],
-    ['cone', 0xffe9a8, 0.5, 4.9, 0.5, 0.3, 0.7, 0.3, -0.3],
-    ['ball', 0x2b2233, -0.5, 4.15, 1.6, 0.3, 0.36, 0.2],
-    ['ball', 0x2b2233, 0.5, 4.15, 1.6, 0.3, 0.36, 0.2],
-    ['ball', 0xff9eb5, -0.8, 3.7, 1.55, 0.35, 0.2, 0.1],
-    ['ball', 0xff9eb5, 0.8, 3.7, 1.55, 0.35, 0.2, 0.1],
-    ['cone', 0xb39ddb, -1.9, 2.7, -0.6, 2.2, 0.16, 1.6, 0, 0, 0.7],
-    ['cone', 0xb39ddb, 1.9, 2.7, -0.6, 2.2, 0.16, 1.6, 0, 0, -0.7],
-    ['cone', 0x6fcf97, 0, 0.5, -2.3, 0.8, 2.8, 0.8, -1.35],
-    ['ball', 0x5cbf86, -0.9, 0.35, 1.0, 0.9, 0.7, 1.1],
-    ['ball', 0x5cbf86, 0.9, 0.35, 1.0, 0.9, 0.7, 1.1],
-    ['cone', 0xffe9a8, 0, 3.4, -1.3, 0.35, 0.6, 0.35, -0.5],
-    ['cone', 0xffe9a8, 0, 2.6, -1.75, 0.35, 0.6, 0.35, -0.9],
+    ['ball', 0x2f9a6a, 0, 1.6, 0, 3.4, 3.0, 3.6],
+    ['ball', 0xd9a441, 0, 1.3, 1.25, 1.8, 1.8, 1.2],
+    ['cylt', 0x2f9a6a, 0, 3.5, 0.7, 1.2, 2.6, 1.2, 0.35],
+    ['box', 0x2f9a6a, 0, 4.9, 1.2, 1.1, 0.9, 1.3],
+    ['box', 0x38b07a, 0, 4.7, 1.85, 0.8, 0.55, 0.8],
+    ['cone', 0xe8d8a0, -0.4, 5.6, 0.5, 0.26, 1.3, 0.26, -0.9],
+    ['cone', 0xe8d8a0, 0.4, 5.6, 0.5, 0.26, 1.3, 0.26, -0.9],
+    ['box', G | 0xffd54a, -0.56, 5.0, 1.5, 0.06, 0.16, 0.4],
+    ['box', G | 0xffd54a, 0.56, 5.0, 1.5, 0.06, 0.16, 0.4],
+    ['cone', 0x6a3fc0, -1.9, 2.7, -0.6, 2.2, 0.16, 1.6, 0, 0, 0.7],
+    ['cone', 0x6a3fc0, 1.9, 2.7, -0.6, 2.2, 0.16, 1.6, 0, 0, -0.7],
+    ['cone', 0x2f9a6a, 0, 0.5, -2.3, 0.8, 2.8, 0.8, -1.35],
+    ['ball', 0x237a52, -0.9, 0.35, 1.0, 0.9, 0.7, 1.1],
+    ['ball', 0x237a52, 0.9, 0.35, 1.0, 0.9, 0.7, 1.1],
+    ['cone', 0xe8d8a0, 0, 4.3, 0.1, 0.3, 0.7, 0.3, -0.5],
+    ['cone', 0xe8d8a0, 0, 3.4, -1.3, 0.35, 0.8, 0.35, -0.5],
+    ['cone', 0xe8d8a0, 0, 2.6, -1.75, 0.35, 0.8, 0.35, -0.9],
   ] },
   { name: 'bush', label: 'bushes', count: 60, parts: [
     ['blob', SWAY | 0x4caf50, 0, 0.3, 0, 0.8, 0.6, 0.7], ['blob', SWAY | 0x5cb85c, 0.25, 0.4, 0.1, 0.5, 0.5, 0.5], ['ball', 0xff5c8a, -0.2, 0.5, 0.2, 0.1, 0.1, 0.1], ['ball', 0xff5c8a, 0.2, 0.3, 0.3, 0.1, 0.1, 0.1],
@@ -116,7 +116,7 @@ const KINGDOM: PropDef[] = [
     ['box', SPIN | 0xf7ead0, 0, 4.1, 1.7, 0.55, 5.4, 0.06], ['box', SPIN | 0xf7ead0, 0, 4.1, 1.7, 5.4, 0.55, 0.06],
   ] },
   { name: 'hall', label: 'great halls', count: 4, place: 'landmark', parts: hall(0xf3e3c3, 0x7e57c2, 0xc9c3d6, 0xffd54a) },
-  { name: 'castle', count: 1, place: 'landmark', parts: castle(0xc9c3d6, 0x7e57c2, 0xff8fc8) },
+  { name: 'castle', count: 1, place: 'landmark', parts: castle(0xc9c3d6, 0x5a3fb0, 0xc8323c) },
 ];
 
 // ---------- ski village ----------
@@ -347,13 +347,13 @@ const BEACH: PropDef[] = [
 ];
 
 export const MAPS: MapDef[] = [
-  { id: 'kingdom', name: 'Kingdom', ground: 0x8fd16a, ground2: 0x7cc45a, road: 0xe8d5a3, water: 0x58b8ee, sky: [0x6db8f2, 0xd8f0ff], sun: 0xfff0d0, hemi: [0xcfe8ff, 0x7aa860], wall: 0x4caf50, plan: { roads: 3, river: true, ponds: 1, plaza: true }, backdrop: [0x6fb86a, 0x9ad48a], ambient: 'petals', props: KINGDOM },
-  { id: 'ski', name: 'Ski Village', ground: 0xf3f8ff, ground2: 0xdfeaf7, road: 0xc5d9ec, water: 0x9fd4f5, sky: [0x5aa6e8, 0xdcefff], sun: 0xfff4e6, hemi: [0xdcecff, 0x9fb4d0], wall: 0xdfeefb, plan: { roads: 2, ponds: 2, plaza: true }, backdrop: [0x9fb4c8, 0xffffff], ambient: 'snow', props: SKI },
-  { id: 'beach', name: 'Beach Town', ground: 0xf5dfa8, ground2: 0xedd193, road: 0xd9b888, water: 0x35b6e6, sky: [0x49b4f0, 0xd6f4ff], sun: 0xfff2cf, hemi: [0xcff2ff, 0xd8c08a], wall: 0xe8c98a, plan: { roads: 2, sea: true, plaza: true }, backdrop: [0x7ec97a, 0xb6e3a0], ambient: 'spray', props: BEACH },
-  { id: 'desert', name: 'Desert Oasis', ground: 0xf0cf8e, ground2: 0xe6bf78, road: 0xd6a868, water: 0x3fc4d8, sky: [0x5fb0ec, 0xffe9c4], sun: 0xffe6b0, hemi: [0xffefd0, 0xd0a060], wall: 0xd9b074, plan: { roads: 2, ponds: 3, plaza: true }, backdrop: [0xe0b06a, 0xf2d08c], ambient: 'dust', props: DESERT },
-  { id: 'cat', name: 'Cat Town', ground: 0xa8dc88, ground2: 0x98d078, road: 0xf2d9c0, water: 0x6ec6f0, sky: [0x86c5f5, 0xffe4f0], sun: 0xfff0dc, hemi: [0xffe6f2, 0x86b870], wall: 0xff9ec7, plan: { roads: 3, river: true, plaza: true }, backdrop: [0xc8a0e0, 0xffc8e0], ambient: 'petals', props: CAT },
-  { id: 'candy', name: 'Candy Land', ground: 0xffd3e6, ground2: 0xffc2dc, road: 0xfff3c4, water: 0x8a5a44, sky: [0x8fd0ff, 0xffe0f2], sun: 0xfff0e0, hemi: [0xffe8f6, 0xe8a0c8], wall: 0xff8fc8, plan: { roads: 3, river: true, ponds: 1, plaza: true }, backdrop: [0xffa8d0, 0xffffff], ambient: 'sparkle', props: CANDY },
-  { id: 'park', name: 'Colorado Park', ground: 0x86c46a, ground2: 0x74b45c, road: 0xcdb48a, water: 0x3f9fd8, sky: [0x4a9de8, 0xd8ecff], sun: 0xfff2d8, hemi: [0xd0e6ff, 0x6a9a58], wall: 0x5a9a50, plan: { roads: 1, river: true, ponds: 2 }, backdrop: [0x7890a8, 0xffffff], ambient: 'leaves', props: PARK },
-  { id: 'dragon', name: 'Dragon Mountain', ground: 0x6a5a6e, ground2: 0x5c4d62, road: 0x8a7a8a, water: 0xff7a2a, sky: [0x3a2a5a, 0xff9a6a], sun: 0xffc890, hemi: [0xffb8a0, 0x4a3050], wall: 0x4a3a50, plan: { roads: 2, river: true, ponds: 2, plaza: true }, backdrop: [0x4a3858, 0xff8a4a], ambient: 'embers', props: DRAGON },
-  { id: 'sky', name: 'Starry Sky Isles', ground: 0x7a6ad0, ground2: 0x6c5cc4, road: 0xc8b8ff, water: 0x4a3a9a, sky: [0x1a1448, 0x8a6ad8], sun: 0xe8e0ff, hemi: [0xc8b8ff, 0x4a3a8a], wall: 0xc8b8ff, plan: { roads: 2, ponds: 3, plaza: true }, backdrop: [0x5a4ab0, 0xe8dcff], ambient: 'stars', props: SKY },
+  { id: 'kingdom', name: 'Crownhold', ground: 0x4f9a3c, ground2: 0x3d8434, road: 0xcfb078, water: 0x2f8fd8, sky: [0x1f5fc4, 0xffd9a0], sun: 0xffe2b0, hemi: [0xbfd8ff, 0x5a5a9a], wall: 0x6a5a78, plan: { roads: 3, river: true, ponds: 1, plaza: true }, backdrop: [0x3f7f5a, 0x8fd0a0], ambient: 'petals', props: KINGDOM },
+  { id: 'ski', name: 'Frostpeak', ground: 0xdfeaf8, ground2: 0xc4d6ee, road: 0xa9c0dc, water: 0x6fb8ec, sky: [0x1c4fa8, 0xbfe0ff], sun: 0xfff0d8, hemi: [0xd0e4ff, 0x6a80b8], wall: 0x8fa8c8, plan: { roads: 2, ponds: 2, plaza: true }, backdrop: [0x6f88b0, 0xf0f6ff], ambient: 'snow', props: SKI },
+  { id: 'beach', name: 'Tidehaven', ground: 0xe8c47a, ground2: 0xd9b064, road: 0xc49a62, water: 0x1aa0d8, sky: [0x0f6fd0, 0xffe0b0], sun: 0xffe6b8, hemi: [0xc0e8ff, 0x8a6a7a], wall: 0xc8a060, plan: { roads: 2, sea: true, plaza: true }, backdrop: [0x3f9a6a, 0x8fd890], ambient: 'spray', props: BEACH },
+  { id: 'desert', name: 'Sunscar Oasis', ground: 0xe0a85a, ground2: 0xcf9044, road: 0xb8804a, water: 0x1fb8c8, sky: [0x2a4fb0, 0xffb870], sun: 0xffd898, hemi: [0xffe0b8, 0x8a5a6a], wall: 0xb07a48, plan: { roads: 2, ponds: 3, plaza: true }, backdrop: [0xc07a48, 0xf0b070], ambient: 'dust', props: DESERT },
+  { id: 'cat', name: 'Clawhaven', ground: 0x4a9a6a, ground2: 0x3c8a5e, road: 0xd8b890, water: 0x3aa0e0, sky: [0x3a3a9a, 0xff9ab0], sun: 0xffd8c0, hemi: [0xe0c8ff, 0x5a4a8a], wall: 0xb83a4a, plan: { roads: 3, river: true, plaza: true }, backdrop: [0x5a4a9a, 0xc890d0], ambient: 'petals', props: CAT },
+  { id: 'candy', name: 'Sugarspire', ground: 0x8a3a6a, ground2: 0x7a2e5e, road: 0xf0d090, water: 0x5a2e1e, sky: [0x2a1a6a, 0xff8ac0], sun: 0xffd8e8, hemi: [0xffc8f0, 0x6a3a8a], wall: 0xd83a7a, plan: { roads: 3, river: true, ponds: 1, plaza: true }, backdrop: [0x7a3a9a, 0xffb0e0], ambient: 'sparkle', props: CANDY },
+  { id: 'park', name: 'Aspen Wilds', ground: 0x4a8a3a, ground2: 0x3c7830, road: 0xb09060, water: 0x2a80c8, sky: [0x1a58b8, 0xffe8c0], sun: 0xffe8c0, hemi: [0xc0dcff, 0x4a6a6a], wall: 0x5a4a3a, plan: { roads: 1, river: true, ponds: 2 }, backdrop: [0x4a6088, 0xe8f0ff], ambient: 'leaves', props: PARK },
+  { id: 'dragon', name: 'Dragonspire', ground: 0x4a3a52, ground2: 0x3c2e46, road: 0x6a5a6e, water: 0xff6a1a, sky: [0x1a1038, 0xff7a3a], sun: 0xffb070, hemi: [0xff9a80, 0x3a2048], wall: 0x2e2438, plan: { roads: 2, river: true, ponds: 2, plaza: true }, backdrop: [0x32243e, 0xff7a3a], ambient: 'embers', props: DRAGON },
+  { id: 'sky', name: 'Astral Isles', ground: 0x5a48b8, ground2: 0x4c3ca8, road: 0xa898f0, water: 0x2e2480, sky: [0x0a0830, 0x7a4ad8], sun: 0xd8d0ff, hemi: [0xb8a8ff, 0x3a2a7a], wall: 0x8a78e0, plan: { roads: 2, ponds: 3, plaza: true }, backdrop: [0x40308a, 0xc8b8ff], ambient: 'stars', props: SKY },
 ];

@@ -1,4 +1,4 @@
-// Munch Hollow: menus, HUD, input, save data, the campaign and the round flow. Gets the platform services from main.ts.
+// Riftmaw: menus, HUD, input, save data, the campaign and the round flow. Gets the platform services from main.ts.
 import './style.css';
 import type { Camalot, SfxName, LoopHandle } from '../../core/contract';
 import { MAPS, type MapId } from './props';
@@ -8,7 +8,7 @@ import {
   PLACE_COINS, levelCoins, scoreCoins, TREASURES, treasureAt, AWARDS, migrate, type LevelDef, type PlayMode, type Save, type Stat, type UpKey,
 } from './data';
 
-const POW_NAME: Record<PowKind, string> = { magnet: 'Magnet', speed: 'Speed', grow: 'Grow', clock: '+10 seconds', rush: 'Sugar rush: double growth', treasure: 'Treasure', thorn: 'Ouch! Thornball' };
+const POW_NAME: Record<PowKind, string> = { magnet: 'Magnet', speed: 'Speed', grow: 'Grow', clock: '+10 seconds', rush: 'Overdrive: double growth', treasure: 'Treasure', thorn: 'Thornball: rift shrinks' };
 
 // Lucide icons (lucide.dev, ISC): pause, zap, sparkles.
 const svg = (p: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -40,6 +40,8 @@ export async function run(cm: Camalot) {
   root.innerHTML = `
     <canvas tabindex="-1" aria-label="Game"></canvas>
     <div class="hh-tags"></div>
+    <div class="hh-speed"></div>
+    <div class="hh-flash"></div>
     <div class="hh-arrow" hidden></div>
     <div class="hh-hud" hidden>
       <div class="hh-timer cm-panel"><b>2:00</b></div>
@@ -85,6 +87,8 @@ export async function run(cm: Camalot) {
   let wind: LoopHandle | null = null, waves: LoopHandle | null = null;
   const stopLoops = () => { wind?.stop(); waves?.stop(); wind = waves = null; };
 
+  const flashEl = $('.hh-flash');
+  const flash = () => { flashEl.classList.remove('on'); void flashEl.offsetWidth; flashEl.classList.add('on'); };
   const pop = (text: string, secs = 1.2) => { popEl.textContent = text; popEl.hidden = false; popT = secs; };
 
   // ---------- score popups: "+N" rising from the hole. One pooled layer of 10 nodes, nothing allocated per item. ----------
@@ -156,11 +160,11 @@ export async function run(cm: Camalot) {
       // Combo bonus goes into the item's own "+N"; the banner only marks milestones, so it never reads x1060.
       const bonus = combo >= 5 ? Math.min(20, combo) : 0;
       h.score += bonus;
-      if (combo >= 5 && combo % 5 === 0) { if (COMBO_AT.includes(combo)) pop(`Combo x${combo}!`); sfx('cascade', 1 + Math.min(1, combo / 60), 0.6); }
+      if (combo >= 5 && combo % 5 === 0) { if (COMBO_AT.includes(combo)) pop(`Chain x${combo}`); sfx('cascade', 1 + Math.min(1, combo / 60), 0.6); }
       bump('combo', combo, true);
       scorePop(o.score * (h.rushT > 0 ? 2 : 1) + bonus, o.diag, o.kind);
       if (o.diag >= TIER_AT[1] || o.diag > h.R * 0.4) sizeJump();
-      if (o.boss) { round.bosses++; pop('LANDMARK SWALLOWED!', 2.5); sfx('explode'); sfx('cheer'); return; }
+      if (o.boss) { round.bosses++; pop('LANDMARK DEVOURED', 2.5); flash(); sfx('explode'); sfx('cheer'); return; }
       const now = performance.now();
       if (now - lastGulp < 45) return;
       lastGulp = now;
@@ -172,12 +176,12 @@ export async function run(cm: Camalot) {
     },
     holeEaten(victim: Hole, by: Hole) {
       if (victim.player) {
-        msgEl.innerHTML = `Gobbled by <b>${esc(by.name)}</b>!<br>Back in a moment`;
+        msgEl.innerHTML = `Consumed by <b>${esc(by.name)}</b><br>Reforming`;
         msgEl.hidden = false;
         sfx('lose', 1.2, 0.7);
       } else if (by.player) {
         round.gobbled++;
-        pop(`You gobbled ${victim.name}!`, 1.6);
+        pop(`${victim.name} consumed`, 1.6);
         sfx('gulp', 0.6); sfx(save.skin === 'kitty' || save.skin === 'set-cat' ? 'meow' : 'cheer', 1, 0.7);
       }
     },
@@ -188,7 +192,7 @@ export async function run(cm: Camalot) {
       sfx(kind === 'thorn' ? 'error' : kind === 'grow' ? 'grow' : kind === 'speed' ? 'boost' : kind === 'treasure' ? 'unlock' : kind === 'clock' ? 'coin' : 'sparkle');
       if (kind === 'treasure' && round.lv) {
         const id = `${round.lv.place}-${treasureAt(round.lv)}`;
-        if (!save.treasures.includes(id)) { save.treasures.push(id); bump('treasures', 1); pop(`Treasure: ${TREASURES[round.lv.place][treasureAt(round.lv)]}!`, 2.6); }
+        if (!save.treasures.includes(id)) { save.treasures.push(id); bump('treasures', 1); pop(`Treasure: ${TREASURES[round.lv.place][treasureAt(round.lv)]}`, 2.6); }
       }
     },
   };
@@ -356,7 +360,7 @@ export async function run(cm: Camalot) {
         save.stars[lv.id] = Math.max(save.stars[lv.id] ?? 0, stars);
         if (round.crown && !save.crowns.includes(lv.id)) { save.crowns.push(lv.id); bump('crowns', 1); coins += 50 + lv.pi * 10; news.push('Crown won!'); }
       }
-      head = stars > 0 ? `${mapName(lv.place)} ${lv.n} ${round.crown ? 'crowned' : 'complete'}` : 'So close! Try again';
+      head = stars > 0 ? `${mapName(lv.place)} ${lv.n} ${round.crown ? 'crowned' : 'complete'}` : 'Goal missed';
       extra = bigStars(stars) + `<p class="hh-help cm-help">${esc(round.goal?.text ?? 'Finish first')}</p>`;
     } else if (round.mode === 'solo') {
       const share = world.swallowed / world.total;
@@ -379,7 +383,7 @@ export async function run(cm: Camalot) {
     PLACES.forEach((id, i) => { if (placeOpen(i) && !save.maps.includes(id)) save.maps.push(id); });
     const openNow = PLACES.filter((_, i) => placeOpen(i)).length;
     save.stats.places = Math.max(save.stats.places, openNow);
-    if (openNow > openBefore) news.push(`New place: ${mapName(PLACES[openNow - 1])}!`);
+    if (openNow > openBefore) news.push(`New place: ${mapName(PLACES[openNow - 1])}`);
     for (const a of ABILITIES) if (starsBefore < a.stars && totalStars() >= a.stars) { news.push(`New ability: ${a.name}`); if (!save.ability) save.ability = a.id; }
     for (const id of PLACES) if (TREASURES[id].every((_, i) => save.treasures.includes(`${id}-${i}`)) && !save.skins.includes(`set-${id}`)) { save.skins.push(`set-${id}`); news.push(`Treasure set complete: ${SKINS.find((s) => s.id === `set-${id}`)!.name} skin`); }
     if (save.crowns.length >= PLACES.length * LEVELS_PER_PLACE && !save.skins.includes('crown')) { save.skins.push('crown'); news.push('Every crown won: Crowned skin'); }
@@ -426,7 +430,7 @@ export async function run(cm: Camalot) {
   }
 
   async function startBoost(epic: boolean) {
-    if (await ask(epic ? 'Giant start: begin your next round HUGE' : 'Start your next round bigger', epic)) startBonus = epic ? TUNE.giantStart : TUNE.bigStart;
+    if (await ask(epic ? 'Titan start: begin the next round at full size' : 'Start the next round bigger', epic)) startBonus = epic ? TUNE.giantStart : TUNE.bigStart;
     showHome();
   }
 
@@ -446,16 +450,16 @@ export async function run(cm: Camalot) {
     hud.hidden = true; arrow.hidden = true;
     if (world.mode !== 'attract') attract();
     const pi = Math.max(0, PLACES.map((_, i) => placeOpen(i)).lastIndexOf(true));
-    const boost = startBonus ? `<button class="cm-btn" disabled>${startBonus >= TUNE.giantStart ? 'Giant' : 'Big'} start ready</button>` :
-      `<button class="cm-btn" data-a="big">Bigger start ${key('B')}</button><button class="cm-btn" data-a="giant">Giant start: big question ${key('G')}</button>`;
+    const boost = startBonus ? `<button class="cm-btn" disabled>${startBonus >= TUNE.giantStart ? 'Titan' : 'Big'} start ready</button>` :
+      `<button class="cm-btn" data-a="big">Bigger start ${key('B')}</button><button class="cm-btn" data-a="giant">Titan start: big question ${key('G')}</button>`;
     setScreen(`
       <div class="hh-card cm-panel">
-        ${head('Munch Hollow')}
-        <p class="hh-help cm-help">${title()}. Swallow small things. Grow. Swallow big things.</p>
-        <button class="cm-btn main hh-play" data-a="adv">Adventure<small>${mapName(PLACES[pi])}: ${placeStars(pi)} of ${LEVELS_PER_PLACE * 3} stars</small></button>
+        ${head('Riftmaw')}
+        <p class="hh-help cm-help">Rank: ${title()}. Start small. Grow. Swallow everything.</p>
+        <button class="cm-btn main hh-play" data-a="adv">Campaign<small>${mapName(PLACES[pi])}: ${placeStars(pi)} of ${LEVELS_PER_PLACE * 3} stars</small></button>
         <div class="hh-grid two">
           <button class="cm-btn hh-tile" data-a="battle">Battle<small>Rank ${save.rank}: beat 3 rivals</small></button>
-          <button class="cm-btn hh-tile" data-a="solo">Clear map<small>Swallow it all</small></button>
+          <button class="cm-btn hh-tile" data-a="solo">Clear map<small>Leave nothing standing</small></button>
         </div>
         <div class="hh-row4">
           <button class="cm-btn" data-a="ups">Upgrades ${key('U')}</button>
@@ -505,9 +509,9 @@ export async function run(cm: Camalot) {
     state = 'brief';
     back = () => showAdventure(pi, `[data-lv="${n}"]`);
     const notes = [
-      lv.slip ? 'Icy ground: you slide.' : '', lv.thorns ? 'Thornballs shrink you. Steer around them.' : '', lv.kind !== 'battle' && lv.bots ? 'Rival holes want your snacks.' : '',
-      lv.pows.includes('rush') ? 'Pink stars give double growth.' : '', lv.treasure && lv.kind !== 'hunt' && world.treasure ? 'A treasure chest is hidden here.' : '',
-      lv.kind === 'battle' ? 'Be the biggest hole when time runs out.' : lv.kind === 'clear' ? 'More cleared means more stars.' : 'Finish fast for more stars.',
+      lv.slip ? 'Icy ground: you slide.' : '', lv.thorns ? 'Thornballs shrink you. Steer around them.' : '', lv.kind !== 'battle' && lv.bots ? 'Rival rifts hunt the same targets.' : '',
+      lv.pows.includes('rush') ? 'Overdrive crystals give double growth.' : '', lv.treasure && lv.kind !== 'hunt' && world.treasure ? 'A treasure chest is hidden here.' : '',
+      lv.kind === 'battle' ? 'Be the biggest rift when time runs out.' : lv.kind === 'clear' ? 'More cleared means more stars.' : 'Finish fast for more stars.',
     ].filter(Boolean);
     const canCrown = !crown && !!save.stars[lv.id] && !!save.stars[`${lv.place}-${LEVELS_PER_PLACE}`] && !save.crowns.includes(lv.id);
     setScreen(`
@@ -535,7 +539,7 @@ export async function run(cm: Camalot) {
     setScreen(`
       <div class="hh-card cm-panel">
         ${head(mode === 'battle' ? `Battle: rank ${save.rank}` : 'Clear map')}
-        <p class="hh-help cm-help">${mode === 'battle' ? 'Two minutes against three rival holes. Each win raises your rank and the rivals.' : 'Swallow the whole town before time runs out.'} Places open in Adventure, or early with coins.</p>
+        <p class="hh-help cm-help">${mode === 'battle' ? 'Two minutes against three rival rifts. Each win raises your rank and theirs.' : 'Swallow the whole town before time runs out.'} Places open in the Campaign, or early with coins.</p>
         <div class="hh-grid">${PLACES.map(tile).join('')}</div>
         <div class="hh-actions"><button class="cm-btn main hh-play" data-a="play">Play ${key('Enter')}</button><button class="cm-btn" data-a="back">Back ${key('Esc')}</button></div>
       </div>`, true);
@@ -842,7 +846,7 @@ export async function run(cm: Camalot) {
     abilCd = Math.max(0, abilCd - dt);
     if (p.alive) msgEl.hidden = true;
     const lv = World.level(p.R);
-    if (lv.level > lastLevel) { lastLevel = lv.level; pop(`Size ${lv.level}: ${sizeName(lv.level)}!`); sfx('levelUp', 0.8 + lv.level * 0.03); }
+    if (lv.level > lastLevel) { lastLevel = lv.level; pop(`Size ${lv.level}: ${sizeName(lv.level)}`); sfx('levelUp', 0.8 + lv.level * 0.03); }
     const sp = Math.hypot(p.vx, p.vz) / (world.holeSpeed(p) || 1);
     wind?.setLevel(p.alive ? sp * 0.35 + (p.boostT > 0 ? 0.3 : 0) : 0);
     wind?.setPitch(0.8 + p.R * 0.03 + (p.boostT > 0 ? 0.4 : 0));
@@ -873,10 +877,10 @@ export async function run(cm: Camalot) {
     const fx: string[] = [];
     if (p.magnetT > 0) fx.push(`Magnet ${Math.ceil(p.magnetT)}`);
     if (p.speedT > 0) fx.push(`Speed ${Math.ceil(p.speedT)}`);
-    if (p.rushT > 0) fx.push(`Double ${Math.ceil(p.rushT)}`);
-    if (p.giantT > 0) fx.push(`Giant ${Math.ceil(p.giantT)}`);
-    if (world.freezeT > 0) fx.push(`Freeze ${Math.ceil(world.freezeT)}`);
-    if (p.shieldT > 0) fx.push('Safe');
+    if (p.rushT > 0) fx.push(`Overdrive ${Math.ceil(p.rushT)}`);
+    if (p.giantT > 0) fx.push(`Colossus ${Math.ceil(p.giantT)}`);
+    if (world.freezeT > 0) fx.push(`Stasis ${Math.ceil(world.freezeT)}`);
+    if (p.shieldT > 0) fx.push('Warded');
     fxEl.innerHTML = fx.map((f) => `<span>${f}</span>`).join('');
   }
 
@@ -899,6 +903,7 @@ export async function run(cm: Camalot) {
       world.update(dt);
     }
     drawTags();
+    root.classList.toggle('boost', state === 'play' && !!world.player?.alive && (world.player.boostT > 0 || world.player.speedT > 0));
     world.render(dt);
     requestAnimationFrame(frame);
   };
