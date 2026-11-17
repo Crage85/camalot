@@ -1,4 +1,4 @@
-// Menus for Kitty Cup Run: home, season map, team, clubhouse, pause, lost, goal. Plain DOM on the shared Camalot theme.
+// Menus for Neko Strike: home, season map, team, clubhouse, pause, lost, goal. Plain DOM on the shared Camalot theme.
 import {
   BONUS_CATS, COIN_MULT, CUPS, EPIC_PILE, GOALS, incomeCost, incomeMult, INCOME_MAX, JERSEYS, LAST_LEVEL, LEAGUES, matchTitle, MATCHES,
   REVIVE_MIN, STADIUM_MAX, stadiumCost, stadiumMult, STAR_MAX, starCost, STARS, startCats, starsOf, teamCost, TEAM_MAX, totalStars, where, WORLDS,
@@ -101,18 +101,18 @@ export class Screens {
     const feat = wh.league === 0 && wh.match < 3 ? FEATURES.find((f) => f.cup === wh.cup) : undefined;
     const claim = GOALS.filter((q) => (s.claimed[q.id] ?? 0) < q.tiers.length && (s.stats[q.id] ?? 0) >= q.tiers[s.claimed[q.id] ?? 0]).length;
     this.panel(
-      `<h1 class="cm-title">Kitty Cup Run</h1>
+      `<h1 class="cm-title rn-logo">Neko Strike</h1>
       <div class="rn-card" style="--a:${wh.world.swatch[0]};--b:${wh.world.swatch[1]}">
         <b>${matchTitle(g.cur)}</b><span>${wh.endless ? 'Endless Cup' : LEAGUES[wh.league]} · ${wh.world.name}</span>
         <span>${wh.final ? `Final: beat keeper ${wh.world.keeper}` : wh.derby ? `Derby: Captain ${wh.world.captain} of the ${wh.world.rivals}` : `vs ${wh.world.rivals}`} ${g.cur < s.level ? stars3(starsOf(s, g.cur)) : ''}</span>
         ${feat ? `<span class="rn-new">New: ${feat.name}. ${feat.text}</span>` : ''}
       </div>
       <div class="rn-stat">${coin(s.coins)} <span class="rn-stars">★ ${totalStars(s)}</span></div>
-      <button class="cm-btn main rn-main" data-act="play" data-help="Run to the goal and score.">Play <span class="cm-key">Enter</span></button>
-      <button class="cm-btn rn-q" data-act="bonus" ${g.bonusCats ? 'disabled' : ''} data-help="Answer a question. Start this run with ${BONUS_CATS} extra cats.">${g.bonusCats ? `+${BONUS_CATS} cats ready` : `Bonus cats +${BONUS_CATS}`} ${Q}</button>
+      <button class="cm-btn main rn-main" data-act="play" data-help="Run the gates. Break the keeper. Score.">Play <span class="cm-key">Enter</span></button>
+      <button class="cm-btn rn-q" data-act="bonus" ${g.bonusCats ? 'disabled' : ''} data-help="Answer a question. Start this run with ${BONUS_CATS} extra players.">${g.bonusCats ? `+${BONUS_CATS} players ready` : `Reinforcements +${BONUS_CATS}`} ${Q}</button>
       <div class="rn-row3">
         <button class="cm-btn" data-act="season" data-key="s" data-help="All cups and matches. Replay any match for more stars.">Season <span class="cm-key">S</span></button>
-        <button class="cm-btn" data-act="team" data-key="t" data-help="Upgrades and star cats. Captain: ${cap ? cap.name : 'none yet'}.">Team <span class="cm-key">T</span></button>
+        <button class="cm-btn" data-act="team" data-key="t" data-help="Upgrades and aces. Captain: ${cap ? cap.name : 'none yet'}.">Team <span class="cm-key">T</span></button>
         <button class="cm-btn" data-act="club" data-key="c" data-help="Trophy room, jerseys, and goals.">Clubhouse${claim ? ` <span class="rn-dot">${claim}</span>` : ''} <span class="cm-key">C</span></button>
       </div>`,
       null,
@@ -122,7 +122,7 @@ export class Screens {
     this.on('[data-act=team]', () => this.team());
     this.on('[data-act=club]', () => this.club());
     this.on('[data-act=bonus]', async () => {
-      if (!(await g.bonus(`Start with ${BONUS_CATS} extra cats`))) return;
+      if (!(await g.bonus(`Start with ${BONUS_CATS} extra players`))) return;
       g.bonusCats = BONUS_CATS;
       this.home(g.cur);
       this.el.querySelector<HTMLButtonElement>('[data-act=play]')?.focus();
@@ -163,7 +163,7 @@ export class Screens {
       const wh = where(n);
       const open = n <= s.level;
       return `<button class="cm-btn rn-node${wh.final ? ' final' : wh.derby ? ' derby' : ''}${n === s.level ? ' now' : ''}" data-n="${n}" ${open ? '' : 'disabled'}
-        data-help="${wh.final ? `Cup final against keeper ${w.keeper}.` : wh.derby ? `Derby against Captain ${w.captain}.` : `Match ${m + 1}.`}${STARS.some((x) => x.at === n) && !s.cats[STARS.find((x) => x.at === n)!.id] ? ' A star cat joins if you win.' : ''}">
+        data-help="${wh.final ? `Cup final against keeper ${w.keeper}.` : wh.derby ? `Derby against Captain ${w.captain}.` : `Match ${m + 1}.`}${STARS.some((x) => x.at === n) && !s.cats[STARS.find((x) => x.at === n)!.id] ? ' An ace joins if you win.' : ''}">
         <b>${wh.final ? 'Final' : m + 1}</b>${n < s.level ? stars3(starsOf(s, n)) : `<span>${open ? 'Play' : '·'}</span>`}</button>`;
     }).join('');
     this.panel(
@@ -194,11 +194,11 @@ export class Screens {
     this.panel(
       `<h1 class="cm-title">Team</h1><div class="rn-stat">${coin(s.coins)}</div>
       <div class="rn-row3">
-        ${up('team', 'More cats', s.teamLvl, TEAM_MAX, teamCost(s.teamLvl), `Start with ${startCats(s.teamLvl)} cats. Next: ${startCats(s.teamLvl + 1)}.`)}
+        ${up('team', 'Squad size', s.teamLvl, TEAM_MAX, teamCost(s.teamLvl), `Start with ${startCats(s.teamLvl)} players. Next: ${startCats(s.teamLvl + 1)}.`)}
         ${up('income', 'Coin boost', s.incomeLvl, INCOME_MAX, incomeCost(s.incomeLvl), `Goal coins x${incomeMult(s.incomeLvl).toFixed(2)}. Next: x${incomeMult(s.incomeLvl + 1).toFixed(2)}.`)}
         ${up('stadium', 'Stadium', s.stadiumLvl, STADIUM_MAX, stadiumCost(s.stadiumLvl), `Bigger home stands with more fans. Goal coins x${stadiumMult(s.stadiumLvl).toFixed(2)}. Next: x${stadiumMult(s.stadiumLvl + 1).toFixed(2)}.`)}
       </div>
-      <h2 class="cm-label">Star cats</h2><div class="rn-cats">${cats}</div>${this.back}`,
+      <h2 class="cm-label">Aces</h2><div class="rn-cats">${cats}</div>${this.back}`,
       () => this.home(), 'rn-wide',
     );
     this.on('[data-up]', (b) => {
@@ -296,9 +296,9 @@ export class Screens {
       const q = g.save.quality;
       this.panel(
         `<h1 class="cm-title">Paused</h1><p class="rn-sub">${matchTitle(g.cur)}</p>
-        <button class="cm-btn main rn-main" data-act="resume" data-key="Escape" data-help="Keep running.">Resume <span class="cm-key">Esc</span></button>
+        <button class="cm-btn main rn-main" data-act="resume" data-key="Escape" data-help="Back to the match.">Resume <span class="cm-key">Esc</span></button>
         <button class="cm-btn" data-act="restart" data-key="r" data-help="Start this match again.">Restart <span class="cm-key">R</span></button>
-        <button class="cm-btn" data-act="quality" data-key="g" data-help="High: shadows and glow. Low: smoother on tablets. Auto picks for this device.">Graphics: ${q === 'auto' ? `Auto (${g.low ? 'Low' : 'High'})` : q === 'high' ? 'High' : 'Low'} <span class="cm-key">G</span></button>
+        <button class="cm-btn" data-act="quality" data-key="g" data-help="High: ink outlines, shadows, and glow. Low: smoother on tablets. Auto picks for this device.">Graphics: ${q === 'auto' ? `Auto (${g.low ? 'Low' : 'High'})` : q === 'high' ? 'High' : 'Low'} <span class="cm-key">G</span></button>
         <button class="cm-btn" data-act="menu" data-key="m" data-help="Back to the start screen.">Menu <span class="cm-key">M</span></button>`,
         resume,
       );
@@ -322,14 +322,14 @@ export class Screens {
     g.clearKeys();
     const back = Math.max(REVIVE_MIN, startCats(g.save.teamLvl), opp + 5);
     this.panel(
-      `<h1 class="cm-title">Out of cats</h1><p class="rn-sub">${matchTitle(g.cur)}</p>
-      <button class="cm-btn main rn-main rn-q" data-act="revive" ${revived ? 'disabled' : ''} data-help="Answer a question. ${back} cats come back right here.">Revive team ${Q}</button>
+      `<h1 class="cm-title">Team down</h1><p class="rn-sub">${matchTitle(g.cur)}</p>
+      <button class="cm-btn main rn-main rn-q" data-act="revive" ${revived ? 'disabled' : ''} data-help="Answer a question. ${back} players return right here.">Revive team ${Q}</button>
       <button class="cm-btn" data-act="again" data-key="r" data-help="Start this match again.">Try again <span class="cm-key">R</span></button>
-      <button class="cm-btn" data-act="menu" data-key="m" data-help="Upgrades, star cats, and the season map.">Menu <span class="cm-key">M</span></button>`,
+      <button class="cm-btn" data-act="menu" data-key="m" data-help="Upgrades, aces, and the season map.">Menu <span class="cm-key">M</span></button>`,
       () => this.home(g.cur),
     );
     this.on('[data-act=revive]', async () => {
-      if (!(await g.bonus(`Bring back ${back} cats`))) return;
+      if (!(await g.bonus(`Bring back ${back} players`))) return;
       this.close();
       g.revive(back);
     });
@@ -346,15 +346,15 @@ export class Screens {
     const draw = (focus?: string) => {
       const total = reward * (tripled ? COIN_MULT : 1) + (pile ? reward * EPIC_PILE : 0);
       this.panel(
-        `<h1 class="cm-title">Goal!</h1><p class="rn-sub">${matchTitle(g.cur)}</p>
+        `<h1 class="cm-title rn-logo">Goal</h1><p class="rn-sub">${matchTitle(g.cur)}</p>
         <div class="rn-bigstars">${stars3(stars)}</div>
-        <p class="rn-sub">${stars === 3 ? 'Perfect!' : `${stars === 1 ? g.level.star2 : g.level.star3} cats left after the goal earns ${stars + 1} stars. You had ${g.count}.`}</p>
+        <p class="rn-sub">${stars === 3 ? 'Flawless.' : `${stars === 1 ? g.level.star2 : g.level.star3} players left after the goal earns ${stars + 1} stars. You had ${g.count}.`}</p>
         <div class="rn-stat big">${coin('+' + total)}</div>
         ${news.map((x) => `<p class="rn-news">${x}</p>`).join('')}
         <button class="cm-btn main rn-main" data-act="next" data-help="${matchTitle(next)}.">Next match <span class="cm-key">Enter</span></button>
         <button class="cm-btn rn-q" data-act="triple" ${tripled ? 'disabled' : ''} data-help="Answer a question. Get ${reward * COIN_MULT} coins instead of ${reward}.">${tripled ? 'Tripled' : 'Triple coins'} ${Q}</button>
-        ${cupFinal ? `<button class="cm-btn rn-q rn-epic" data-act="pile" ${pile ? 'disabled' : ''} data-help="One big pencil-and-paper question. Win a golden pile of ${reward * EPIC_PILE} coins.">${pile ? 'Golden pile won' : `Golden coin pile +${reward * EPIC_PILE}`} ${Q}</button>` : ''}
-        <button class="cm-btn" data-act="menu" data-key="m" data-help="Upgrades, star cats, and the season map.">Menu <span class="cm-key">M</span></button>`,
+        ${cupFinal ? `<button class="cm-btn rn-q rn-epic" data-act="pile" ${pile ? 'disabled' : ''} data-help="One big pencil-and-paper question. Win a gold vault of ${reward * EPIC_PILE} coins.">${pile ? 'Gold vault won' : `Gold vault +${reward * EPIC_PILE}`} ${Q}</button>` : ''}
+        <button class="cm-btn" data-act="menu" data-key="m" data-help="Upgrades, aces, and the season map.">Menu <span class="cm-key">M</span></button>`,
         () => this.home(next), 'rn-end',
       );
       this.on('[data-act=next]', () => g.play(next));
@@ -368,7 +368,7 @@ export class Screens {
         draw('[data-act=next]');
       });
       this.on('[data-act=pile]', async () => {
-        if (pile || !(await g.bonus(`A golden pile of ${reward * EPIC_PILE} coins`, true))) return;
+        if (pile || !(await g.bonus(`A gold vault of ${reward * EPIC_PILE} coins`, true))) return;
         pile = true;
         g.save.coins += reward * EPIC_PILE;
         g.persist();

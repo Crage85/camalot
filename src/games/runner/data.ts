@@ -1,4 +1,4 @@
-// Kitty Cup Run season data: worlds, leagues, cups, star cats, jerseys, upgrades, goals, and the save format.
+// Neko Strike season data: worlds, leagues, cups, aces (star cats), jerseys, upgrades, goals, and the save format.
 // No three.js here, so the level checker and the balance simulator can import it in Node.
 
 export type WorldId = 'field' | 'snow' | 'beach' | 'canyon' | 'desert' | 'candy' | 'city' | 'castle';
@@ -26,16 +26,16 @@ export interface World {
   swatch: [string, string]; // card colours on the season map
 }
 export const WORLDS: World[] = [
-  { id: 'field', name: 'Colorado Fields', cup: 'Meadow Cup', rivals: 'Meadow Mousers', rivalJersey: '#ff8a3d', rivalTrim: '#7a3a10', captain: 'Clover', keeper: 'Big Mittens', traps: ['ball', 'sprinkler'], swatch: ['#8fd96a', '#3f9a4a'] },
-  { id: 'snow', name: 'Snowy Peak', cup: 'Snowflake Cup', rivals: 'Peak Pouncers', rivalJersey: '#3d4fa8', rivalTrim: '#dfe8ff', captain: 'Frost', keeper: 'Avalanche', traps: ['snowball', 'penguin'], swatch: ['#e8f3ff', '#7fb2e8'] },
-  { id: 'beach', name: 'Sunny Beach', cup: 'Seashell Cup', rivals: 'Tide Tabbies', rivalJersey: '#17b3b0', rivalTrim: '#fff3c4', captain: 'Coral', keeper: 'Tsunami Tom', traps: ['crab', 'splash'], swatch: ['#ffe29a', '#3cc3e8'] },
-  { id: 'canyon', name: 'Red Rock Canyon', cup: 'Canyon Cup', rivals: 'Canyon Claws', rivalJersey: '#c2452d', rivalTrim: '#ffd9a0', captain: 'Rusty', keeper: 'Boulder Paws', traps: ['boulder', 'tumbleweed'], swatch: ['#f0a070', '#b8472c'] },
-  { id: 'desert', name: 'Dune Oasis', cup: 'Oasis Cup', rivals: 'Dune Dashers', rivalJersey: '#8a5fd0', rivalTrim: '#ffe08a', captain: 'Sandy', keeper: 'The Sphinx', traps: ['cactus', 'twister'], swatch: ['#ffd98a', '#e09a3c'] },
-  { id: 'candy', name: 'Candy Kingdom', cup: 'Sugar Cup', rivals: 'Sugar Paws', rivalJersey: '#ff6fb5', rivalTrim: '#ffffff', captain: 'Taffy', keeper: 'Marshmallow', traps: ['gumball', 'candycane'], swatch: ['#ffc4e4', '#b58cff'] },
-  { id: 'city', name: 'Night City', cup: 'Neon Cup', rivals: 'Neon Nines', rivalJersey: '#22e0d0', rivalTrim: '#20203a', captain: 'Pixel', keeper: 'Night Shift', traps: ['vacuum', 'cones'], swatch: ['#5a4ac8', '#191a3c'] },
-  { id: 'castle', name: 'Dragon Castle', cup: 'Dragon Cup', rivals: 'Dragon Guard', rivalJersey: '#7a2ad0', rivalTrim: '#ffcf3a', captain: 'Ember', keeper: 'Sir Scales', traps: ['dragon', 'flame'], swatch: ['#b58cff', '#4a2a6a'] },
+  { id: 'field', name: 'Colorado Fields', cup: 'Meadow Cup', rivals: 'Meadow Strikers', rivalJersey: '#ff7a1a', rivalTrim: '#3a1c08', captain: 'Briar', keeper: 'Ironwall', traps: ['ball', 'sprinkler'], swatch: ['#58c860', '#1f7a3a'] },
+  { id: 'snow', name: 'Frost Peak', cup: 'Glacier Cup', rivals: 'Frost Fangs', rivalJersey: '#3d4fa8', rivalTrim: '#dfe8ff', captain: 'Rime', keeper: 'Avalanche', traps: ['snowball', 'penguin'], swatch: ['#bfe0ff', '#3f7fd8'] },
+  { id: 'beach', name: 'Azure Coast', cup: 'Tidal Cup', rivals: 'Riptide', rivalJersey: '#17b3b0', rivalTrim: '#fff3c4', captain: 'Coral', keeper: 'Tsunami', traps: ['crab', 'splash'], swatch: ['#ffd070', '#0f9ad0'] },
+  { id: 'canyon', name: 'Red Rock Canyon', cup: 'Canyon Cup', rivals: 'Canyon Claws', rivalJersey: '#c2452d', rivalTrim: '#ffd9a0', captain: 'Mesa', keeper: 'Monolith', traps: ['boulder', 'tumbleweed'], swatch: ['#f08a50', '#9a3018'] },
+  { id: 'desert', name: 'Dune Oasis', cup: 'Oasis Cup', rivals: 'Sandstorm', rivalJersey: '#8a5fd0', rivalTrim: '#ffe08a', captain: 'Mirage', keeper: 'The Sphinx', traps: ['cactus', 'twister'], swatch: ['#ffc860', '#c87a1c'] },
+  { id: 'candy', name: 'Crystal Vale', cup: 'Prism Cup', rivals: 'Prism Blades', rivalJersey: '#e040c0', rivalTrim: '#9ff0ff', captain: 'Shard', keeper: 'Bastion', traps: ['gumball', 'candycane'], swatch: ['#e070d8', '#5a3ac0'] },
+  { id: 'city', name: 'Night City', cup: 'Neon Cup', rivals: 'Neon Nines', rivalJersey: '#22e0d0', rivalTrim: '#20203a', captain: 'Volt', keeper: 'Blackout', traps: ['vacuum', 'cones'], swatch: ['#5a4ac8', '#191a3c'] },
+  { id: 'castle', name: 'Dragon Keep', cup: 'Dragon Cup', rivals: 'Dragon Guard', rivalJersey: '#7a2ad0', rivalTrim: '#ffcf3a', captain: 'Ember', keeper: 'Wyvern', traps: ['dragon', 'flame'], swatch: ['#b58cff', '#4a2a6a'] },
 ];
-export const LEAGUES = ['Kitten League', 'Sunset League', 'Moonlight League', 'Legends League'];
+export const LEAGUES = ['Rookie League', 'Dusk League', 'Midnight League', 'Legends League'];
 export const MATCHES = 20; // matches per cup; the last one is the cup final
 export const CUPS = WORLDS.length * LEAGUES.length; // 32
 export const LAST_LEVEL = CUPS * MATCHES; // 640; after that the Endless Cup starts
@@ -56,37 +56,37 @@ export function matchTitle(n: number): string {
   return `${w.world.cup} · ${w.final ? 'Final' : `Match ${w.match + 1}`}`;
 }
 
-// ---- Star cats: one joins after each Kitten League mid-cup derby. One is the captain of a run. ----
+// ---- Aces (star cats): one joins after each Rookie League mid-cup derby. One is the captain of a run. ----
 export interface StarCat { id: string; name: string; fur: string; at: number; what: (lvl: number) => string }
 export const STAR_MAX = 5;
 export const STARS: StarCat[] = [
-  { id: 'whiskers', name: 'Whiskers', fur: '#f6a04d', at: 10, what: (l) => `Start with ${4 * l} more cats.` },
-  { id: 'blizzard', name: 'Blizzard', fur: '#ffffff', at: 30, what: (l) => `A snow shield saves the first ${4 * l} cats a trap would hit.` },
-  { id: 'sunny', name: 'Sunny', fur: '#ffd86a', at: 50, what: (l) => `Pulls in coins from far away. Goal coins +${8 * l}%.` },
-  { id: 'rocky', name: 'Rocky', fur: '#b0714a', at: 70, what: (l) => `Rival teams count ${6 * l}% smaller.` },
-  { id: 'dune', name: 'Dune', fur: '#e8c890', at: 90, what: (l) => `Each stray cat that joins brings ${l} more.` },
-  { id: 'taffy', name: 'Taffy', fur: '#ffb3d9', at: 110, what: (l) => `Plus gates give ${8 * l}% more cats.` },
-  { id: 'pixel', name: 'Pixel', fur: '#6a6a8a', at: 130, what: (l) => `The keeper is ${5 * l}% weaker.` },
-  { id: 'ember', name: 'Ember', fur: '#e0523a', at: 150, what: (l) => `Saves ${12 * l} of every 100 cats a trap would hit.` },
+  { id: 'whiskers', name: 'Kaze', fur: '#f08a2e', at: 10, what: (l) => `Start with ${4 * l} more players.` },
+  { id: 'blizzard', name: 'Blizzard', fur: '#ffffff', at: 30, what: (l) => `An ice shield saves the first ${4 * l} players a trap would hit.` },
+  { id: 'sunny', name: 'Sol', fur: '#ffcf4a', at: 50, what: (l) => `Pulls in coins from far away. Goal coins +${8 * l}%.` },
+  { id: 'rocky', name: 'Ridge', fur: '#a8623a', at: 70, what: (l) => `Rival teams count ${6 * l}% smaller.` },
+  { id: 'dune', name: 'Dune', fur: '#e8c890', at: 90, what: (l) => `Each free agent who joins brings ${l} more.` },
+  { id: 'taffy', name: 'Shard', fur: '#d88af0', at: 110, what: (l) => `Plus gates give ${8 * l}% more players.` },
+  { id: 'pixel', name: 'Volt', fur: '#5a6a9a', at: 130, what: (l) => `The keeper is ${5 * l}% weaker.` },
+  { id: 'ember', name: 'Ember', fur: '#e0523a', at: 150, what: (l) => `Saves ${12 * l} of every 100 players a trap would hit.` },
 ];
 export const starCost = (lvl: number) => [0, 800, 3000, 9000, 25000][lvl] ?? Infinity; // cost to go from lvl to lvl + 1
 
 // ---- Jerseys: main colour + trim. Fixed ways to get each one; nothing is random. ----
 export interface Jersey { id: string; name: string; color: string; trim: string; cost?: number; cup?: number; stars?: number; epic?: boolean }
 export const JERSEYS: Jersey[] = [
-  { id: 'berry', name: 'Berry', color: '#ff5d8f', trim: '#ffffff', cost: 0 },
-  { id: 'sky', name: 'Sky', color: '#4aa8ff', trim: '#ffffff', cost: 150 },
-  { id: 'mint', name: 'Mint', color: '#2fd39a', trim: '#145a44', cost: 300 },
-  { id: 'sun', name: 'Sunshine', color: '#ffc93c', trim: '#c2452d', cost: 500 },
-  { id: 'grape', name: 'Grape', color: '#9b6bff', trim: '#ffe08a', cost: 800 },
-  { id: 'snow', name: 'Snowcap', color: '#f4f4ff', trim: '#4aa8ff', cost: 1200 },
-  { id: 'lava', name: 'Lava', color: '#ff5a2a', trim: '#2a2235', cost: 3000 },
-  { id: 'ocean', name: 'Ocean', color: '#1f6fd1', trim: '#7fe0d0', cost: 6000 },
-  { id: 'bubble', name: 'Bubblegum', color: '#ff9fd6', trim: '#7fd1ff', cost: 12000 },
+  { id: 'berry', name: 'Crimson', color: '#e8305a', trim: '#ffffff', cost: 0 },
+  { id: 'sky', name: 'Azure', color: '#2f8cf0', trim: '#ffffff', cost: 150 },
+  { id: 'mint', name: 'Jade', color: '#12b890', trim: '#145a44', cost: 300 },
+  { id: 'sun', name: 'Solar', color: '#ffb020', trim: '#c2452d', cost: 500 },
+  { id: 'grape', name: 'Violet', color: '#7a4ae8', trim: '#ffe08a', cost: 800 },
+  { id: 'snow', name: 'Frost', color: '#f4f4ff', trim: '#4aa8ff', cost: 1200 },
+  { id: 'lava', name: 'Magma', color: '#ff5a2a', trim: '#2a2235', cost: 3000 },
+  { id: 'ocean', name: 'Abyss', color: '#1f6fd1', trim: '#7fe0d0', cost: 6000 },
+  { id: 'bubble', name: 'Sakura', color: '#ff8ac8', trim: '#7fd1ff', cost: 12000 },
   { id: 'midnight', name: 'Midnight', color: '#2a2a5a', trim: '#ffd84a', cost: 25000 },
   ...WORLDS.map((w, i): Jersey => ({ id: 'cup-' + w.id, name: w.rivals, color: w.rivalJersey, trim: w.rivalTrim, cup: WORLDS.length + i })),
-  { id: 'starry', name: 'Starry', color: '#3a2a8a', trim: '#ffe86a', stars: 300 },
-  { id: 'rainbow', name: 'Rainbow', color: '#ff7ad0', trim: '#5ae0ff', stars: 900 },
+  { id: 'starry', name: 'Starfall', color: '#3a2a8a', trim: '#ffe86a', stars: 300 },
+  { id: 'rainbow', name: 'Aurora', color: '#ff7ad0', trim: '#5ae0ff', stars: 900 },
   { id: 'gold', name: 'Champion Gold', color: '#ffcf3a', trim: '#ffffff', cup: CUPS - 1 },
   { id: 'galaxy', name: 'Galaxy', color: '#6a3ad8', trim: '#3affd0', epic: true },
 ];
@@ -117,13 +117,13 @@ export const GOALS: Goal[] = [
   { id: 'goals', name: 'Goal Scorer', text: (n) => `Score ${n} goals`, tiers: [5, 25, 100, 300, 640], reward: [50, 200, 1000, 4000, 12000] },
   { id: 'cups', name: 'Cup Collector', text: (n) => `Win ${n} cups`, tiers: [1, 4, 8, 16, 32], reward: [200, 800, 2500, 8000, 25000] },
   { id: 'stars', name: 'Star Hunter', text: (n) => `Earn ${n} stars`, tiers: [15, 100, 400, 1000, 1920], reward: [60, 400, 2000, 8000, 30000] },
-  { id: 'bigTeam', name: 'Big Team', text: (n) => `Have ${n} cats at once`, tiers: [50, 150, 400, 700, 999], reward: [40, 150, 600, 2000, 6000] },
+  { id: 'bigTeam', name: 'Full Squad', text: (n) => `Field ${n} players at once`, tiers: [50, 150, 400, 700, 999], reward: [40, 150, 600, 2000, 6000] },
   { id: 'fights', name: 'Derby Day', text: (n) => `Win ${n} team fights`, tiers: [10, 60, 250, 800], reward: [50, 300, 1500, 6000] },
-  { id: 'captains', name: 'Captain Catcher', text: (n) => `Beat ${n} rival captains`, tiers: [1, 8, 32, 96], reward: [80, 500, 2500, 9000] },
-  { id: 'gates', name: 'Gate Whiz', text: (n) => `Pick the best gate ${n} times`, tiers: [20, 150, 600, 2000], reward: [50, 300, 1500, 6000] },
-  { id: 'coins', name: 'Coin Purse', text: (n) => `Collect ${n} coins on the track`, tiers: [100, 1000, 5000, 15000], reward: [50, 300, 1500, 5000] },
-  { id: 'strays', name: 'Best Friends', text: (n) => `Pick up ${n} stray cats`, tiers: [25, 200, 1000, 4000], reward: [40, 250, 1200, 5000] },
-  { id: 'answers', name: 'Brainy Cat', text: (n) => `Answer ${n} bonus questions`, tiers: [3, 15, 50, 150], reward: [60, 300, 1200, 4000] },
+  { id: 'captains', name: 'Captain Breaker', text: (n) => `Beat ${n} rival captains`, tiers: [1, 8, 32, 96], reward: [80, 500, 2500, 9000] },
+  { id: 'gates', name: 'Gate Reader', text: (n) => `Pick the best gate ${n} times`, tiers: [20, 150, 600, 2000], reward: [50, 300, 1500, 6000] },
+  { id: 'coins', name: 'Treasury', text: (n) => `Collect ${n} coins on the track`, tiers: [100, 1000, 5000, 15000], reward: [50, 300, 1500, 5000] },
+  { id: 'strays', name: 'Recruiter', text: (n) => `Sign ${n} free agents`, tiers: [25, 200, 1000, 4000], reward: [40, 250, 1200, 5000] },
+  { id: 'answers', name: 'Sharp Mind', text: (n) => `Answer ${n} bonus questions`, tiers: [3, 15, 50, 150], reward: [60, 300, 1200, 4000] },
 ];
 
 // ---- Save ----
