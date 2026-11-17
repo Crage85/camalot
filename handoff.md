@@ -9,26 +9,30 @@
 
 ## Where we are
 
-All six games are at v2 (new graphics, late game, balance, music and sound) on `main`. Question bank reworked (per-device memory, multiple-choice normal math, epic pencil math, ~155 grammar/history and 259 spelling per grade; all keys re-checked). `npm run build` passes; every page loads with no console errors (`node shots/smoke.mjs` against `npx vite preview`). Play: `Play Camalot.bat`. Listen: `npm run dev`, then `http://localhost:5173/audio-lab.html`. Published 2026-11-16: https://crage85.github.io/camalot/ (repo `Crage85/camalot`, public; history squashed to one clean commit, old local history kept on branch `pre-publish-backup`, never push it). Live smoke test passed. Tested only in headless Chromium. `main` now has a remote: future changes go on a branch and a PR.
+Live: https://crage85.github.io/camalot/ = `main` (v2 games plus play-test fixes: quieter sfx, 3 songs per game, Wyrm arena 3x wider, per-item scores in the hole game, tractor Unstuck). Anime fantasy restyle (D7, D16, D17) is in progress on branch `restyle-anime`, not merged or published. Done there with marker commits: shared UI and hub (`Restyle: hub`), Neko Strike (`Restyle: runner`), Riftmaw (`Restyle: hole`). Cut off partway, saved in commit "WIP (not done)": Wyrmrise, Skyfield Saga, Spellpaw, Frostclaim, and the music rework. The branch may not build until those finish.
+
+## Last session
+
+- Built all six games, platform, question bank; v2 upgrade (graphics, late game, balance, audio); question rework (multiple-choice normal math, epic pencil math, per-device memory); published to GitHub Pages.
+- Merged PR #1 (docs) and PR #2 (play-test fixes) and republished.
+- Craig picked anime fantasy style (Q15 C) and asked CC to name the games (D16); asked for non-childish music (D17).
 
 ## Next
 
-1. Real-device check on the laptop and tablets: frame rate on Low, touch, trackpad, spelling voice, music.
-2. Polish: Munch Hollow camera too close when the hole is huge and the combo counter runs to 1000+; Whisker Castle can show a negative star count with a forced save; Kitty Cup Run arch can cross the camera near the goal; volume card does not pause games.
+1. Finish the restyle: follow `.claude/resume-restyle.md` (shared style spec, per-piece notes, Fable 5.2 medium builders, marker commits). Launch builders for wyrm, tractor, match3, trail, and music in parallel; each continues from the WIP files. Done when: all eight markers exist on `restyle-anime`.
+2. Restyle follow-ups: Riftmaw's Clawhaven and Sugarspire props still read young (yarn balls, cupcakes; rebuild in props2.ts) and two rival names (Moonpaw, Juniper) are left; hub Spellpaw emblem still a round cat face; Neko Strike snow world looks flat. Done when: fixed and re-screenshotted.
+3. `npm run build`, `node shots/smoke.mjs` against `npx vite preview`, open PR to `main`. Done when: PR open with screenshots, not merged.
+4. Craig reviews, then merge and republish (project.md Process step 4).
 
 ## Waiting on Craig
 
-- Listen to the music in the audio lab: keep or change each theme.
-- Play-test feel and difficulty. All balance numbers come from computer players, not kids.
-- Rules CC picked (keep or change):
-  - Wyrm: 9 places, 72 goals, 9 bosses; evolution to level 30+; arena radius 100; epic = Dragon start, Royal hoard.
-  - Hole: 180 levels in 9 places; stars at 100/82/62% of the clock; Clear Map 2:30; epic = Triple coins, Giant start.
-  - Harvest: 7 farms; tough crops cut slowly until the harvester is upgraded; Golden Seasons after farm 7; epic = Mega harvest, Treasure chest.
-  - Match: 240 levels in 12 worlds, no lives; crowns for fewer-move replays; epic = Treasure chest, legendary cat rescue.
-  - Runner: 640 matches in 4 leagues + Endless Cup; 8 star cats; epic = Golden coin pile, Galaxy jersey.
-  - Trail: 20 mountains x 7 runs; goals 13-24% of land; last 4 track cells never trip you; epic = Golden Dragon skin, Champion's purse.
+- Listen to the reworked music once it lands (`npm run dev`, then http://localhost:5173/audio-lab.html) before it is published.
+- Look at the restyled games and the new names; approve the restyle PR.
+- Play-test on the real laptop and tablets: speed on Low, touch, trackpad, spelling voice. All balance numbers come from computer players.
+- Rules CC picked (keep or change): Wyrm arena radius 300 with 36 rivals; tractor Unstuck is free and unlimited, all vehicles share one collision size; Riftmaw and Neko Strike renamed every cutesy string (lists in the restyle commits); Neko Strike star cats are now "Aces".
 
 ## Parked
 
 - The combined castle hub game (project.md D1).
 - Empty stray file `SOURCES.md` at the repo root (untracked, 0 bytes, from an agent run).
+- Whisker Castle/Spellpaw negative star count with a forced save; Neko Strike arch can cross the camera near the goal; the volume card does not pause games.
