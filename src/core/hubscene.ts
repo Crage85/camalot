@@ -132,20 +132,19 @@ const EMBLEM: Record<string, (part: Part, g: THREE.Group) => void> = {
     }
     for (let i = 0; i < 5; i++) part(g, cone(0.07, 0.42, 5), C.grass, [-0.2 + i * 0.22, 0.14, 0.72 - Math.abs(i - 2) * 0.12]);
   },
-  // A cat familiar's mask with a spell gem and three orbiting runestones.
+  // A mage's crest: a cat's-eye spell gem in a gold ring with two ear points, three runestones in orbit.
   match3(part, g) {
-    const head = part(g, facet, C.violet, [0, -0.15, 0], [0, 0, 0], 0, 0.9);
-    part(head, cone(0.38, 0.85, 4), C.violet, [-0.62, 0.95, 0], [0, 0, 0.35]);
-    part(head, cone(0.38, 0.85, 4), C.violet, [0.62, 0.95, 0], [0, 0, -0.35]);
-    part(head, gem, C.teal, [-0.4, 0.1, 0.84], [0, 0, 0.45], 1, 0.2).scale.set(0.3, 0.13, 0.12);
-    part(head, gem, C.teal, [0.4, 0.1, 0.84], [0, 0, -0.45], 1, 0.2).scale.set(0.3, 0.13, 0.12);
-    part(head, gem, C.gold, [0, 0.58, 0.8], [0, 0, 0], 0.5, 0.2);
-    part(head, cone(0.1, 0.16, 3), C.ruby, [0, -0.22, 1.0], [Math.PI, 0, 0]);
-    const stones = [C.ruby, C.gold, C.violet];
-    stones.forEach((c, i) => {
-      const a = 0.6 + (i / 3) * Math.PI * 2;
-      part(g, gem, c, [Math.cos(a) * 1.25, 0.2 + Math.sin(a * 2) * 0.5, Math.sin(a) * 0.5 + 0.5], [0.3, a, 0.2], 0.5, 0.24);
+    part(g, cyl(0.86, 0.86, 0.1, 6), C.navy, [0, 0, -0.08], [Math.PI / 2, 0, 0]);
+    part(g, new THREE.TorusGeometry(0.9, 0.09, 6, 6), C.gold, [0, 0, 0], [0, 0, Math.PI / 2]);
+    for (const x of [-1, 1]) part(g, cone(0.2, 0.75, 4), C.gold, [x * 0.6, 1.02, 0], [0, 0, -x * 0.3]);
+    part(g, cone(0.17, 0.6, 4), C.gold, [0, -1.12, 0], [Math.PI, 0, 0]);
+    part(g, gem, C.teal, [0, 0, 0.1], [0, 0, 0], 0.5).scale.set(0.5, 0.74, 0.4);
+    part(g, gem, C.ink, [0, 0, 0.24], [0, 0, 0]).scale.set(0.09, 0.56, 0.32); // the slit pupil
+    [C.ruby, C.violet, C.ruby].forEach((c, i) => {
+      const a = 0.5 + (i / 3) * Math.PI * 2;
+      part(g, gem, c, [Math.cos(a) * 1.25, Math.sin(a) * 0.55 - 0.1, 0.45], [0.3, a, 0.2], 0.5, 0.17);
     });
+    g.scale.setScalar(0.92);
   },
   // A struck ball with speed trails and an impact burst.
   runner(part, g) {
