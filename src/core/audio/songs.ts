@@ -66,7 +66,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
   hub: [
     {
       title: 'Crownfire', style: 'JRPG title theme: horn and violin over a cello ostinato, taiko and kit',
-      key: 62, scale: AEOLIAN, bpm: 112, trim: [1, 1, 1, 1],
+      key: 62, scale: AEOLIAN, bpm: 112, trim: [0.487, 0.561, 0.49, 0.635],
       lead: ['horn', 'violin'], comp: ['cello', 'line', '0.2.3.2.0.2.3.2.', '0.223.2.0.223.24'], arp: ['crystal', '..3...4...5...4.'],
       pad: 'strings', bass: ['sub', 'r_____..r___R_..', 'r_r_r_r_r_r_R_r_'],
       drums: {
@@ -86,7 +86,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Oathbound', style: 'half-time dorian hymn: violin lead, piano chords, choir pad, glass arp',
-      key: 64, scale: DORIAN, bpm: 100, trim: [1, 1, 1, 1],
+      key: 64, scale: DORIAN, bpm: 100, trim: [0.952, 1.198, 1, 1.382],
       lead: ['violin', 'saw'], comp: ['piano', 'chord', 'x__..x__..x_....', 'x__x__x_.x__x_x_'], arp: ['crystal', '0.2.4.2.3.2.4.2.'],
       pad: 'choir', bass: ['synbass', 'r_____...r__f_..', 'r_.r_.r_r_.r_.f_'],
       drums: {
@@ -106,7 +106,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Starfall Keep', style: 'royal-road progression: supersaw lead, pumping pad, four-on-the-floor',
-      key: 65, scale: MAJOR, bpm: 124, trim: [1, 1, 1, 1], pump: 0.5,
+      key: 65, scale: MAJOR, bpm: 124, trim: [1.068, 1.328, 1.496, 1.524], pump: 0.5,
       lead: ['super', 'horn'], comp: ['stab', 'chord', '..x..x....x..x..', 'x..x..x...x..x.x'], arp: ['pluck', '0.2.4.2.5.4.2.4.'],
       pad: 'sawpad', bass: ['synbass', '..r...r...r...r.', 'r.r.r.R.r.r.r.R.'],
       drums: {
@@ -129,7 +129,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
   wyrm: [
     {
       title: 'Dragonfall', style: 'battle march: galloping cello ostinato, taiko, choir, horn theme',
-      key: 60, scale: AEOLIAN, bpm: 140, trim: [1, 1, 1, 1],
+      key: 60, scale: AEOLIAN, bpm: 140, trim: [0.479, 0.453, 0.589, 0.673],
       lead: ['horn', 'violin'], comp: ['cello', 'line', '0.000.000.000.20', '0.000.002.000.23'],
       pad: 'choir', bass: ['sub', 'r_______r_____r_', 'r_.r_.r_r_.r_.r_'],
       drums: {
@@ -149,7 +149,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Ember Crown', style: 'full battle theme: distorted power chords, string ostinato, taiko, saw lead',
-      key: 57, scale: AEOLIAN, bpm: 152, trim: [1, 1, 1, 1],
+      key: 57, scale: AEOLIAN, bpm: 152, trim: [0.713, 1, 1, 1.402],
       lead: ['saw', 'horn'], comp: ['power', 'power', 'x_.x_.x_.x_.x_x_', 'x_x_x_x_x_x_x_x_'], arp: ['stacc', '0.2.3.2.0.2.3.2.'],
       pad: 'choir', bass: ['synbass', 'r.r.r.r.r.r.r.r.'],
       drums: {
@@ -169,7 +169,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Ashen Sky', style: 'half-time dorian dirge: taiko, trap hats, 808 slides, choir, violin',
-      key: 67, scale: DORIAN, bpm: 96, trim: [1, 1, 1, 1],
+      key: 67, scale: DORIAN, bpm: 96, trim: [0.352, 0.482, 0.454, 0.486],
       lead: ['violin', 'horn'], comp: ['cello', 'line', '0..0..0.2..0..3.', '0.00.00.2.00.03.'],
       pad: 'choir', bass: ['b808', 'r_____....S___..', 'r__.r_....S__r_.'],
       drums: {
@@ -192,7 +192,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
   hole: [
     {
       title: 'Null Sigil', style: 'phrygian dark techno: wobble bass, glitch arp, saw lead, pumping pad',
-      key: 64, scale: PHRYGIAN, bpm: 126, trim: [1, 1, 1, 1], pump: 0.5,
+      key: 64, scale: PHRYGIAN, bpm: 126, trim: [0.862, 0.821, 0.952, 1.219], pump: 0.5,
       lead: ['saw', 'soft'], comp: ['stab', 'chord', '..x..x....x.....', '..x..x..x.x..x..'], arp: ['crystal', '0.42.1.4.03.2.4.'],
       pad: 'air', bass: ['wobble', 'r___r___r___r_r_', 'r___r_r_r___r_R_'],
       drums: {
@@ -212,7 +212,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Hollow Star', style: 'harmonic-minor half-time trap: 808 slides, hat rolls, electric piano, glitch arp',
-      key: 60, scale: HARMONIC, bpm: 100, trim: [1, 1, 1, 1],
+      key: 60, scale: HARMONIC, bpm: 100, trim: [0.347, 0.422, 0.446, 0.446],
       lead: ['saw', 'ep'], comp: ['ep', 'chord', 'x_____....x___..'], arp: ['crystal', '..4..3..4..2..3.'],
       pad: 'air', bass: ['b808', 'r_____..S___..r_', 'r__r__..S__.r_r_'],
       drums: {
@@ -232,7 +232,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Umbral Tide', style: 'phrygian breakbeat: reese bass, two-bar break, glitch arp, saw lead',
-      key: 62, scale: PHRYGIAN, bpm: 140, trim: [1, 1, 1, 1],
+      key: 62, scale: PHRYGIAN, bpm: 140, trim: [0.921, 1, 0.936, 1.051],
       lead: ['saw', 'violin'], comp: ['stab', 'chord', 'x..x....x..x..x.'], arp: ['crystal', '0.3.4.3.02.34.3.'],
       pad: 'air', bass: ['reese', 'r_____r___r_____', 'r__r__r_r__r__R_'],
       drums: {
@@ -255,7 +255,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
   tractor: [
     {
       title: 'Windward Fields', style: 'lydian lo-fi: piano lead, electric piano chords, nylon arp, warm strings',
-      key: 65, scale: LYDIAN, bpm: 88, shuffle: 0.22, trim: [1, 1, 1, 1], lowpass: 6500,
+      key: 65, scale: LYDIAN, bpm: 88, shuffle: 0.22, trim: [1.086, 1.393, 1.487, 1.104], lowpass: 6500,
       lead: ['piano', 'nylon'], comp: ['ep', 'chord', 'x___..x__.x_....'], arp: ['nylon', '0.2.4.3.2.4.3.2.'],
       pad: 'strings', bass: ['fing', 'r__...r.r_...f..'],
       drums: {
@@ -275,7 +275,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Lantern Road', style: 'mixolydian acoustic-electronic: nylon guitar lead, piano comp, easy backbeat',
-      key: 62, scale: MIXO, bpm: 96, trim: [1, 1, 1, 1],
+      key: 62, scale: MIXO, bpm: 96, trim: [0.952, 1, 1.068, 1.104],
       lead: ['nylon', 'violin'], comp: ['piano', 'chord', 'x__.x_.x__.x_.x_'], arp: ['nylon', '0.2.3.4.3.2.3.2.'],
       pad: 'warm', bass: ['fing', 'r_____r_..f_r_..'],
       drums: {
@@ -295,7 +295,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Amber Hour', style: 'slow lydian lo-fi: electric piano lead, nylon picking, upright bass, dusty kit',
-      key: 60, scale: LYDIAN, bpm: 78, shuffle: 0.25, trim: [1, 1, 1, 1], lowpass: 6000,
+      key: 60, scale: LYDIAN, bpm: 78, shuffle: 0.25, trim: [1.472, 1, 1, 1.282], lowpass: 6000,
       lead: ['ep', 'soft'], comp: ['nylon', 'line', '0.2.3.4.3.2.4.2.'],
       pad: 'strings', bass: ['upright', 'r__..f..r__.....'],
       drums: {
@@ -318,7 +318,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
   match3: [
     {
       title: 'Moonlit Grimoire', style: 'dorian chillhop: 9th chords on electric piano, swung dusty drums, glass arp',
-      key: 62, scale: DORIAN, bpm: 84, shuffle: 0.25, trim: [1, 1, 1, 1], lowpass: 5500,
+      key: 62, scale: DORIAN, bpm: 84, shuffle: 0.25, trim: [1.086, 0.821, 0.952, 1.086], lowpass: 5500,
       lead: ['soft', 'ep'], comp: ['ep', 'chord', 'x_____..x_.x__..'], arp: ['crystal', '..3...4...2...4.'],
       pad: 'warm', bass: ['upright', 'r__...r.f_...r..'],
       drums: {
@@ -338,7 +338,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Velvet Hex', style: 'royal-road chillhop: piano 7th chords, electric piano lead, swung beat',
-      key: 63, scale: MAJOR, bpm: 90, shuffle: 0.22, trim: [1, 1, 1, 1], lowpass: 6000,
+      key: 63, scale: MAJOR, bpm: 90, shuffle: 0.22, trim: [0.952, 1.051, 1.308, 1.086], lowpass: 6000,
       lead: ['ep', 'soft'], comp: ['piano', 'chord', '..x__.x_..x__.x_'], arp: ['crystal', '0...3...4...2...'],
       pad: 'warm', bass: ['fing', 'r__..r..r_..f_r.'],
       drums: {
@@ -358,7 +358,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Runeglass', style: 'minor lo-fi, half-time: piano lead over maj7 and 9th chords, sub bass',
-      key: 59, scale: AEOLIAN, bpm: 80, shuffle: 0.25, trim: [1, 1, 1, 1], lowpass: 5500,
+      key: 59, scale: AEOLIAN, bpm: 80, shuffle: 0.25, trim: [0.525, 0.63, 0.769, 0.59], lowpass: 5500,
       lead: ['piano', 'soft'], comp: ['ep', 'chord', 'x____.x__.x___..'], arp: ['crystal', '0.2.4.2.3.2.4.2.'],
       pad: 'air', bass: ['sub', 'r_____..r_..r_..'],
       drums: {
@@ -381,7 +381,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
   runner: [
     {
       title: 'Breakaway', style: 'anime opening: power chords, supersaw hook, driving rock kit',
-      key: 57, scale: MAJOR, bpm: 160, trim: [1, 1, 1, 1],
+      key: 57, scale: MAJOR, bpm: 160, trim: [1.068, 1, 1.068, 1.509],
       lead: ['super', 'saw'], comp: ['power', 'power', 'x_o_o_x_o_o_x_o_', 'x_x_x_x_x_x_x_x_'], arp: ['pluck', '0.2.4.2.0.2.4.2.'],
       pad: 'sawpad', bass: ['synbass', 'r.r.r.r.r.r.r.r.'],
       drums: {
@@ -401,7 +401,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Overdrive Heart', style: 'minor-key EDM-rock: saw lead, power chords, four-on-the-floor, string ostinato',
-      key: 64, scale: AEOLIAN, bpm: 172, trim: [1, 1, 1, 1], pump: 0.4,
+      key: 64, scale: AEOLIAN, bpm: 172, trim: [1.068, 1, 1.104, 1.596], pump: 0.4,
       lead: ['saw', 'super'], comp: ['power', 'power', 'x_.x_.x_x_.x_.x_'], arp: ['stacc', '0.2.3.2.4.2.3.2.'],
       pad: 'strings', bass: ['synbass', 'r.r.r.r.r.r.r.R.'],
       drums: {
@@ -421,7 +421,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Golden Sprint', style: 'major-key pop-punk: supersaw and horn hook, power chords, galloping kick',
-      key: 62, scale: MAJOR, bpm: 152, trim: [1, 1, 1, 1],
+      key: 62, scale: MAJOR, bpm: 152, trim: [1.051, 1, 1, 1.402],
       lead: ['super', 'horn'], comp: ['power', 'power', 'x_x_.x_x_.x_x_x_'], arp: ['pluck', '0.4.2.4.0.4.2.4.'],
       pad: 'sawpad', bass: ['synbass', 'r.r.r.r.r.r.r.f.'],
       drums: {
@@ -444,7 +444,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
   trail: [
     {
       title: 'Glacier Line', style: 'liquid drum-and-bass: airy pad, glass arp, sub bass, floating lead',
-      key: 65, scale: AEOLIAN, bpm: 168, trim: [1, 1, 1, 1], pump: 0.35,
+      key: 65, scale: AEOLIAN, bpm: 168, trim: [0.502, 0.719, 0.685, 0.769], pump: 0.35,
       lead: ['soft', 'violin'], comp: ['pluck', 'chord', '..x...x..x....x.'], arp: ['crystal', '0.2.4.2.5.2.4.2.'],
       pad: 'air', bass: ['sub', 'r_____....r___..', 'r_____r_..r___r_'],
       drums: {
@@ -464,7 +464,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Aurora Drift', style: 'half-time future bass: pumping supersaw stabs, 808 slides, hat rolls',
-      key: 59, scale: AEOLIAN, bpm: 150, trim: [1, 1, 1, 1], pump: 0.6,
+      key: 59, scale: AEOLIAN, bpm: 150, trim: [0.333, 0.464, 0.552, 0.485], pump: 0.6,
       lead: ['saw', 'soft'], comp: ['stab', 'chord', 'x__x__x_..x_x_..'], arp: ['crystal', '..4...3...5...3.'],
       pad: 'sawpad', bass: ['b808', 'r_____....S_r_..'],
       drums: {
@@ -484,7 +484,7 @@ export const SONGS: Record<MusicTrack, Theme[]> = {
     },
     {
       title: 'Whiteout Run', style: 'dorian drum-and-bass: reese bass, two-bar break, plucks, saw lead',
-      key: 57, scale: DORIAN, bpm: 174, trim: [1, 1, 1, 1], pump: 0.4,
+      key: 57, scale: DORIAN, bpm: 174, trim: [0.936, 1, 1, 1.086], pump: 0.4,
       lead: ['saw', 'violin'], comp: ['pluck', 'chord', 'x..x..x...x..x..'], arp: ['crystal', '0.3.4.3.0.3.4.3.'],
       pad: 'air', bass: ['reese', 'r_________r_____', 'r_____r___r___R_'],
       drums: {

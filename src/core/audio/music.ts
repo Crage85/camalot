@@ -255,7 +255,7 @@ export class Track {
   private buses = new Map<string, AudioNode>();
   private mood: MusicMood | null = null;
 
-  constructor(private ctx: Ctx, private mix: Mixer, readonly name: MusicTrack, readonly song = 0) {
+  constructor(private ctx: Ctx, mix: Mixer, readonly name: MusicTrack, readonly song = 0) {
     const th = (this.theme = SONGS[name][song]);
     this.bus = ctx.createGain();
     this.send = ctx.createGain();
