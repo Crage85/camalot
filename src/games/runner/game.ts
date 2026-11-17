@@ -332,6 +332,10 @@ export class RunnerGame {
       this.scene.background = look.skyLow;
       this.hemi.color.copy(look.skyTop).lerp(WHITE, 0.6);
       this.hemi.groundColor.set(look.ground).lerp(WHITE, 0.2);
+      if (look.amb) {
+        this.hemi.color.set(look.amb[0]);
+        this.hemi.groundColor.set(look.amb[1]);
+      }
       this.hemi.intensity = look.hemi;
       this.sun.color.copy(look.sunColor);
       this.sun.intensity = look.sun;
@@ -1212,6 +1216,7 @@ export class RunnerGame {
     this.sun.position.set(-16, 30, c.z - 16 + 14);
     const w = this.world!;
     w.follow.position.set(c.x, 0, c.z);
+    w.time.value = this.time;
     if (w.dragon) {
       const a = this.time * 0.35;
       w.dragon.position.set(Math.sin(a) * 34, 17 + Math.sin(a * 2) * 2, -this.d - 55 + Math.cos(a) * 26);

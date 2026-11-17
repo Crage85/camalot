@@ -31,6 +31,8 @@ function part(g0: THREE.BufferGeometry, color: string, x = 0, y = 0, z = 0, sx =
   return g;
 }
 const merge = (parts: THREE.BufferGeometry[]) => mergeGeometries(parts)!;
+/** Flat facets: each triangle gets its own normal, so the toon ramp cuts crisp planes. */
+const facet = (g: THREE.BufferGeometry) => (g.computeVertexNormals(), g);
 
 // ---------------- Toon shading and ink ----------------
 /** The one light ramp every toon material uses: shadow 0.35, mid 0.7, lit 1.0. */
@@ -330,10 +332,12 @@ export type CatMesh = ReturnType<typeof catMesh>;
 export interface Look {
   skyTop: THREE.Color; skyLow: THREE.Color; ground: string; track: [string, string]; line: string; kerb: string;
   hemi: number; sun: number; sunColor: THREE.Color; night: number; // night 0..1: how much glow and how many stars
+  amb?: [string, string]; // sky light colours (from above, from below) when the world sets its own shadow colour
 }
-const BASE: Record<WorldId, { top: string; low: string; ground: string; track: [string, string]; line: string; kerb: string; night?: number }> = {
+const BASE: Record<WorldId, { top: string; low: string; ground: string; track: [string, string]; line: string; kerb: string; night?: number; amb?: [string, string]; sun?: string }> = {
   field: { top: '#0f4fc4', low: '#8fd4ff', ground: '#3a9a44', track: ['#2b8a48', '#35a054'], line: '#f2fff0', kerb: '#ffb020' },
-  snow: { top: '#1f55cc', low: '#c4e2ff', ground: '#dbe8f8', track: ['#b4cdea', '#c6daf2'], line: '#2f6fe0', kerb: '#2f6fe0' },
+  // Snow: strong blue sky light makes every shadow cobalt; a low gold sun keeps the lit snow warm white.
+  snow: { top: '#0a2a9a', low: '#9fdcff', ground: '#f0f5ff', track: ['#3a78cc', '#4688dc'], line: '#ffffff', kerb: '#ff6a2a', amb: ['#6f9bff', '#cfe0ff'], sun: '#ffe2b4' },
   beach: { top: '#0a74dc', low: '#9eeaff', ground: '#efcc80', track: ['#e0b460', '#ebc474'], line: '#ffffff', kerb: '#0b9aa0' },
   canyon: { top: '#2864d4', low: '#ffc488', ground: '#c46a38', track: ['#a45530', '#b4633a'], line: '#ffe8c8', kerb: '#7a2418' },
   desert: { top: '#2a70dc', low: '#ffdc98', ground: '#e6b864', track: ['#cc9c4e', '#daaa5c'], line: '#fff6e0', kerb: '#6a3fc0' },
@@ -351,13 +355,20 @@ const LEAGUE_SKY: [string, string, number, string, number, number, number][] = [
 export function lookFor(world: WorldId, league: number): Look {
   const b = BASE[world];
   const [top, low, k, sunC, sun, hemi, night] = LEAGUE_SKY[league];
-  return {
+  const look: Look = {
     skyTop: new THREE.Color(b.top).lerp(new THREE.Color(top), k),
     skyLow: new THREE.Color(b.low).lerp(new THREE.Color(low), k),
     ground: b.ground, track: b.track, line: b.line, kerb: b.kerb,
     hemi: league === 0 && b.night ? 0.85 : hemi, sun: league === 0 && b.night ? 1.8 : sun,
     sunColor: new THREE.Color(league === 0 && b.night ? '#c8b8ff' : sunC), night: Math.max(night, b.night ?? 0),
   };
+  if (b.amb) {
+    look.amb = b.amb;
+    look.hemi *= 2;
+    look.sun *= 0.88;
+  }
+  if (b.sun && league === 0) look.sunColor.set(b.sun);
+  return look;
 }
 
 // ---------------- Scenery props ----------------
@@ -373,7 +384,16 @@ const tree = (leaf: string, capCol?: string): Proto => ({
 const PROTOS: Record<string, () => Proto> = {
   pine: () => tree('#2f8f57'),
   darkpine: () => tree('#28584a'),
-  snowpine: () => tree('#5f9e86', '#ffffff'),
+  // Dark pine with a snow cap on every tier.
+  snowpine: () => ({
+    geo: merge([
+      part(cyl(0.2, 0.28, 1, 6), '#5a3a34', 0, 0.5, 0),
+      ...[[1.25, 1.7, 1.7], [0.95, 1.5, 2.6], [0.6, 1.2, 3.4]].flatMap(([rad, h, y]) => [
+        part(cone(rad, h, 7), '#1c6a5e', 0, y, 0),
+        part(cone(rad * 0.76, h * 0.75, 7), '#ffffff', 0, y + h * 0.125 + 0.05, 0),
+      ]),
+    ]),
+  }),
   round: () => ({ geo: merge([part(cyl(0.22, 0.3, 1.4, 6), '#8a5a3c', 0, 0.7, 0), part(new THREE.IcosahedronGeometry(1.3, 1), '#2f9a48', 0, 2.3, 0), part(new THREE.IcosahedronGeometry(0.8, 1), '#4ab858', 0.7, 2.9, 0.3)]) }),
   snowman: () => ({ geo: merge([part(cone(0.5, 2.6, 5), '#9fd8ff', 0, 1.3, 0), part(cone(0.32, 1.7, 5), '#c8ecff', 0.55, 0.85, 0.2, 1, 1, 1, 0, -0.3), part(cone(0.28, 1.3, 5), '#7fbcf0', -0.5, 0.65, -0.1, 1, 1, 1, 0, 0.35)]) }),
   palm: () => ({ geo: merge([part(cyl(0.16, 0.26, 4, 6), '#a87a4f', 0.2, 2, 0, 1, 1, 1, 0, -0.1), ...[0, 1, 2, 3, 4, 5].map((i) => part(cone(0.45, 2.2, 4), i % 2 ? '#3fbf6a' : '#2fa35a', 0.4 + Math.cos(i * 1.05) * 0.95, 3.9, Math.sin(i * 1.05) * 0.95, 1, 1, 0.35, Math.sin(i * 1.05) * 1.2, -Math.cos(i * 1.05) * 1.2)), part(sph(0.22, 6, 5), '#7a4a2a', 0.4, 3.9, 0.2)]) }),
@@ -395,6 +415,14 @@ const PROTOS: Record<string, () => Proto> = {
   }),
   tent: () => ({ geo: merge([part(cyl(1.5, 1.5, 1.4, 8), '#f4efe6', 0, 0.7, 0), part(cone(1.9, 1.3, 8), '#e8305a', 0, 2.05, 0), part(cyl(0.04, 0.04, 1.6, 4), '#2a2c48', 0, 3.3, 0), part(box(0.9, 0.5, 0.04), '#ffb020', 0.47, 3.8, 0)]) }),
   mountain: () => ({ geo: merge([part(cone(1, 1.4, 6), '#4a5a9c', 0, 0.7, 0), part(cone(0.43, 0.6, 6), '#eef4ff', 0, 1.11, 0), part(cone(0.7, 0.9, 5), '#3c4a88', 0.7, 0.45, 0.3)]) }),
+  peak: () => ({
+    geo: facet(merge([
+      part(cone(1, 1.5, 6), '#34489a', 0, 0.75, 0), part(cone(0.5, 0.75, 6), '#ffffff', 0, 1.15, 0),
+      part(cone(0.7, 1.0, 5), '#2a3a86', 0.75, 0.5, 0.3), part(cone(0.33, 0.47, 5), '#eaf2ff', 0.75, 0.78, 0.3),
+      part(cone(0.5, 0.7, 5), '#3c52a8', -0.7, 0.35, -0.3),
+    ])),
+  }),
+  drift: () => ({ geo: part(sph(1, 12, 6), '#f6f9ff', 0, 0, 0, 1, 0.2, 0.7) }),
   dune: () => ({ geo: part(sph(1, 8, 5), '#e8c070', 0, 0, 0, 1.6, 0.5, 1) }),
   island: () => ({ geo: merge([part(sph(1, 8, 5), '#e8d090', 0, 0, 0, 1.4, 0.3, 1.4), part(sph(0.8, 8, 5), '#3fbf6a', 0, 0.3, 0, 1, 0.7, 1)]) }),
   butte: () => ({ geo: merge([part(cyl(0.7, 1, 1.2, 7), '#c2603a', 0, 0.6, 0), part(cyl(0.72, 0.72, 0.15, 7), '#e8a070', 0, 0.9, 0)]) }),
@@ -407,7 +435,7 @@ const PROTOS: Record<string, () => Proto> = {
 };
 // near A, near B, small scatter, far backdrop
 const SCENERY: Record<WorldId, [string, string, string, string]> = {
-  field: ['round', 'pine', 'flower', 'mountain'], snow: ['snowpine', 'snowman', 'rock', 'mountain'], beach: ['palm', 'umbrella', 'rock', 'island'],
+  field: ['round', 'pine', 'flower', 'mountain'], snow: ['snowpine', 'snowman', 'rock', 'peak'], beach: ['palm', 'umbrella', 'rock', 'island'],
   canyon: ['mesa', 'pine', 'rock', 'butte'], desert: ['cactus', 'palm', 'dune', 'pyramid'], candy: ['lolly', 'cupcake', 'gumdrop', 'icecream'],
   city: ['building', 'lamp', 'rock', 'skyscraper'], castle: ['tower', 'darkpine', 'torch', 'keep'],
 };
@@ -481,6 +509,124 @@ export function streakTexture() {
 }
 const beamMat = (color: THREE.Color, opacity: number) =>
   new THREE.MeshBasicMaterial({ map: streakTexture(), color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide });
+
+// ---------------- Frost Peak extras ----------------
+/** Toon snow: white with hard-edged blue wind-carved shadow shapes. Tiles in both directions. */
+function snowTexture() {
+  const t = canvasTex(512, 512, (c) => {
+    c.fillStyle = '#ffffff';
+    c.fillRect(0, 0, 512, 512);
+    const r = seeded(5);
+    const oval = (x: number, y: number, w: number, h: number, col: string) => {
+      c.fillStyle = col;
+      for (const dx of [-512, 0, 512]) for (const dy of [-512, 0, 512]) {
+        c.beginPath();
+        c.ellipse(x + dx, y + dy, w, h, -0.2, 0, Math.PI * 2);
+        c.fill();
+      }
+    };
+    for (let i = 0; i < 30; i++) {
+      const x = r() * 512, y = r() * 512, w = 36 + r() * 110, h = w * (0.1 + r() * 0.1);
+      oval(x, y, w, h, i % 3 ? '#c4d6f8' : '#9fb9ee');
+      oval(x - w * 0.05, y - h * 0.5, w * 0.99, h * 0.92, '#ffffff'); // the lit crest leaves a crescent of shadow
+    }
+  });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(900 / 46, (TRACK_LEN + 500) / 46);
+  t.anisotropy = 4;
+  return t;
+}
+
+const POINT_VERT = 'uniform float uTime; uniform float uPx; attribute vec3 aSeed; varying float vA;';
+/** Layered ridges, a sun halo, snow drifts, twinkling glints, and falling snow for Frost Peak. */
+function snowScene(g: THREE.Group, follow: THREE.Group, look: Look, sunPos: THREE.Vector3, time: { value: number }, low: boolean) {
+  const r = seeded(77);
+  // Three mountain ridges ring the horizon. Each one further back fades more into the sky haze.
+  const haze = look.skyLow.clone().lerp(look.skyTop, 0.3);
+  const tint = (c: string, k: number) => '#' + new THREE.Color(c).lerp(haze, k).getHexString();
+  const peaks: THREE.BufferGeometry[] = [];
+  [[300, 44, 80, 0.72], [262, 28, 54, 0.45], [226, 16, 34, 0.18]].forEach(([rad, h0, h1, k], j) => {
+    const n = 20 + j * 4;
+    for (let i = 0; i < n; i++) {
+      const a = -2.2 + (i + r() * 0.8) * (4.4 / n);
+      const h = h0 + r() * (h1 - h0);
+      const w = h * (0.75 + r() * 0.5);
+      const x = Math.sin(a) * rad, z = -Math.cos(a) * rad;
+      peaks.push(part(cone(w, h, 6), tint(i % 2 ? '#2a3c92' : '#3a52b0', k), x, h / 2 - 3, z), part(cone(w * 0.48, h * 0.47, 6), tint('#ffffff', k * 0.8), x, h * 0.775 - 3, z));
+    }
+  });
+  follow.add(mesh(facet(merge(peaks)), toon({ vertexColors: true, fog: false })));
+  // An ice halo around the sun.
+  const halo = mesh(new THREE.RingGeometry(33, 35.5, 48), new THREE.MeshBasicMaterial({ color: look.sunColor, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  halo.position.copy(sunPos);
+  halo.lookAt(0, 0, 0);
+  follow.add(halo);
+
+  // Wind-packed drifts beside the pitch, clear of the stands.
+  const drifts = instanced(PROTOS.drift().geo, propMat, Array.from({ length: low ? 36 : 80 }, () => {
+    const s = 3 + r() * 6;
+    return mat4((r() < 0.5 ? -1 : 1) * (W + 14 + r() * 50), -0.05, Z0 - r() * (TRACK_LEN + 40), s, s * (0.7 + r() * 0.8), (r() - 0.5) * 0.8);
+  }));
+  drifts.receiveShadow = true;
+  g.add(drifts);
+
+  const points = (n: number, fill: () => [number, number, number], mat: THREE.ShaderMaterial) => {
+    const pos = new Float32Array(n * 3), seed = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      pos.set(fill(), i * 3);
+      seed.set([r(), r(), r()], i * 3);
+    }
+    const pg = new THREE.BufferGeometry();
+    pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    pg.setAttribute('aSeed', new THREE.BufferAttribute(seed, 3));
+    const p = new THREE.Points(pg, mat);
+    p.frustumCulled = false;
+    g.add(p);
+  };
+  const px = low ? 1.25 : 2; // close to the device pixel ratio each quality renders at
+  // Glints: four-point sparkles on the snow that flash in and out.
+  points(low ? 160 : 520, () => [(r() < 0.5 ? -1 : 1) * (W + 2.6 + r() * r() * 44), 0.12, Z0 - r() * (TRACK_LEN + 40)], new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+    uniforms: { uTime: time, uPx: { value: 300 * px } },
+    vertexShader: `${POINT_VERT}
+void main(){
+  vec4 mv = viewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mv;
+  vA = pow(max(0.0, sin(uTime * (1.5 + aSeed.y * 2.0) + aSeed.x * 6.283)), 10.0) * smoothstep(120.0, 60.0, -mv.z);
+  gl_PointSize = step(0.02, vA) * uPx * (0.6 + aSeed.z) / max(1.0, -mv.z); // asleep glints cost nothing
+}`,
+    fragmentShader: `varying float vA;
+void main(){
+  vec2 q = abs(gl_PointCoord - 0.5);
+  float star = max(0.0, 1.0 - (q.x + q.y) * 2.0 - min(q.x, q.y) * 14.0);
+  gl_FragColor = vec4(vec3(1.5, 1.8, 2.4) * star * vA, 1.0);
+  #include <colorspace_fragment>
+}`,
+  }));
+  // Falling snow: a box of flakes that wraps around the camera, so it never runs out.
+  points(low ? 220 : 800, () => [r() * 64, r() * 30, r() * 80], new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, fog: false,
+    uniforms: { uTime: time, uPx: { value: 110 * px } },
+    vertexShader: `${POINT_VERT}
+void main(){
+  vec3 box = vec3(64.0, 30.0, 80.0);
+  vec3 p = position + vec3(uTime * 1.6 + sin(uTime * 0.7 + aSeed.x * 6.283) * 1.3, -uTime * (2.6 + aSeed.y * 2.4), uTime * 0.9);
+  vec3 c = cameraPosition + vec3(0.0, 3.0, -26.0);
+  p = c + mod(p - c, box) - box * 0.5;
+  vec4 mv = viewMatrix * vec4(p, 1.0);
+  gl_Position = projectionMatrix * mv;
+  vA = (0.55 + aSeed.z * 0.45) * smoothstep(1.0, 5.0, -mv.z);
+  gl_PointSize = uPx * (0.6 + aSeed.z * 0.8) / max(1.0, -mv.z);
+}`,
+    fragmentShader: `varying float vA;
+void main(){
+  float d = length(gl_PointCoord - 0.5) * 2.0;
+  if (d > 1.0) discard;
+  gl_FragColor = vec4(vec3(1.0), vA * (1.0 - d * d));
+  #include <colorspace_fragment>
+}`,
+  }));
+}
 
 /** Scenery for one world in one league's light: sky, ground, track, boards, arches, props. */
 export function buildWorld(id: WorldId, league: number, low: boolean) {
@@ -561,7 +707,7 @@ void main(){
   follow.add(clouds);
   g.add(follow);
 
-  const ground = mesh(new THREE.PlaneGeometry(900, TRACK_LEN + 500), toon({ color: look.ground }));
+  const ground = mesh(new THREE.PlaneGeometry(900, TRACK_LEN + 500), toon({ color: look.ground, map: id === 'snow' ? snowTexture() : null }));
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -0.05, zMid);
   ground.receiveShadow = true;
@@ -651,6 +797,8 @@ void main(){
     sea.position.set(W + 22 + 200, 0.02, zMid);
     g.add(sea);
   }
+  const time = { value: 0 };
+  if (id === 'snow') snowScene(g, follow, look, sunPos, time, low);
   let dragon: THREE.Object3D | null = null;
   if (id === 'castle') {
     // A dragon circles over the keep: dark scales, ember wings, long neck and tail.
@@ -668,7 +816,7 @@ void main(){
     dragon.scale.setScalar(1.6);
     g.add(dragon);
   }
-  return { group: g, look, follow, dragon };
+  return { group: g, look, follow, dragon, time };
 }
 export type WorldArt = ReturnType<typeof buildWorld>;
 
