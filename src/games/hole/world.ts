@@ -1108,7 +1108,8 @@ export class World {
       return;
     }
     const R = h ? h.R : 2, x = h ? h.x : 0, z = h ? h.z : 0;
-    const height = (9.5 + R * 3.3) * portrait;
+    // Past R 2 the camera climbs faster than the hole grows, so a huge hole stays about a third of the screen.
+    const height = (9.5 + R * 3.3 + Math.max(0, R - 2) * 3) * portrait;
     out.set(x, height, z + height * 0.74);
     look.set(x, 0, z - R * 0.25);
   }

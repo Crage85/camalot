@@ -630,7 +630,7 @@ export class RunnerGame {
       if (!c.fired && this.d > c.d - 3 && st === 'run') {
         c.fired = true;
         this.burst(2, c.x, 1.6, -c.d, this.low ? 14 : 40, null, 3.2, 2.4);
-        if (c.x < 0) this.sfx('pop', 0.6, 0.8);
+        if (c.x < 0) this.sfx('pop', 0.6, 0.6);
       }
     }
   }
@@ -773,7 +773,7 @@ export class RunnerGame {
       this.bump('coins');
       this.coinRun = this.coinClock < 0.5 ? this.coinRun + 1 : 0;
       this.coinClock = 0;
-      this.sfx('coin', 1 + Math.min(10, this.coinRun) * 0.06, 0.7);
+      this.sfx('coin', 1 + Math.min(10, this.coinRun) * 0.06, 0.5);
       this.refreshHud();
       this.burst(1, c.x, 0.6, -c.d, 3, GOLD, 1.6);
     }
@@ -866,7 +866,7 @@ export class RunnerGame {
       this.burst(1, 2.2, 1.6, gz, 30, null, 5);
       this.float('GOAL!', 0, 4.6, gz, 'goal');
       this.sfx('win');
-      this.sfx('cheer', 1, 1);
+      this.sfx('cheer', 1, 0.6);
     }
     // Fireworks over the stadium.
     this.fireClock -= dt;

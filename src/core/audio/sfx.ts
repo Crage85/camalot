@@ -1,5 +1,5 @@
-import type { LoopName, SfxName } from '../contract';
-import { INST, blip, mtof, noise, noiseBuffer, tone } from './synth';
+import type { LoopName, SfxName, SfxOptions } from '../contract';
+import { INST, blip, mtof, noise, noiseBuffer, tone, type Mixer } from './synth';
 
 type Ctx = BaseAudioContext;
 /** Builds one sound on `o` starting at `t`; `p` is the pitch multiplier. */
@@ -149,6 +149,75 @@ export const SFX: Record<SfxName, Sfx> = {
 
 /** Seconds the music dips under each big sound. */
 export const DUCK: Partial<Record<SfxName, number>> = { win: 1.2, lose: 0.8, levelUp: 0.7, unlock: 0.4, explode: 0.5, cheer: 1 };
+
+/**
+ * The mix for each sound: [level, seconds until it has faded 20 dB, least seconds between two of the same name].
+ * The levels even out the loudness (measured by shots/audio/check.mjs, see report.txt): small sounds
+ * that fire all the time sit lowest, ordinary sounds in the middle, the few big moments on top.
+ * Loudest 100 ms with the sfx slider at max, against music at about -12.5: small -23, ordinary -20,
+ * big -16; and no peak over -14, -12, -9 dBFS, which holds the short clicks lower still.
+ */
+export const SFX_MIX: Record<SfxName, [number, number, number]> = {
+  tap: [1.5, 0.05, 0.05], select: [1.12, 0.15, 0.08], back: [1.23, 0.15, 0.08], buy: [1.15, 0.7, 0.15], error: [1.12, 0.25, 0.15],
+  unlock: [1, 1.1, 0.4], levelUp: [0.98, 1.3, 0.6], win: [1.3, 1.4, 1], lose: [1.48, 1.05, 1], star: [0.65, 0.85, 0.08],
+  coin: [1.55, 0.22, 0.08], pop: [1.12, 0.06, 0.08], grow: [1.38, 0.65, 0.12], gulp: [1, 0.2, 0.08], whoosh: [1.22, 0.36, 0.15],
+  boost: [1.55, 0.42, 0.25], sparkle: [0.76, 1, 0.15], splash: [1.7, 0.26, 0.15], thud: [0.88, 0.13, 0.08], crunch: [1.6, 0.13, 0.08],
+  snip: [0.95, 0.1, 0.08], swap: [1.24, 0.13, 0.08], match: [0.63, 0.87, 0.08], cascade: [0.61, 0.9, 0.12], explode: [1.04, 0.3, 0.2],
+  cheer: [2.85, 1.1, 0.8], kick: [1, 0.08, 0.08], meow: [1.33, 0.41, 0.25], purr: [0.61, 1, 0.6],
+};
+
+/** No more sounds than this at once; a new one fades out the oldest. */
+const MAX_VOICES = 6;
+/** No more of one name than this at once. */
+const MAX_SAME = 3;
+
+export type SfxPlayer = (name: SfxName, opts?: SfxOptions, now?: number) => void;
+
+/**
+ * The one door every sound effect goes through, so no game can make a pile of sound:
+ * - a repeat of the same name inside its least gap is dropped;
+ * - at most MAX_SAME of one name and MAX_VOICES in all ring at once; a new sound fades out the oldest
+ *   (the big sounds in DUCK are never cut short);
+ * - a new sound is turned down by how much sound is still ringing, so a burst adds up to little more than one sound.
+ */
+export function createSfx(c: Ctx, mix: Mixer): SfxPlayer {
+  const voices: { name: SfxName; at: number; len: number; gain: AudioParam }[] = [];
+  const last: Partial<Record<SfxName, number>> = {};
+  const cut = (v: (typeof voices)[number], t: number) => {
+    v.gain.setTargetAtTime(0, t, 0.015);
+    voices.splice(voices.indexOf(v), 1);
+  };
+  return (name, opts, now = c.currentTime) => {
+    const [level, len, gap] = SFX_MIX[name];
+    if (now - (last[name] ?? -9) < gap) return;
+    for (let i = voices.length; i--; ) if (voices[i].at + voices[i].len <= now) voices.splice(i, 1);
+    const t = now + 0.005;
+    const same = voices.filter((v) => v.name === name);
+    if (same.length >= MAX_SAME) cut(same[0], t);
+    if (voices.length >= MAX_VOICES) {
+      const v = voices.find((x) => !DUCK[x.name]);
+      if (!v) return;
+      cut(v, t);
+    }
+    last[name] = now;
+    const volume = Math.max(0, Math.min(1, opts?.volume ?? 1));
+    // Each voice counts by the share of its power still left (it is 20 dB down, 0.01, after `len`).
+    let ringing = 0;
+    for (const v of voices) ringing += 0.01 ** ((now - v.at) / v.len);
+    const g = c.createGain();
+    g.gain.value = (level * volume) / Math.sqrt(1 + ringing);
+    if (opts?.pan) {
+      const p = c.createStereoPanner();
+      p.pan.value = Math.max(-1, Math.min(1, opts.pan));
+      g.connect(p).connect(mix.sfx);
+    } else g.connect(mix.sfx);
+    voices.push({ name, at: now, len, gain: g.gain });
+    // A little random pitch so repeats do not sound robotic.
+    SFX[name](c, g, t, (opts?.pitch ?? 1) * (0.97 + Math.random() * 0.06));
+    const duck = DUCK[name];
+    if (duck) mix.duck(t, duck * volume);
+  };
+}
 
 // ---- loops ----
 

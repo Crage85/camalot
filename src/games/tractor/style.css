@@ -79,3 +79,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #a8dcff; }
 .tr-goal { font-weight: 700; }
 .tr-btns .tr-coin { width: 16px; height: 16px; margin: 0 4px; }
 @media (max-width: 860px) { .tr-cards { grid-template-columns: repeat(2, 1fr); } .tr-btns { flex-wrap: wrap; } }
+
+/* Unstuck: shows and pulses when she has been pushing without moving. */
+.tr-unstuck { animation: tr-pulse 0.9s ease-in-out infinite; }
+@keyframes tr-pulse { 50% { scale: 1.08; } }
+@media (prefers-reduced-motion: reduce) { .tr-unstuck { animation: none; } }

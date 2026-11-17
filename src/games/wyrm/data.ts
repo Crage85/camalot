@@ -1,11 +1,11 @@
 // Fixed game data: tunables, skins, arenas, journey stages, evolution, awards, save shape. No three.js here.
 
 export const T = {
-  arenaRadius: 100,
-  fieldGems: 1700, // small gems kept on the field
-  gemRegenPerSec: 35, // how fast eaten field gems grow back
-  maxGems: 3400,
-  bots: 11,
+  arenaRadius: 300, // 3x the first version's 100: 9x the area
+  fieldGems: 15300, // small gems kept on the field (same density as the first version: 1700 on radius 100)
+  gemRegenPerSec: 315, // how fast eaten field gems grow back
+  maxGems: 20000,
+  bots: 36,
   startMass: 12,
   bigStartMass: 90, // "Start big" bonus
   dragonStartMass: 260, // "Dragon start" epic bonus
@@ -14,14 +14,14 @@ export const T = {
   boostCostPerSec: 5, // mass burned per second while boosting
   minBoostMass: 16,
   deathDropShare: 0.6, // share of a defeated wyrm's mass that bursts into gems
-  potionCount: 5,
+  potionCount: 45,
   potionSecs: 12,
   bubbleSecs: 12,
   zoomSecs: 8,
   frostSecs: 6,
   reviveBubbleSecs: 3,
   botRespawnSecs: 3,
-  spriteCount: 6, // fleeing sprite gems on the field
+  spriteCount: 54, // fleeing sprite gems on the field
   spriteValue: 15,
   spriteSpeed: 9.2,
   spriteStamina: 3.5, // seconds a sprite gem can run before it must rest
@@ -42,6 +42,10 @@ export const BOT_NAMES = [
   'Twinkle', 'Pebble', 'Juniper', 'Marzipan', 'Clover', 'Captain Puddle',
   'Bramble', 'Sprinkles', 'Thistle', 'Moonpie', 'Wisp', 'Duchess Plum',
   'Acorn', 'Sunny', 'Glimmer', 'Tumble', 'Maple', 'Ziggy',
+  'Hazel', 'Doodle', 'Puddingtop', 'Saffron', 'Nimbus', 'Truffle',
+  'Pickle', 'Lady Bluebell', 'Cobble', 'Sir Waffles', 'Poppy', 'Fizz',
+  'Comet', 'Honeydew', 'Rosehip', 'Wobble', 'Tinsel', 'Sage',
+  'Muffin', 'Lord Pudding', 'Jellybean', 'Cricket', 'Kiwi', 'Dewdrop',
 ];
 
 export type BotStyle = 'grazer' | 'hunter' | 'circler';
@@ -160,14 +164,14 @@ export interface Arena {
 const GEMS_A = [0xff6b9a, 0xffe066, 0x5cc8ff, 0xb18cff, 0x7ee081, 0xff9d5c];
 export const ARENAS: Arena[] = [
   { id: 'valley', name: 'Fairy Valley', blurb: 'A calm meadow. A good place to learn.', ground: 0x8fd16a, groundAlt: 0x74c058, outside: 0x5fa64e, far: 0x6fa8c8, skyTop: 0x4aa3ff, sky: 0xcdeeff, sun: 0xfff1d0, border: 0xd9a8ff, gems: GEMS_A, obstacles: [], zones: [], boss: { name: 'Old Mossback', skin: 'b-valley' } },
-  { id: 'peak', name: 'Snowy Peak', blurb: 'Ice patches make turning slippery.', ground: 0xf2f6ff, groundAlt: 0xdce8fa, outside: 0xe4ecfa, far: 0x9fb4d8, skyTop: 0x5a9cf0, sky: 0xdcefff, sun: 0xfff6e8, border: 0x8fe8ff, gems: [0x4aa8ff, 0xb18cff, 0xff6b9a, 0x2fd0c0, 0xffb84d, 0x6c7cff], obstacles: [], zones: [['slick', 10]], boss: { name: 'Frostwhisker', skin: 'b-peak' } },
-  { id: 'beach', name: 'Sunny Beach', blurb: 'Tide pools slow you down.', ground: 0xf5dfa3, groundAlt: 0xeccf86, outside: 0xf0d590, far: 0x58b8a0, skyTop: 0x2f9ef5, sky: 0xc6f0ff, sun: 0xfff0c0, border: 0xffa8c8, gems: [0xff6b6b, 0x2fd0c0, 0xffe066, 0xff8fc8, 0x5cc8ff, 0x9b8cff], obstacles: [], zones: [['slow', 10]], boss: { name: 'Captain Coral', skin: 'b-beach' } },
-  { id: 'grove', name: 'Glowshroom Grove', blurb: 'Bouncy mushrooms bump you back.', ground: 0x2c4a5e, groundAlt: 0x23405a, outside: 0x1c3048, far: 0x1a2a4a, skyTop: 0x0c1030, sky: 0x2a3a6a, sun: 0x9fc8ff, border: 0x4dffd9, night: true, gems: [0x4dffd9, 0xff7ad9, 0xffe066, 0x7a9dff, 0x9dff7a, 0xffa04d], obstacles: [['bumper', 16]], zones: [], boss: { name: 'Glimmercap', skin: 'b-grove' } },
-  { id: 'canyon', name: 'Red Rock Canyon', blurb: 'Stone pillars pop you. Wind gusts speed you up.', ground: 0xe0a070, groundAlt: 0xd08a5a, outside: 0xc8784a, far: 0xb0603a, skyTop: 0x4a8ae0, sky: 0xffe0c0, sun: 0xffd9a0, border: 0xffd04a, gems: [0x2fd0c0, 0xffe066, 0xffffff, 0x5cc8ff, 0xb18cff, 0x7ee081], obstacles: [['rock', 14]], zones: [['fast', 5]], boss: { name: 'Rustle the Red', skin: 'b-canyon' } },
-  { id: 'cat', name: 'Catnap Garden', blurb: 'Yarn balls bounce. Catnip makes you zoom.', ground: 0xc8e8a0, groundAlt: 0xb4dc8c, outside: 0x9ccc7c, far: 0xe8b8d0, skyTop: 0xff9ec8, sky: 0xffe8f0, sun: 0xfff0e0, border: 0xff8fc8, gems: [0xff8fc8, 0xffe066, 0x8fd8ff, 0xc8a0ff, 0xffb070, 0xffffff], obstacles: [['bumper', 13]], zones: [['fast', 6]], boss: { name: 'Queen Mittens', skin: 'b-cat' } },
-  { id: 'disco', name: 'Starlight Dance Floor', blurb: 'Slippery tiles and speed tiles.', ground: 0x2a2050, groundAlt: 0x3a2a70, outside: 0x181030, far: 0x2a1a5a, skyTop: 0x0a0620, sky: 0x3a1a6a, sun: 0xd0a0ff, border: 0xff4dd2, night: true, gems: [0xff4dd2, 0x4dd2ff, 0xffe04d, 0x4dff88, 0xff884d, 0xb44dff], obstacles: [], zones: [['slick', 8], ['fast', 8]], boss: { name: 'DJ Sparkle', skin: 'b-disco' } },
-  { id: 'forge', name: 'Dragon Forge', blurb: 'Lava pools and hot rocks pop you.', ground: 0x4a3a3a, groundAlt: 0x3a2c2e, outside: 0x2a2024, far: 0x3a1a1a, skyTop: 0x1a0a14, sky: 0x6a2a1a, sun: 0xffa060, border: 0xff7a1f, night: true, gems: [0xffb81f, 0xff5a1f, 0xfff07a, 0xff7ad9, 0x7ad9ff, 0xffffff], obstacles: [['pool', 9], ['rock', 5]], zones: [], boss: { name: 'Cinderjaw', skin: 'b-forge' } },
-  { id: 'cloud', name: 'Cloud Kingdom', blurb: 'Sky holes, bouncy clouds, and rainbow speed strips.', ground: 0xf8f4ff, groundAlt: 0xe8e0ff, outside: 0xd8e4ff, far: 0xffd0e8, skyTop: 0x6a7af0, sky: 0xffd8e8, sun: 0xfff4d8, border: 0xffe066, gems: [0xff6b6b, 0xffb84d, 0xffe066, 0x7ee081, 0x5cc8ff, 0xb18cff], obstacles: [['pool', 8], ['bumper', 8]], zones: [['fast', 6]], boss: { name: 'The Rainbow Empress', skin: 'b-cloud' } },
+  { id: 'peak', name: 'Snowy Peak', blurb: 'Ice patches make turning slippery.', ground: 0xf2f6ff, groundAlt: 0xdce8fa, outside: 0xe4ecfa, far: 0x9fb4d8, skyTop: 0x5a9cf0, sky: 0xdcefff, sun: 0xfff6e8, border: 0x8fe8ff, gems: [0x4aa8ff, 0xb18cff, 0xff6b9a, 0x2fd0c0, 0xffb84d, 0x6c7cff], obstacles: [], zones: [['slick', 90]], boss: { name: 'Frostwhisker', skin: 'b-peak' } },
+  { id: 'beach', name: 'Sunny Beach', blurb: 'Tide pools slow you down.', ground: 0xf5dfa3, groundAlt: 0xeccf86, outside: 0xf0d590, far: 0x58b8a0, skyTop: 0x2f9ef5, sky: 0xc6f0ff, sun: 0xfff0c0, border: 0xffa8c8, gems: [0xff6b6b, 0x2fd0c0, 0xffe066, 0xff8fc8, 0x5cc8ff, 0x9b8cff], obstacles: [], zones: [['slow', 90]], boss: { name: 'Captain Coral', skin: 'b-beach' } },
+  { id: 'grove', name: 'Glowshroom Grove', blurb: 'Bouncy mushrooms bump you back.', ground: 0x2c4a5e, groundAlt: 0x23405a, outside: 0x1c3048, far: 0x1a2a4a, skyTop: 0x0c1030, sky: 0x2a3a6a, sun: 0x9fc8ff, border: 0x4dffd9, night: true, gems: [0x4dffd9, 0xff7ad9, 0xffe066, 0x7a9dff, 0x9dff7a, 0xffa04d], obstacles: [['bumper', 144]], zones: [], boss: { name: 'Glimmercap', skin: 'b-grove' } },
+  { id: 'canyon', name: 'Red Rock Canyon', blurb: 'Stone pillars pop you. Wind gusts speed you up.', ground: 0xe0a070, groundAlt: 0xd08a5a, outside: 0xc8784a, far: 0xb0603a, skyTop: 0x4a8ae0, sky: 0xffe0c0, sun: 0xffd9a0, border: 0xffd04a, gems: [0x2fd0c0, 0xffe066, 0xffffff, 0x5cc8ff, 0xb18cff, 0x7ee081], obstacles: [['rock', 126]], zones: [['fast', 45]], boss: { name: 'Rustle the Red', skin: 'b-canyon' } },
+  { id: 'cat', name: 'Catnap Garden', blurb: 'Yarn balls bounce. Catnip makes you zoom.', ground: 0xc8e8a0, groundAlt: 0xb4dc8c, outside: 0x9ccc7c, far: 0xe8b8d0, skyTop: 0xff9ec8, sky: 0xffe8f0, sun: 0xfff0e0, border: 0xff8fc8, gems: [0xff8fc8, 0xffe066, 0x8fd8ff, 0xc8a0ff, 0xffb070, 0xffffff], obstacles: [['bumper', 117]], zones: [['fast', 54]], boss: { name: 'Queen Mittens', skin: 'b-cat' } },
+  { id: 'disco', name: 'Starlight Dance Floor', blurb: 'Slippery tiles and speed tiles.', ground: 0x2a2050, groundAlt: 0x3a2a70, outside: 0x181030, far: 0x2a1a5a, skyTop: 0x0a0620, sky: 0x3a1a6a, sun: 0xd0a0ff, border: 0xff4dd2, night: true, gems: [0xff4dd2, 0x4dd2ff, 0xffe04d, 0x4dff88, 0xff884d, 0xb44dff], obstacles: [], zones: [['slick', 72], ['fast', 72]], boss: { name: 'DJ Sparkle', skin: 'b-disco' } },
+  { id: 'forge', name: 'Dragon Forge', blurb: 'Lava pools and hot rocks pop you.', ground: 0x4a3a3a, groundAlt: 0x3a2c2e, outside: 0x2a2024, far: 0x3a1a1a, skyTop: 0x1a0a14, sky: 0x6a2a1a, sun: 0xffa060, border: 0xff7a1f, night: true, gems: [0xffb81f, 0xff5a1f, 0xfff07a, 0xff7ad9, 0x7ad9ff, 0xffffff], obstacles: [['pool', 81], ['rock', 45]], zones: [], boss: { name: 'Cinderjaw', skin: 'b-forge' } },
+  { id: 'cloud', name: 'Cloud Kingdom', blurb: 'Sky holes, bouncy clouds, and rainbow speed strips.', ground: 0xf8f4ff, groundAlt: 0xe8e0ff, outside: 0xd8e4ff, far: 0xffd0e8, skyTop: 0x6a7af0, sky: 0xffd8e8, sun: 0xfff4d8, border: 0xffe066, gems: [0xff6b6b, 0xffb84d, 0xffe066, 0x7ee081, 0x5cc8ff, 0xb18cff], obstacles: [['pool', 72], ['bumper', 72]], zones: [['fast', 54]], boss: { name: 'The Rainbow Empress', skin: 'b-cloud' } },
 ];
 export const FREE_ARENAS = 3; // the first three places were open in the first version and stay open
 
@@ -193,19 +197,21 @@ export interface Stage {
 }
 // Targets come from bot runs (shots/wyrm/balance.ts, calib): about the 45th, 72nd, and 90th percentile of what a
 // computer player reaches in that place, so 1 star takes a couple of tries and 3 stars takes practice.
-const LEN_A = [[1500, 3000, 5000], [2000, 4000, 6500], [2500, 4500, 7500], [2500, 5000, 8000]];
-const LEN_B = [[3000, 5000, 7000], [4000, 6000, 8500], [4500, 7000, 9500], [5000, 7500, 10000]];
+// Retuned for the radius-300 field (calib-v3.txt): wyrms meet less often, so runs last longer, lengths run higher,
+// sprite gems are easier to find, and pops stay about as hard.
+const LEN_A = [[2500, 5000, 9000], [3000, 6000, 10000], [3000, 6500, 11000], [3000, 6000, 9000]];
+const LEN_B = [[6000, 10000, 14000], [7000, 11000, 15000], [7000, 11500, 16000], [5000, 7500, 10000]];
 export const STAGES: Stage[] = ARENAS.flatMap((a, c) => {
   const mk = (n: number, kind: GoalKind, t: number[], text: string): Stage =>
     ({ id: `${a.id}-${n}`, arena: a.id, chapter: c, n, kind, tiers: [t[0], t[1], t[2]], text });
   return [
     mk(1, 'length', LEN_A[Math.min(3, c)], 'Grow long'),
     mk(2, 'pops', [1, 2, 3], 'Pop wyrms'),
-    mk(3, 'sprites', c < 3 ? [1, 2, 4] : [2, 3, 4], 'Catch sprite gems'),
+    mk(3, 'sprites', c < 3 ? [4, 8, 14] : c < 7 ? [3, 6, 10] : [2, 4, 7], 'Catch sprite gems'),
     mk(4, 'rush', [4000, 6000, 8500].map((v) => v + c * 100), 'Gem rush: 3 minutes'),
     mk(5, 'crown', [10, 30, 60].map((v) => v + c * 2), 'Stay in the top 3'),
     mk(6, 'length', LEN_B[Math.min(3, c)], 'Grow huge'),
-    mk(7, 'pops', [2, 3, 4], 'Pop many wyrms'),
+    mk(7, 'pops', c < 3 ? [2, 3, 4] : [1, 2, 4], 'Pop many wyrms'),
     mk(8, 'boss', [1, 2, 3], `Boss: ${a.boss.name}`),
   ];
 });

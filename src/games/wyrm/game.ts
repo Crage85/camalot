@@ -199,7 +199,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
     o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.7);
     o2.frequency.setValueAtTime(96, t); o2.frequency.exponentialRampToValueAtTime(48, t + 0.7);
     f.type = 'lowpass'; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(1800, t + 0.15); f.frequency.exponentialRampToValueAtTime(300, t + 0.7);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.75);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.75);
     o.connect(f); o2.connect(f); f.connect(g).connect(out);
     o.start(t); o2.start(t); o.stop(t + 0.8); o2.stop(t + 0.8);
   }
@@ -698,18 +698,19 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
     for (const pt of sim.potions) {
       if (!pt.alive) continue;
       map.fillStyle = hex(POTIONS[pt.kind].color);
-      map.fillRect(c + pt.x * k - 3, c + pt.z * k - 3, 6, 6);
+      map.fillRect(c + pt.x * k - 2, c + pt.z * k - 2, 4, 4);
     }
     map.fillStyle = '#ffe066';
     for (const sp of sim.sprites) if (sp.alive) { map.beginPath(); map.arc(c + sp.x * k, c + sp.z * k, 2.5, 0, 7); map.fill(); }
     for (const w of sim.wyrms) {
       if (!w.alive || w === sim.player) continue;
       map.fillStyle = w.isBoss ? '#ff5a5a' : '#f4efe6aa';
-      map.beginPath(); map.arc(c + w.segs[0] * k, c + w.segs[1] * k, (w.isBoss ? 6 : 3) + radiusOf(w.mass) * 4, 0, 7); map.fill();
+      map.beginPath(); map.arc(c + w.segs[0] * k, c + w.segs[1] * k, (w.isBoss ? 6 : 2) + radiusOf(w.mass) * 2.4, 0, 7); map.fill(); // small dots: the big field holds many wyrms
     }
     const p = sim.player;
     map.fillStyle = '#ffe3a0';
     map.beginPath(); map.arc(c + p.segs[0] * k, c + p.segs[1] * k, 7, 0, 7); map.fill();
+    map.strokeStyle = '#0d1118'; map.lineWidth = 2.5; map.stroke();
   }
   function drawTags() {
     const W = root.clientWidth || innerWidth, H = root.clientHeight || innerHeight;
@@ -749,7 +750,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
             combo = comboT > 0 ? Math.min(14, combo + 1) : 0;
             comboT = 0.6;
             lastGulp = now;
-            sfx('gulp', { pitch: 0.9 + combo * 0.045, volume: 0.55 });
+            sfx('gulp', { pitch: 0.9 + combo * 0.045, volume: 0.4 });
           }
           break;
         case 'potion':
@@ -787,7 +788,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
           world.shake(0.7);
           world.confetti(e.wyrm.segs[0], e.wyrm.segs[1], 50);
           world.ring(e.wyrm.segs[0], e.wyrm.segs[1], 0xff6b6b, 16, 0.8);
-          if (playing) { sfx('explode'); popText(e.wyrm.hearts > 0 ? 'Ouch!' : 'Beaten!', e.wyrm.segs[0], e.wyrm.segs[1], 'gold'); if (e.wyrm.hearts > 0) toast(`${e.wyrm.name} crashed! ${e.wyrm.hearts} to go`); }
+          if (playing) { sfx('explode', { volume: 0.5 }); popText(e.wyrm.hearts > 0 ? 'Ouch!' : 'Beaten!', e.wyrm.segs[0], e.wyrm.segs[1], 'gold'); if (e.wyrm.hearts > 0) toast(`${e.wyrm.name} crashed! ${e.wyrm.hearts} to go`); }
           break;
         case 'down': {
           const x = e.wyrm.segs[0], z = e.wyrm.segs[1];
@@ -838,7 +839,7 @@ export async function runWyrm(root: HTMLElement, camalot: Camalot) {
     }
     if (p.boosting && !wasBoosting) vary('boost', 0.7);
     wasBoosting = p.boosting;
-    wind?.setLevel(p.alive ? (p.boosting ? 0.7 : arena.id === 'peak' || arena.id === 'canyon' || arena.id === 'cloud' ? 0.22 : 0.06) : 0);
+    wind?.setLevel(p.alive ? (p.boosting ? 0.45 : arena.id === 'peak' || arena.id === 'canyon' || arena.id === 'cloud' ? 0.22 : 0.06) : 0);
     wind?.setPitch(p.boosting ? 1.4 : 1);
     const rank = sim.ranking().indexOf(p);
     const tl = tracker.timeLeft();

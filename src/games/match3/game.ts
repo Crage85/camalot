@@ -275,7 +275,7 @@ class Game {
     if (s.type === 'convert') this.sfx('sparkle');
     if (s.type === 'clear' && removed) {
       this.sfx('match', { pitch: 1 + 0.12 * Math.min(8, s.depth - 1) }, 0);
-      if (s.depth >= 3) this.sfx('cascade', { pitch: 1 + 0.06 * (s.depth - 3) });
+      if (s.depth >= 3) this.sfx('cascade', { pitch: 1 + 0.06 * (s.depth - 3), volume: 0.7 });
     }
     for (const f of s.fx) {
       if (f.t === 'line') this.sfx('whoosh');
@@ -987,7 +987,7 @@ class Game {
     if (!(await this.bonus(`${c.name}, a legendary cat, joins your kingdom`, true))) return;
     this.save.cats[id] = '';
     this.sfx('meow');
-    this.sfx('cheer');
+    this.sfx('cheer', { volume: 0.6 });
     this.afterGain();
     this.syncKingdom();
     this.showCats(id);

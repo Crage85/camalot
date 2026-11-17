@@ -75,6 +75,8 @@ const fbm = (x: number, y: number) => noise(x, y) * 0.6 + noise(x * 2.1, y * 2.1
 const smooth = (t: number) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 
 const R = T.arenaRadius;
+const GROW = R / 100; // the places were first drawn for radius 100: props inside scale with area, the rim with length
+const TILE = 90; // props are cut into tiles this wide so the ones out of view are not drawn
 const VOID = new Set(['cloud', 'disco']); // floating platforms: the land outside drops away
 const WATER_Y: Partial<Record<string, number>> = { beach: -0.9, forge: -1.6, valley: -2.2 };
 
@@ -98,11 +100,11 @@ function heightFn(arena: Arena): (x: number, z: number) => number {
   };
 }
 
-function terrain(arena: Arena, h: (x: number, z: number) => number): THREE.Mesh {
+function terrain(arena: Arena, h: (x: number, z: number) => number, low: boolean): THREE.Mesh {
   const rings: number[] = [];
-  for (let r = 0; r < R; r += 2.5) rings.push(r);
+  for (let r = 0; r < R; r += low ? 4.5 : 3) rings.push(r);
   for (let r = R, st = 1.5; r < R + 330; r += st, st *= 1.14) rings.push(r);
-  const seg = 144;
+  const seg = low ? 160 : 256;
   const pos: number[] = [], col: number[] = [], idx: number[] = [];
   const cg = new THREE.Color(arena.ground), ca = new THREE.Color(arena.groundAlt), co = new THREE.Color(arena.outside), cf = new THREE.Color(arena.far);
   const snow = new THREE.Color(0xffffff), c = new THREE.Color();
@@ -210,7 +212,7 @@ function barrier(arena: Arena): THREE.Mesh {
     fragmentShader: `
       uniform float uTime; uniform vec3 col; varying vec2 vUv;
       void main(){
-        float u = vUv.x * 260.0, v = vUv.y;
+        float u = vUv.x * ${(260 * GROW).toFixed(1)}, v = vUv.y;
         float dia = abs(fract(u + uTime * 0.25) - 0.5) + abs(fract(v * 2.0 - uTime * 0.3) - 0.5);
         float runes = smoothstep(0.32, 0.26, dia) * 0.5;
         float fade = pow(clamp(1.0 - v, 0.0, 1.0), 2.2);
@@ -218,7 +220,7 @@ function barrier(arena: Arena): THREE.Mesh {
         gl_FragColor = vec4(col * (1.2 + runes * 2.0), 1.0) * a * (0.8 + 0.2 * sin(uTime * 2.0 + u));
       }`,
   });
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 7, 160, 1, true), mat);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 7, 320, 1, true), mat);
   m.position.y = 3.5;
   m.renderOrder = 5;
   return m;
@@ -444,15 +446,15 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
 
   const skyDome = sky(arena, new THREE.Vector3(-0.5, arena.night ? 0.5 : 0.32, -0.8));
   track(skyDome.material as THREE.ShaderMaterial);
-  group.add(skyDome, terrain(arena, h));
+  group.add(skyDome, terrain(arena, h, low));
   const wy = WATER_Y[arena.id];
   if (wy !== undefined) { const l = liquid(arena, wy); track(l.material as THREE.ShaderMaterial); group.add(l); }
   const wall = barrier(arena);
   track(wall.material as THREE.ShaderMaterial);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(R - 0.5, R + 0.3, 128).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(arena.border).multiplyScalar(2.2) }));
+  const ring = new THREE.Mesh(new THREE.RingGeometry(R - 0.5, R + 0.3, 384).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(arena.border).multiplyScalar(2.2) }));
   ring.position.y = 0.05;
   group.add(wall, ring);
-  const nC = low ? 100 : 210;
+  const nC = Math.round((low ? 100 : 210) * GROW);
   const crystals = instanced(new THREE.OctahedronGeometry(1, 0), glowMat(0.9, { color: arena.border }), nC, false);
   for (let i = 0; i < nC; i++) {
     const a = (i / nC) * Math.PI * 2, ch = 1 + ((i * 7) % 5) * 0.3;
@@ -478,7 +480,7 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
           gl_FragColor = vec4(c, 1.0);
         }`,
     }));
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(R, 64).rotateX(-Math.PI / 2), m);
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(R, 160).rotateX(-Math.PI / 2), m);
     floor.position.y = 0.02;
     group.add(floor);
     const ballGeo = new THREE.IcosahedronGeometry(7, 1);
@@ -512,7 +514,7 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
   const rnd = () => { seed = (seed * 16807 + 11) % 2147483647; return seed / 2147483647; };
   const blocked = (x: number, z: number, pad: number) => sim.obstacles.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + pad) || sim.zones.some((o) => Math.hypot(o.x - x, o.z - z) < o.r * 0.9);
   for (const pr of propsFor(arena)) {
-    const n = Math.round(pr.n * (low && pr.n > 30 ? 0.45 : 1));
+    const n = Math.round(pr.n * (pr.where === 'in' ? GROW * GROW : GROW) * (low && pr.n > 30 ? 0.45 : 1));
     const mats: THREE.Matrix4[] = [];
     let cx = 0, cz = 0, left = 0;
     for (let tries = 0; mats.length < n && tries < n * 8; tries++) {
@@ -538,15 +540,29 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
       const s = pr.s[0] + rnd() * (pr.s[1] - pr.s[0]);
       mats.push(m4(x, y, z, s, s, s, 0, pr.where === 'rim' ? -Math.atan2(z, x) - Math.PI / 2 : rnd() * 6.28, 0));
     }
+    // one instanced mesh per tile, culled by the camera (and the shadow camera) when out of view
+    const tiles = new Map<number, THREE.Matrix4[]>();
+    for (const m of mats) {
+      const k = Math.floor(m.elements[12] / TILE) * 1000 + Math.floor(m.elements[14] / TILE);
+      let list = tiles.get(k);
+      if (!list) tiles.set(k, list = []);
+      list.push(m);
+    }
     const add = (parts: Part[] | undefined, mat: THREE.MeshStandardMaterial) => {
       if (!parts) return;
-      const mesh = instanced(merge(parts), pr.sway ? swayMat(mat, pr.sway) : mat, mats.length, false);
-      mats.forEach((m, i) => mesh.setMatrixAt(i, m));
-      mesh.count = mats.length;
-      mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-      mesh.castShadow = !!pr.shadow && !low;
-      mesh.receiveShadow = pr.where !== 'in';
-      group.add(mesh);
+      const geo = merge(parts), mt = pr.sway ? swayMat(mat, pr.sway) : mat;
+      for (const list of tiles.values()) {
+        const mesh = instanced(geo, mt, list.length, false);
+        list.forEach((m, i) => mesh.setMatrixAt(i, m));
+        mesh.count = list.length;
+        mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+        mesh.computeBoundingSphere();
+        mesh.boundingSphere!.radius += 2; // room for the sway
+        mesh.frustumCulled = true;
+        mesh.castShadow = !!pr.shadow && !low;
+        mesh.receiveShadow = pr.where !== 'in';
+        group.add(mesh);
+      }
     };
     add(pr.lit, flatMat({ vertexColors: true }));
     add(pr.glow, glowMat(arena.night ? 0.95 : 1.1, { vertexColors: true }));
@@ -555,9 +571,10 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
   // puffy clouds high in the sky
   if (!arena.night) {
     const puff = merge([[ball(6, 2), 0xffffff, m4(0, 0, 0, 1, 0.5, 1)], [ball(4.5, 2), 0xffffff, m4(6, 0.5, 1, 1, 0.55, 1)], [ball(4, 2), 0xffffff, m4(-5.5, 0, -1, 1, 0.5, 1)], [ball(3.4, 2), 0xffffff, m4(1, 1.8, -3, 1, 0.55, 1)]]);
-    const clouds = instanced(puff, new THREE.MeshStandardMaterial({ vertexColors: true, emissive: 0x9a9aa8, roughness: 1, fog: false }), 46, false);
-    for (let i = 0; i < 46; i++) { const a = rnd() * 6.28, r = 140 + rnd() * 320, s = 1.5 + rnd() * 3.5; clouds.setMatrixAt(i, m4(Math.cos(a) * r, 55 + rnd() * 70, Math.sin(a) * r, s, s, s, 0, rnd() * 6.28)); }
-    clouds.count = 46;
+    const nCloud = Math.round(46 * GROW);
+    const clouds = instanced(puff, new THREE.MeshStandardMaterial({ vertexColors: true, emissive: 0x9a9aa8, roughness: 1, fog: false }), nCloud, false);
+    for (let i = 0; i < nCloud; i++) { const a = rnd() * 6.28, r = 40 + Math.sqrt(rnd()) * (R + 380), s = 1.5 + rnd() * 3.5; clouds.setMatrixAt(i, m4(Math.cos(a) * r, 55 + rnd() * 70, Math.sin(a) * r, s, s, s, 0, rnd() * 6.28)); }
+    clouds.count = nCloud;
     clouds.userData.spin = 0.004;
     group.add(clouds);
   }
@@ -566,6 +583,10 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
   const bumpers: { mesh: THREE.Object3D; x: number; z: number; s: number; t: number }[] = [];
   const poolMat = sim.obstacles.some((o) => o.kind === 'pool') ? track(decalMat(arena.id === 'forge' ? 'lava' : 'hole', arena)) : null;
   const disc = new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2);
+  // many hazards share a few looks: one geometry per look, one material per kind of surface
+  const geoCache = new Map<string, THREE.BufferGeometry>();
+  const geoOf = (key: string, parts: Part[]) => { let g = geoCache.get(key); if (!g) geoCache.set(key, g = merge(parts)); return g; };
+  const hazLit = flatMat({ vertexColors: true, roughness: 0.6 }), hazGlow = glowMat(1.5, { vertexColors: true });
   for (const o of sim.obstacles) {
     if (o.kind === 'pool') {
       const m = new THREE.Mesh(disc, poolMat!);
@@ -589,11 +610,12 @@ export function buildArena(arena: Arena, sim: Sim, low: boolean): Scenery {
       lit = [[cyl(0.4, 0.55, 1.1, 8), 0xe8e0f8, m4(0, 0.55)]];
       glow = [[dome(1.05, 12), bumpers.length % 2 ? 0xff7ad9 : 0x4dffd9, m4(0, 1, 0, 1, 0.8, 1)], [ball(0.14, 0), 0xffffff, m4(0.5, 1.6, 0.2)], [ball(0.12, 0), 0xffffff, m4(-0.4, 1.65, -0.3)], [ball(0.12, 0), 0xffffff, m4(0, 1.75, 0.5)]];
     }
+    const look = `${o.kind}${o.kind === 'bumper' ? bumpers.length % (arena.id === 'cat' ? 4 : 2) : ''}`;
     const g = new THREE.Group();
-    const lm = new THREE.Mesh(merge(lit), flatMat({ vertexColors: true, roughness: 0.6 }));
+    const lm = new THREE.Mesh(geoOf(look, lit), hazLit);
     lm.castShadow = !low;
     g.add(lm);
-    if (glow.length) g.add(new THREE.Mesh(merge(glow), glowMat(1.5, { vertexColors: true })));
+    if (glow.length) g.add(new THREE.Mesh(geoOf(look + 'g', glow), hazGlow));
     g.position.set(o.x, 0, o.z);
     g.scale.setScalar(o.r);
     g.rotation.y = rnd() * 6.28;

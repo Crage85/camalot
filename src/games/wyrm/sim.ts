@@ -6,6 +6,9 @@ import {
 
 export type Look = Pick<Skin, 'colors' | 'head' | 'acc' | 'accColor' | 'glow'>;
 const MAX_SEGS = 300;
+// Gem lookup grid: eating and grazing only scan nearby cells, so the big field stays cheap.
+const CELL = 8;
+const GN = Math.ceil((T.arenaRadius + CELL) * 2 / CELL); // cells per side, with a margin for gems just outside
 
 export interface Wyrm {
   id: number;
@@ -106,6 +109,12 @@ export class Sim {
   private nameIx = 0;
   private nextId = 1;
   private near: number[] = [];
+  private cellStart = new Int32Array(GN * GN + 1);
+  private cellCur = new Int32Array(GN * GN);
+  private cellOfGem = new Int32Array(T.maxGems);
+  private cellItems = new Int32Array(T.maxGems);
+  private cb = new Int32Array(4); // cell box of the last query: x0, x1, z0, z1
+  private eaten = 0; // gems marked eaten (value 0) this step, removed at its end
 
   /** Choose the place (hazard layout), bot strength, and which potions appear. Call before reset. */
   setup(arena: Arena, tier: number, potionKinds: PotionKind[], boss: { name: string; look: Look; mass: number } | null = null) {
@@ -118,7 +127,7 @@ export class Sim {
     const rnd = seeded(arena.id.length * 977 + arena.id.charCodeAt(0) * 131 + arena.id.charCodeAt(1));
     const place = (r: number): { x: number; z: number } | null => {
       for (let tries = 0; tries < 60; tries++) {
-        const d = 16 + rnd() * (T.arenaRadius - 26 - r), a = rnd() * Math.PI * 2;
+        const d = 16 + Math.sqrt(rnd()) * (T.arenaRadius - 26 - r), a = rnd() * Math.PI * 2;
         const x = Math.cos(a) * d, z = Math.sin(a) * d;
         if ([...this.obstacles, ...this.zones].every((o) => Math.hypot(o.x - x, o.z - z) > o.r + r + 7)) return { x, z };
       }
@@ -166,7 +175,7 @@ export class Sim {
       b.care = 0.9;
       b.evo = 6;
       this.wyrms.push(b);
-      this.placeSafe(b, false);
+      this.placeSafe(b, false, this.player); // close enough to find her quickly in the big field
       this.boss = b;
     }
     while (this.fieldCount < T.fieldGems) this.spawnFieldGem();
@@ -226,12 +235,17 @@ export class Sim {
   }
 
   /** Put a wyrm somewhere away from other heads, bodies, and hazards, in a straight line. */
-  placeSafe(w: Wyrm, center: boolean) {
+  placeSafe(w: Wyrm, center: boolean, around: Wyrm | null = null) {
     let bx = 0, bz = 0, bestScore = -1;
     for (let tries = 0; tries < 30; tries++) {
       const r = center && tries === 0 ? 0 : Math.sqrt(Math.random()) * (T.arenaRadius - 14);
       const a = Math.random() * Math.PI * 2;
-      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      let x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (around) {
+        const d = rand(45, 75);
+        x = around.segs[0] + Math.cos(a) * d; z = around.segs[1] + Math.sin(a) * d;
+        if (Math.hypot(x, z) > T.arenaRadius - 14) continue;
+      }
       let minD = 1e9;
       for (const o of this.obstacles) minD = Math.min(minD, (Math.hypot(o.x - x, o.z - z) - o.r) * 1.6);
       for (const o of this.wyrms) {
@@ -279,6 +293,27 @@ export class Sim {
   private spawnFieldGem() {
     const [x, z] = this.spot(2, 2.5);
     this.addGem(x, z, Math.random() < 0.15 ? 2 : 1, Math.floor(Math.random() * this.gemColors), 0, true);
+  }
+
+  /** Sort live gems into grid cells (counting sort). Gems added during the step wait for the next one. */
+  private buildGrid() {
+    const cs = this.cellStart, cur = this.cellCur, of = this.cellOfGem, items = this.cellItems, n = this.gemCount, off = T.arenaRadius + CELL;
+    cs.fill(0);
+    for (let i = 0; i < n; i++) {
+      const c = Math.min(GN - 1, Math.max(0, Math.floor((this.gx[i] + off) / CELL))) + Math.min(GN - 1, Math.max(0, Math.floor((this.gz[i] + off) / CELL))) * GN;
+      of[i] = c;
+      cs[c + 1]++;
+    }
+    for (let c = 1; c <= GN * GN; c++) cs[c] += cs[c - 1];
+    cur.set(cs.subarray(0, GN * GN));
+    for (let i = 0; i < n; i++) items[cur[of[i]]++] = i;
+  }
+  /** Cell box covering a square of half-size `rad` around (x, z). */
+  private cells(x: number, z: number, rad: number) {
+    const off = T.arenaRadius + CELL, cl = (v: number) => Math.min(GN - 1, Math.max(0, Math.floor((v + off) / CELL)));
+    const cb = this.cb;
+    cb[0] = cl(x - rad); cb[1] = cl(x + rad); cb[2] = cl(z - rad); cb[3] = cl(z + rad);
+    return cb;
   }
 
   private removeGem(i: number) {
@@ -361,6 +396,7 @@ export class Sim {
   step(dt: number) {
     this.time += dt;
     const R = T.arenaRadius;
+    this.buildGrid();
     for (const w of this.wyrms) {
       if (!w.alive) {
         if (w.respawn > 0 && (w.respawn -= dt) <= 0) {
@@ -442,10 +478,11 @@ export class Sim {
       this.eat(w, r);
     }
     this.collide();
+    if (this.eaten) { for (let i = this.gemCount - 1; i >= 0; i--) if (this.gv[i] <= 0) this.removeGem(i); this.eaten = 0; }
     this.moveSprites(dt);
     for (const p of this.potions) if (!p.alive && (p.respawn -= dt) <= 0) this.placePotion(p);
     // eaten gems grow back at a steady rate, so a grazed patch stays thin for a while
-    this.regen = Math.min(5, this.regen + dt * T.gemRegenPerSec);
+    this.regen = Math.min(T.gemRegenPerSec / 10, this.regen + dt * T.gemRegenPerSec);
     while (this.fieldCount < T.fieldGems && this.regen >= 1) { this.spawnFieldGem(); this.regen--; }
   }
 
@@ -497,13 +534,17 @@ export class Sim {
     const bite = r + 0.55;
     const mult = w.double > 0 ? 2 : 1;
     let ate = 0;
-    for (let i = this.gemCount - 1; i >= 0; i--) {
+    const cb = this.cells(hx, hz, pull), cs = this.cellStart, items = this.cellItems;
+    for (let cz = cb[2]; cz <= cb[3]; cz++) for (let c = cz * GN + cb[0], ce = cz * GN + cb[1]; c <= ce; c++) for (let j = cs[c]; j < cs[c + 1]; j++) {
+      const i = items[j];
+      if (this.gv[i] <= 0) continue;
       const dx = hx - this.gx[i], dz = hz - this.gz[i];
       if (dx > pull || dx < -pull || dz > pull || dz < -pull) continue;
       const d = Math.hypot(dx, dz);
       if (d < bite) {
         w.mass += this.gv[i] * mult;
-        this.removeGem(i);
+        this.gv[i] = 0;
+        this.eaten++;
         ate++;
       } else if (d < pull) {
         const k = Math.min(1, 0.22 + (w.magnet > 0 ? 0.08 : 0)) * (1 - d / pull) + 0.04;
@@ -585,7 +626,8 @@ export class Sim {
         goal = toward(p.segs[0] + Math.cos(p.ang) * lead, p.segs[1] + Math.sin(p.ang) * lead);
         boost = pd < 20 && pd > 5;
         care = boost ? 0.45 : 0.8;
-      } else goal = toward(0, 0) + Math.sin(this.time * 0.3) * 1.2;
+      } else if (p.alive) goal = toward(p.segs[0], p.segs[1]) + Math.sin(this.time * 0.3) * 0.6; // hunts her across the big field
+      else goal = toward(0, 0) + Math.sin(this.time * 0.3) * 1.2;
     } else if (threat && w.style !== 'hunter') {
       goal = toward(threat.segs[0], threat.segs[1]) + Math.PI;
       boost = threatD < 6 && w.mass > 40;
@@ -599,7 +641,10 @@ export class Sim {
       // graze: best gem or sprite nearby by value over distance, else wander
       let best = -1, bx = 0, bz = 0, bv = 0;
       const look = w.style === 'hunter' ? 30 : 18;
-      for (let i = 0; i < this.gemCount; i++) {
+      const cb = this.cells(hx, hz, look), cs = this.cellStart, items = this.cellItems;
+      for (let cz = cb[2]; cz <= cb[3]; cz++) for (let c = cz * GN + cb[0], ce = cz * GN + cb[1]; c <= ce; c++) for (let j = cs[c]; j < cs[c + 1]; j++) {
+        const i = items[j];
+        if (this.gv[i] <= 0) continue;
         const dx = this.gx[i] - hx, dz = this.gz[i] - hz;
         if (Math.abs(dx) > look || Math.abs(dz) > look) continue;
         const d = Math.hypot(dx, dz) + 1;

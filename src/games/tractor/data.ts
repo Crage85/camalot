@@ -349,3 +349,12 @@ export const CHEST_MULT = 4; // treasure chest after a finished order: this many
 
 /** Hills slow the tractor going up and speed it going down, within these limits. */
 export const SLOPE_FACTOR = 1.6;
+
+// ---------- Getting un-stuck ----------
+
+/** The Unstuck button lights up after she has tried to drive this many seconds while moving less than STUCK_MOVE metres. */
+export const STUCK_SECONDS = 2;
+export const STUCK_MOVE = 0.5;
+/** The bump-out hop: how long it takes and how high it lifts the vehicle. */
+export const HOP_SECONDS = 0.75;
+export const HOP_HEIGHT = 2.6;

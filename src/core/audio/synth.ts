@@ -220,6 +220,10 @@ export interface Mixer {
 
 /** Never louder than this (about -1.4 dBFS): the last stage is a soft clipper with this ceiling. */
 const CEILING = 0.85;
+/** Everything on the sfx bus (sound effects, loops, a game's own sounds) sits this far under the music. */
+const SFX_BUS = 0.4;
+/** How far the music dips under a big sound effect. */
+const DUCK_TO = 0.6;
 
 export function createMixer(ctx: Ctx): Mixer {
   const music = ctx.createGain();
@@ -256,8 +260,10 @@ export function createMixer(ctx: Ctx): Mixer {
   wet.gain.value = 0.5;
   reverb.connect(wet).connect(music);
 
+  const sfxTrim = ctx.createGain();
+  sfxTrim.gain.value = SFX_BUS;
   music.connect(duck).connect(comp);
-  sfx.connect(comp);
+  sfx.connect(sfxTrim).connect(comp);
   comp.connect(limit).connect(ctx.destination);
   return {
     music,
@@ -265,7 +271,7 @@ export function createMixer(ctx: Ctx): Mixer {
     reverb,
     duck(t, dur) {
       duck.gain.cancelScheduledValues(t);
-      duck.gain.setTargetAtTime(0.45, t, 0.03);
+      duck.gain.setTargetAtTime(DUCK_TO, t, 0.03);
       duck.gain.setTargetAtTime(1, t + dur, 0.25);
     },
   };
