@@ -1,4 +1,4 @@
-// Board renderer: glossy instanced pieces, blockers, motion and effects. Animates Steps from board.ts.
+// Board renderer: cel-shaded, ink-outlined instanced spell gems, blockers, motion and effects. Animates Steps from board.ts.
 import {
   AdditiveBlending, Color, DirectionalLight, Euler, Group, HemisphereLight, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial,
   PerspectiveCamera, Plane, PlaneGeometry, Quaternion, Raycaster, Scene, Vector2, Vector3, type BufferGeometry, type Material,
@@ -8,7 +8,7 @@ import type { Cell, Fx, Kind, Step } from './board';
 import {
   PIECE_COLORS, baseGeometry, basketGeometry, crabGeometry, crateGeometry, cursorGeometry, dustGeometry, eggGeometry, gloss,
   glowTexture, hammerGeometry, iceGeometry, pieceGeometry, puffGeometry, rainbowGeometry, ringTexture, rockGeometry,
-  sparkleTexture, tileGeometry, trailGeometry, vineGeometry, wandGeometry, wingsGeometry,
+  sparkleTexture, tileGeometry, burstTexture, circleTexture, hull, inkMaterial, shardTexture, slashTexture, trailGeometry, vineGeometry, wandGeometry, wingsGeometry,
 } from './art';
 import { Backdrop, LOOKS } from './backdrop';
 import { CATS, catGeometry } from './cats';
@@ -53,6 +53,11 @@ export class BoardView {
   private glow = glowTexture();
   private sparkle = sparkleTexture();
   private ringTex = ringTexture();
+  private circleTex = circleTexture();
+  private burstTex = burstTexture();
+  private slashTex = slashTexture();
+  private inkMat = inkMaterial();
+  private inks: [InstancedMesh, InstancedMesh][] = [];
   private quad = new PlaneGeometry(1, 1);
   private backdrop = new Backdrop(this.camera, this.glow, 120);
   private sprites = new Map<number, Sprite>();
@@ -75,7 +80,8 @@ export class BoardView {
   private crabs = inst(crabGeometry(), gloss(), 32);
   private ice1 = inst(iceGeometry(), gloss({ transparent: true, opacity: 0.32, roughness: 0.15, color: 0x7fc8f5, depthWrite: false }), 100);
   private ice2 = inst(iceGeometry(), gloss({ transparent: true, opacity: 0.6, roughness: 0.15, color: 0x9fd8fa, depthWrite: false }), 100);
-  private dots = inst(this.quad, basic(this.glow), 500);
+  private dots = inst(this.quad, basic(shardTexture()), 500);
+  private auras = inst(this.quad, basic(this.glow));
   private stars = inst(this.quad, basic(this.sparkle), 200);
   private cursorMesh = new Mesh(cursorGeometry(), new MeshBasicMaterial({ color: new Color(2.2, 1.8, 0.7), toneMapped: false }));
   private ring = new Mesh(this.quad, basic(this.ringTex));
@@ -102,14 +108,24 @@ export class BoardView {
   private shimmer = 0;
 
   constructor() {
-    this.scene.add(new HemisphereLight(0xffffff, 0x8a6ab0, 1.0));
-    const sun = new DirectionalLight(0xfff4e0, 1.6);
+    this.scene.add(new HemisphereLight(0xdfe4ff, 0x3a2a70, 0.85));
+    const sun = new DirectionalLight(0xfff4e0, 2.3);
     sun.position.set(-6, 4, 6);
     this.scene.add(sun, this.root, this.camera);
-    for (const m of [this.bases, this.tiles, this.trail, this.dust, this.shadows, ...this.pieces, this.rainbow, this.basket, this.kitten, this.wand, this.puff, this.wings, this.crates, this.vines, this.eggs, this.rocks, this.crabs, this.ice1, this.ice2, this.dots, this.stars]) this.root.add(m);
+    for (const m of [this.bases, this.tiles, this.trail, this.dust, this.shadows, this.auras, ...this.pieces, this.rainbow, this.basket, this.kitten, this.wand, this.puff, this.wings, this.crates, this.vines, this.eggs, this.rocks, this.crabs, this.ice1, this.ice2, this.dots, this.stars]) this.root.add(m);
     this.root.add(this.cursorMesh, this.ring, this.hammerMesh);
+    for (const m of [...this.pieces, this.rainbow, this.basket, this.kitten, this.crates, this.eggs, this.rocks]) this.ink(m, 0.022);
+    this.ink(this.crabs, 0.014);
     this.ring.visible = this.hammerMesh.visible = false;
     (this.ring.material as MeshBasicMaterial).color.setRGB(2.4, 1.9, 0.8);
+  }
+
+  /** Ink outline: the model's inverted hull, drawn with the same instance matrices. Hidden on Low. */
+  private ink(m: InstancedMesh, t: number): void {
+    const o = inst(hull(m.geometry, t), this.inkMat, m.instanceMatrix.count);
+    o.instanceMatrix = m.instanceMatrix;
+    this.inks.push([m, o]);
+    this.root.add(o);
   }
 
   setQuality(hi: boolean): void { this.hi = hi; this.backdrop.hi = hi; }
@@ -266,7 +282,7 @@ export class BoardView {
       const c = s.color >= 0 ? PIECE_COLORS[s.color] : 0xffffff;
       this.burst(this.wx(px), this.wy(py), c, 9);
       this.burst(this.wx(px), this.wy(py), 0xffffff, 3, 0, true);
-      this.flash('glow', this.wx(px), this.wy(py), c, 0.25, [1.3]);
+      this.flash('ring', this.wx(px), this.wy(py), c, 0.22, [1.7, 1.2], this.burstTex);
     }
     // blocker chips
     step.cells.forEach((c, i) => {
@@ -333,10 +349,11 @@ export class BoardView {
       const h = f.dir === 'h';
       this.flash('beam', h ? 0 : x, h ? y : 0, 0xfff2b0, 0.45, [h ? 1 : 0, (h ? this.w : this.h) + 1]);
       for (let k = 0; k < (h ? this.w : this.h); k++) this.burst(h ? this.wx(k) : x, h ? y : this.wy(k), 0xffe9a0, 2, 0, true, 0.6);
+      this.flash('ring', x, y, 0xbff4ff, 0.3, [3.2, h ? 2.6 : -2.6], this.slashTex);
       this.jolt(0.07);
     } else if (f.t === 'blast') {
-      this.flash('ring', x, y, 0xffa040, 0.5, [f.r * 2 + 1.5], this.ringTex);
-      this.flash('glow', x, y, 0xffc070, 0.35, [f.r * 2 + 1]);
+      this.flash('ring', x, y, 0xffa040, 0.55, [f.r * 2 + 1.8, 1.6], this.circleTex);
+      this.flash('ring', x, y, 0xfff0b0, 0.26, [f.r * 2 + 2.2, 0.5], this.burstTex);
       for (const c of FIRE) this.burst(x, y, c, 7, 0, false, 1.4);
       this.burst(x, y, 0xffffff, 6, 0, true, 1.5);
       this.jolt(0.1 + f.r * 0.05);
@@ -348,24 +365,24 @@ export class BoardView {
       this.burst(tx, ty, 0xffffff, 2, 0, true);
       this.jolt(0.012);
     } else if (f.t === 'rescue') {
-      this.flash('ring', x, y, 0xff9fc8, 0.6, [3], this.ringTex);
-      this.burst(x, y, 0xff7fb0, 16, 3);
+      this.flash('ring', x, y, 0x7fe8ff, 0.7, [3.4, 2], this.circleTex);
+      this.burst(x, y, 0x7fe8ff, 16, 3);
       this.burst(x, y, 0xffffff, 10, 3, true);
     } else if (f.t === 'hatch') {
       this.flash('ring', x, y, 0xff7a2e, 0.45, [4], this.ringTex);
-      this.flash('glow', x, y, 0xffb060, 0.3, [3]);
+      this.flash('ring', x, y, 0xffd080, 0.28, [3.6, 0.5], this.burstTex);
       for (const c of FIRE) this.burst(x, y, c, 6, 0, false, 1.2);
       this.burst(x, y, 0xffe9c9, 8);
       this.jolt(0.12);
     } else if (f.t === 'catch') {
-      this.flash('ring', x, y, 0xfff2b0, 0.4, [2.2], this.ringTex);
-      this.burst(x, y, 0xff6a5a, 8, 2);
+      this.flash('ring', x, y, 0xfff2b0, 0.4, [2.4, 1.5], this.circleTex);
+      this.burst(x, y, 0xa878f0, 8, 2);
       this.burst(x, y, 0xffffff, 6, 2, true);
     } else if (f.t === 'hop') {
       this.hops.set(f.ty * this.w + f.tx, { x: f.x, y: f.y, t0: this.now });
     } else if (f.t === 'make') {
       const big = f.kind === 'rainbow' || f.kind === 'bomb';
-      this.flash('ring', x, y, big ? 0xffb0f0 : 0xfff2b0, 0.5, [big ? 3.4 : 2.4], this.ringTex);
+      this.flash('ring', x, y, big ? 0xd0b0ff : 0xfff2b0, 0.55, [big ? 3.6 : 2.5, 2.2], this.circleTex);
       this.burst(x, y, 0xfff6c0, big ? 14 : 8, 0, true, 1.2);
       if (big) this.jolt(0.05);
     }
@@ -382,7 +399,7 @@ export class BoardView {
     this.camera.position.set(this.base.x + (Math.random() - 0.5) * this.shake, this.base.y + (Math.random() - 0.5) * this.shake, this.base.z);
 
     const counts = new Array(PIECE_COLORS.length).fill(0);
-    let nr = 0, nk = 0, nw = 0, np = 0, nf = 0, ns = 0;
+    let nr = 0, nk = 0, nw = 0, np = 0, nf = 0, ns = 0, na = 0;
     const hintIds = this.hint ? this.hint.map((i) => this.cells[i]?.piece?.id) : [];
     const selId = this.selected >= 0 ? this.cells[this.selected]?.piece?.id : undefined;
     const specials: Sprite[] = [];
@@ -421,6 +438,10 @@ export class BoardView {
       if (py < -0.5) { const k = Math.max(0, 1 + (py + 0.5) * 1.2); sx *= k; sy *= k; } // grow in from above the board
       if (s.dying < 0 && py > -0.5) this.place(this.shadows, ns++, x + 0.05, y - 0.1, 0.02, 1.05 * sx);
       const special = s.kind === 'h' || s.kind === 'v' || s.kind === 'bomb' || s.kind === 'fly';
+      if (this.hi && s.dying < 0 && s.color >= 0 && py > -0.5) { // glow under the gem
+        this.place(this.auras, na, x, y, 0.06, (special ? 2 : 1.4) * sx);
+        this.auras.setColorAt(na++, this.col.set(PIECE_COLORS[s.color]).multiplyScalar(special ? 0.6 : 0.3));
+      }
       if (s.kind !== 'n' && s.kind !== 'kitten' && s.dying < 0) specials.push(s);
       if (s.kind === 'rainbow') { this.place(this.rainbow, nr++, x, y, z, sx, sy, 0, t * 1.6); continue; }
       if (s.kind === 'kitten') {
@@ -442,6 +463,9 @@ export class BoardView {
     this.puff.count = np;
     this.wings.count = nf;
     this.shadows.count = ns;
+    this.auras.count = na;
+    this.auras.instanceMatrix.needsUpdate = true;
+    if (this.auras.instanceColor) this.auras.instanceColor.needsUpdate = true;
     for (const m of [...this.pieces, this.rainbow, this.basket, this.kitten, this.wand, this.puff, this.wings, this.shadows]) m.instanceMatrix.needsUpdate = true;
 
     // specials shimmer
@@ -504,6 +528,7 @@ export class BoardView {
         f.mesh.scale.set(f.data[0] ? len : wd, f.data[0] ? wd : len, 1);
       } else if (f.kind === 'ring' || f.kind === 'glow') {
         mat.opacity = 1 - k;
+        f.mesh.rotation.z = (f.data[1] || 0) * k;
         f.mesh.scale.setScalar(f.data[0] * (f.kind === 'ring' ? 0.25 + 0.75 * (1 - (1 - k) * (1 - k)) : 0.5 + k * 0.5));
       } else if (f.kind === 'ray') {
         mat.opacity = Math.sin(Math.min(1, k * 1.4) * Math.PI);
@@ -519,6 +544,8 @@ export class BoardView {
       }
       return true;
     });
+
+    for (const [m, o] of this.inks) { o.count = m.count; o.visible = this.hi; }
 
     // cursor, selection, hammer
     const c = this.cursor;

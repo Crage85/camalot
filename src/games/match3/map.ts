@@ -1,10 +1,11 @@
-// The level map: one island per world with a winding path of 20 level stones, landmarks and a cat marker.
+// The level map, drawn as a mage's star chart: one dark floating island per world, a path of 20 glowing rune stones
+// joined by light motes, landmarks and a cat mage marker.
 // The level buttons are HTML (game.ts) placed over the stones with `screenOf`.
 import {
-  Color, ConeGeometry, CylinderGeometry, DirectionalLight, ExtrudeGeometry, HemisphereLight, IcosahedronGeometry, InstancedMesh,
-  Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, Scene, SphereGeometry, Vector3, type BufferGeometry,
+  AdditiveBlending, Color, ConeGeometry, CylinderGeometry, DirectionalLight, ExtrudeGeometry, HemisphereLight, IcosahedronGeometry, InstancedMesh,
+  Matrix4, Mesh, MeshBasicMaterial, OctahedronGeometry, PerspectiveCamera, PlaneGeometry, Scene, SphereGeometry, Vector3, type BufferGeometry,
 } from 'three';
-import { gloss, glowTexture, merge, part, ringTexture, rrect, type V3 } from './art';
+import { glowTexture, hull, inkMaterial, merge, part, ringTexture, rrect, toon, type V3 } from './art';
 import { Backdrop, LOOKS } from './backdrop';
 import { CATS, catGeometry } from './cats';
 import { PER_WORLD } from './levels';
@@ -36,9 +37,13 @@ export class MapView {
   private glow = glowTexture();
   private backdrop = new Backdrop(this.camera, this.glow, 600);
   private land: Mesh | null = null;
-  private stones = new InstancedMesh(cyl(0.72, 0.8, 0.22, 24), gloss({ roughness: 0.3, vertexColors: false }), PER_WORLD);
-  private dotsMesh = new InstancedMesh(cyl(0.16, 0.19, 0.08, 10), gloss({ roughness: 0.6, vertexColors: false }), PER_WORLD * 4);
-  private marker = new Mesh(undefined, gloss({ roughness: 0.7, clearcoatRoughness: 0.6 }));
+  private stones = new InstancedMesh(cyl(0.74, 0.88, 0.26, 6), toon({ vertexColors: false }), PER_WORLD);
+  /** Glow ring lying on each open rune stone. */
+  private runes = new InstancedMesh(new PlaneGeometry(1.85, 1.85).rotateX(-Math.PI / 2), new MeshBasicMaterial({ map: ringTexture(), transparent: true, depthWrite: false, toneMapped: false, blending: AdditiveBlending }), PER_WORLD);
+  private dotsMesh = new InstancedMesh(new OctahedronGeometry(0.13), new MeshBasicMaterial({ toneMapped: false }), PER_WORLD * 4);
+  private marker = new Mesh(undefined, toon());
+  private landInk = new Mesh(undefined, inkMaterial());
+  private markerInk = new Mesh(undefined, inkMaterial());
   private halo = new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: ringTexture(), transparent: true, depthWrite: false, toneMapped: false }));
   private flag = new Mesh(new PlaneGeometry(0.9, 0.5, 6, 1), new MeshBasicMaterial({ color: 0xff5c8a, side: 2 }));
   private pos: Vector3[] = [];
@@ -59,10 +64,12 @@ export class MapView {
     sun.position.set(-5, 10, 6);
     this.halo.rotation.x = -Math.PI / 2;
     (this.halo.material as MeshBasicMaterial).color.setRGB(2.4, 1.6, 0.8);
-    this.scene.add(sun, this.camera, this.stones, this.dotsMesh, this.marker, this.halo, this.flag);
+    this.marker.add(this.markerInk);
+    this.scene.add(sun, this.camera, this.stones, this.runes, this.dotsMesh, this.marker, this.halo, this.flag);
   }
 
-  setQuality(hi: boolean): void { this.backdrop.hi = hi; }
+  /** Low: no ink outlines. */
+  setQuality(hi: boolean): void { this.backdrop.hi = this.landInk.visible = this.markerInk.visible = hi; }
 
   /** `state[k]`: -1 locked, 0 open, 1..3 stars, for the 20 levels of `world`. `current` = index to mark, or -1. */
   setWorld(world: number, state: number[], current: number): void {
@@ -87,7 +94,9 @@ export class MapView {
       g.rotateX(Math.PI / 2);
       return part(g, color, [0, y, 0]);
     };
-    const P: BufferGeometry[] = [slab(0, 0.5, -0.3, look.ground[0]), slab(-0.8, 1.6, -1.1, look.ground[1])];
+    // night ground: the world's own hue, pulled deep toward indigo so the rune stones carry the light
+    const night = (c: number, to: number, k: number) => this.col.set(c).lerp(new Color(to), k).getHex();
+    const P: BufferGeometry[] = [slab(0, 0.5, -0.3, night(look.ground[0], 0x1a2048, 0.62)), slab(-0.8, 1.6, -1.1, night(look.ground[1], 0x0a0c1e, 0.72))];
     // landmarks between the rows and round the rim
     let seed = this.world * 97 + 13;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -102,22 +111,26 @@ export class MapView {
     // gate at the end of the path
     const end = this.pos[PER_WORLD - 1];
     P.push(...landmark('tower', look.frame, [end.x, -0.1, end.z - 1.1], 0.9));
-    this.land = new Mesh(merge(P), gloss({ roughness: 0.75, clearcoatRoughness: 0.8 }));
+    this.land = new Mesh(merge(P), toon());
+    this.landInk.geometry.dispose();
+    this.landInk.geometry = hull(this.land.geometry, 0.035);
+    this.land.add(this.landInk);
     this.scene.add(this.land);
     this.flag.position.set(end.x + 0.45, 2.2, end.z - 1.1);
     (this.flag.material as MeshBasicMaterial).color.set(look.frame);
-    // stepping dots along the path
+    // light motes floating along the path (coloured in paint)
     let n = 0;
     for (let i = 0; i + 1 < PER_WORLD; i++) for (let k = 1; k <= 3; k++) {
       this.v.lerpVectors(this.pos[i], this.pos[i + 1], k / 4);
-      this.m.makeScale(1.5, 1, 1.5).setPosition(this.v.x, 0.03, this.v.z);
-      this.dotsMesh.setMatrixAt(n, this.m);
-      this.dotsMesh.setColorAt(n++, this.col.set(0xfff4dc));
+      this.m.makeScale(1, 1.7, 1).setPosition(this.v.x, 0.3, this.v.z);
+      this.dotsMesh.setMatrixAt(n++, this.m);
     }
     this.dotsMesh.count = n;
     this.dotsMesh.instanceMatrix.needsUpdate = true;
-    if (this.dotsMesh.instanceColor) this.dotsMesh.instanceColor.needsUpdate = true;
+    this.marker.geometry.dispose();
+    this.markerInk.geometry.dispose();
     this.marker.geometry = catGeometry(CATS[this.world * 4], null, 'sit');
+    this.markerInk.geometry = hull(this.marker.geometry, 0.02);
     this.paint();
     this.fit();
   }
@@ -127,10 +140,19 @@ export class MapView {
       const s = this.state[i] ?? -1;
       this.m.makeTranslation(p.x, 0, p.z);
       this.stones.setMatrixAt(i, this.m);
-      this.stones.setColorAt(i, this.col.set(s < 0 ? 0x7a7f96 : s === 0 ? 0xff7ab0 : s === 3 ? 0xffc21f : 0xffe08a));
+      this.stones.setColorAt(i, this.col.set(s < 0 ? 0x2a2d44 : s === 0 ? 0x3d5fc0 : s === 3 ? 0xd9a93a : 0x9a7a3c));
+      // rune glow: none while sealed, mana blue when open, gold once won (values over 1 feed the bloom on High)
+      this.m.makeScale(s < 0 ? 0 : 1, 1, s < 0 ? 0 : 1).setPosition(p.x, 0.15, p.z);
+      this.runes.setMatrixAt(i, this.m);
+      this.runes.setColorAt(i, s > 0 ? this.col.setRGB(0.95, 0.68, 0.26) : this.col.setRGB(0.35, 0.75, 1.4));
+      // the three motes leading to stone i + 1 light up when that stone is open
+      const lit = (this.state[i + 1] ?? -1) >= 0;
+      if (i + 1 < PER_WORLD) for (let k = 0; k < 3; k++) this.dotsMesh.setColorAt(i * 3 + k, lit ? this.col.setRGB(0.7, 1.25, 1.9) : this.col.setRGB(0.2, 0.22, 0.38));
     });
-    this.stones.instanceMatrix.needsUpdate = true;
-    if (this.stones.instanceColor) this.stones.instanceColor.needsUpdate = true;
+    for (const im of [this.stones, this.runes, this.dotsMesh]) {
+      im.instanceMatrix.needsUpdate = true;
+      if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    }
     this.marker.visible = this.halo.visible = this.current >= 0;
   }
 

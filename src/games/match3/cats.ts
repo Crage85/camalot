@@ -1,6 +1,6 @@
 // The cats of the kingdom: who they are, what they wear, and how they are drawn.
-import { BoxGeometry, ConeGeometry, CylinderGeometry, OctahedronGeometry, SphereGeometry, TorusGeometry, type BufferGeometry } from 'three';
-import { merge, part, type V3 } from './art';
+import { BoxGeometry, Color, ConeGeometry, CylinderGeometry, Matrix4, OctahedronGeometry, SphereGeometry, TorusGeometry, type BufferGeometry } from 'three';
+import { facet, merge, part, type V3 } from './art';
 
 export interface CatDef {
   id: string; name: string; world: number; fur: number; fur2: number;
@@ -9,7 +9,9 @@ export interface CatDef {
 
 const GREEN = 0x58c46a, BLUE = 0x4aa8ff, GOLD = 0xf2b632, AQUA = 0x35c9c0, VIOLET = 0x9a6bff, AMBER = 0xff9a2e;
 type P = CatDef['pattern'];
-const c = (world: number, name: string, fur: number, fur2: number, pattern: P, eye: number): CatDef => ({ id: name.toLowerCase(), name, world, fur, fur2, pattern, eye });
+/** Shown names for cats whose first name was replaced; ids (the first names, lower case) stay for old saves. */
+const NAMES: Record<string, string> = { biscuit: 'Bramble', clover: 'Briar', pumpkin: 'Ochre', daisy: 'Linnea', snowdrop: 'Neve', mittens: 'Sable', icicle: 'Rime', sprout: 'Thorn', basil: 'Alder', sandy: 'Dune', pebble: 'Slate', mogul: 'Ridge', flurry: 'Gale', cocoa: 'Umber', paprika: 'Pyre', smokey: 'Ash', nugget: 'Aurum', dusty: 'Flint', twirl: 'Lyra', waltz: 'Vesper', sequin: 'Stella', tango: 'Rhea', cleat: 'Volt', goldie: 'Soleil', cumulus: 'Cirrus', puff: 'Nimbus', breeze: 'Zephyr', lumi: 'Lumen', duchess: 'Selene', regal: 'Regis', jewel: 'Garnet', majesty: 'Aurelia', sizzle: 'Ignis', glimmer: 'Astra' };
+const c = (world: number, name: string, fur: number, fur2: number, pattern: P, eye: number): CatDef => ({ id: name.toLowerCase(), name: NAMES[name.toLowerCase()] ?? name, world, fur, fur2, pattern, eye });
 
 /** 48 cats, 4 per world (index = world * 4 + slot), then 4 legendary cats. */
 export const CATS: CatDef[] = [
@@ -33,38 +35,46 @@ export const CATS: CatDef[] = [
 
 /** Outfits, bought with crowns. Any cat can wear any outfit she owns. */
 export const ACCESSORIES: { id: string; name: string; cost: number }[] = [
-  { id: 'bow', name: 'Bow', cost: 3 }, { id: 'scarf', name: 'Scarf', cost: 5 }, { id: 'flower', name: 'Flower', cost: 6 },
-  { id: 'party', name: 'Party hat', cost: 8 }, { id: 'shades', name: 'Sunglasses', cost: 9 }, { id: 'beanie', name: 'Ski beanie', cost: 10 },
-  { id: 'jersey', name: 'Soccer jersey', cost: 12 }, { id: 'backpack', name: 'Backpack', cost: 13 }, { id: 'tutu', name: 'Tutu', cost: 15 },
-  { id: 'cape', name: 'Cape', cost: 18 }, { id: 'wizard', name: 'Wizard hat', cost: 22 }, { id: 'crown', name: 'Crown', cost: 25 },
+  { id: 'bow', name: 'Silk ribbon', cost: 3 }, { id: 'scarf', name: 'Battle scarf', cost: 5 }, { id: 'flower', name: 'Moonflower', cost: 6 },
+  { id: 'party', name: 'Apprentice cap', cost: 8 }, { id: 'shades', name: 'Shades', cost: 9 }, { id: 'beanie', name: 'Frost cap', cost: 10 },
+  { id: 'jersey', name: 'Arena jersey', cost: 12 }, { id: 'backpack', name: 'Satchel', cost: 13 }, { id: 'tutu', name: 'Battle skirt', cost: 15 },
+  { id: 'cape', name: 'War cape', cost: 18 }, { id: 'wizard', name: 'Archmage hat', cost: 22 }, { id: 'crown', name: 'Crown', cost: 25 },
 ];
 
 const sph = (r: number, ws = 14, hs = 10) => new SphereGeometry(r, ws, hs);
 const cone = (r: number, h: number, s = 10) => new ConeGeometry(r, h, s);
 const cyl = (rt: number, rb: number, h: number, s = 12, open = false) => new CylinderGeometry(rt, rb, h, s, 1, open);
-const ORANGE = 0xf0a040, PINK = 0xff9fb8, DARK = 0x1e1e2c, WHITE = 0xffffff;
+const ORANGE = 0xf0a040, DARK = 0x1e1e2c, WHITE = 0xffffff;
 
-/** A cat about 1 unit tall, feet at y = 0, facing +z. */
-export function catGeometry(cat: CatDef, acc: string | null, pose: 'sit' | 'walk' = 'sit'): BufferGeometry {
+const mix = (a: number, b: number, k: number) => new Color(a).lerp(new Color(b), k).getHex();
+/** Robe colour by home world. */
+const ROBES = [0x2f6a3a, 0x2a4a9a, 0x1f5a48, 0x147a9a, 0x3a4aa8, 0x8a2424, 0x8a4a1c, 0x4a2a8a, 0x1f6a3f, 0x3a5ab8, 0x12506a, 0x5a2a9a];
+const BODY_WEAR = ['jersey', 'backpack', 'tutu', 'cape'];
+const fit = (from: V3, to: V3, k: number) =>
+  new Matrix4().makeTranslation(to[0], to[1], to[2]).multiply(new Matrix4().makeScale(k, k, k)).multiply(new Matrix4().makeTranslation(-from[0], -from[1], -from[2]));
+
+/**
+ * A cat mage about 1 unit tall (staff a little taller), feet at y = 0, facing +z: slim, robed, staff in hand.
+ * One standing model serves both poses.
+ */
+export function catGeometry(cat: CatDef, acc: string | null, _pose: 'sit' | 'walk' = 'sit'): BufferGeometry {
   const { fur, fur2, pattern: pt } = cat;
-  const sit = pose === 'sit';
-  const H: V3 = sit ? [0, 0.68, 0.05] : [0, 0.58, 0.3]; // head centre
-  const B: V3 = sit ? [0, 0.27, 0] : [0, 0.31, -0.06]; // body centre
-  const h = (x: number, y: number, z: number): V3 => [H[0] + x, H[1] + y, H[2] + z];
-  const b = (x: number, y: number, z: number): V3 => [B[0] + x, B[1] + y, B[2] + z];
+  const H: V3 = [0, 0.77, 0.02]; // head centre
+  const robe = cat.legend ? 0x2a2238 : ROBES[cat.world % ROBES.length];
+  const robeLo = mix(robe, 0x0a0618, 0.55), trim = cat.legend ? 0xffd84a : 0xe0b860;
   const out: BufferGeometry[] = [];
-  const add = (g: BufferGeometry, color: number | ((y: number, x: number) => number), p: V3, r: V3 = [0, 0, 0], s: number | V3 = 1) => out.push(part(g, color, p, r, s));
+  let M: Matrix4 | null = null;
+  const add = (g: BufferGeometry, color: number | ((y: number, x: number) => number), p: V3, r: V3 = [0, 0, 0], s: number | V3 = 1) => {
+    const q = part(g, color, p, r, s);
+    out.push(M ? q.applyMatrix4(M) : q);
+  };
+  const hh = (x: number, y: number, z: number): V3 => [H[0] + x, H[1] + y, H[2] + z];
 
-  // pattern as vertex colours (y, x are local to the sphere)
+  // fur pattern as vertex colours (y, x in the old big-head scale)
   const headCol = (y: number, x: number): number => {
     if (pt === 'tabby') return y > 0.12 && Math.abs(Math.sin(x * 26)) > 0.72 ? fur2 : fur;
     if (pt === 'calico') return x > 0.04 && y > -0.02 ? fur2 : x < -0.06 && y > 0.05 ? ORANGE : fur;
     if (pt === 'point') return Math.abs(x) < 0.16 && y < 0.1 && y > -0.22 ? fur2 : fur;
-    return fur;
-  };
-  const bodyCol = (y: number, x: number): number => {
-    if (pt === 'tabby') return Math.sin(y * 34 + 1) > 0.5 ? fur2 : fur;
-    if (pt === 'calico') return x < -0.05 && y > 0 ? fur2 : x > 0.06 && y < 0.08 ? ORANGE : fur;
     return fur;
   };
   const paw = pt === 'tux' || pt === 'point' ? fur2 : pt === 'calico' ? WHITE : fur;
@@ -72,62 +82,64 @@ export function catGeometry(cat: CatDef, acc: string | null, pose: 'sit' | 'walk
   const earL = pt === 'point' ? fur2 : pt === 'calico' ? ORANGE : fur;
   const earR = pt === 'point' || pt === 'calico' ? fur2 : fur;
 
-  // body
-  if (sit) {
-    add(sph(0.26), bodyCol, b(0, 0, 0), [0, 0, 0], [1, 1.08, 0.95]);
-    if (pt === 'tux' || pt === 'calico') add(sph(0.17), pt === 'tux' ? fur2 : WHITE, b(0, 0.02, 0.13), [0, 0, 0], [0.85, 1.05, 0.6]);
-    for (const x of [-0.1, 0.1]) add(sph(0.075, 10, 8), paw, [x, 0.06, 0.2], [0, 0, 0], [1, 0.8, 1.2]);
-    for (const x of [-0.21, 0.21]) add(sph(0.08, 10, 8), paw, [x, 0.055, 0.06], [0, 0, 0], [1, 0.7, 1.3]);
-    add(new TorusGeometry(0.2, 0.05, 6, 14, Math.PI * 1.1), fur, [0.16, 0.2, -0.16], [Math.PI / 2 - 0.5, 0, -0.5]);
-    add(sph(0.062, 8, 6), tip, [0.35, 0.3, -0.07]);
-  } else {
-    add(sph(0.22), bodyCol, b(0, 0, 0), [Math.PI / 2, 0, 0], [0.95, 1.5, 0.9]);
-    if (pt === 'tux' || pt === 'calico') add(sph(0.15), pt === 'tux' ? fur2 : WHITE, b(0, -0.06, 0.2), [0, 0, 0], [0.9, 0.8, 0.9]);
-    for (const x of [-0.12, 0.12]) for (const z of [0.14, -0.26]) {
-      add(cyl(0.055, 0.05, 0.2, 8), fur, [x, 0.13, z]);
-      add(sph(0.065, 8, 6), paw, [x, 0.04, z + 0.02], [0, 0, 0], [1, 0.65, 1.25]);
-    }
-    add(cyl(0.04, 0.055, 0.42, 8), fur, [0, 0.52, -0.44], [-0.45, 0, 0]);
-    add(sph(0.058, 8, 6), tip, [0, 0.72, -0.54]);
-  }
-  if (pt === 'spots') {
-    const spots: V3[] = sit ? [[-0.2, 0.12, 0.08], [0.21, 0.02, 0.06], [0.1, 0.2, -0.16], [-0.12, -0.05, -0.2]] : [[-0.17, 0.08, 0.05], [0.18, 0.06, -0.1], [0, 0.19, -0.05], [0.08, 0.16, 0.18], [-0.1, 0.15, -0.25]];
-    for (const [x, y, z] of spots) add(sph(0.06, 8, 6), fur2, b(x, y, z), [0, 0, 0], [1, 1, 1]);
-    for (const [x, y, z] of [[-0.14, 0.24, 0.02], [0.16, 0.22, -0.04], [0.02, 0.27, -0.1]] as V3[]) add(sph(0.05, 8, 6), fur2, h(x, y, z), [0, 0, 0], [1, 0.6, 1]);
-  }
-
-  // head
-  add(sph(0.3, 18, 14), headCol, h(0, 0, 0), [0, 0, 0], [1.1, 0.95, 0.95]);
-  add(cone(0.12, 0.22, 8), earL, h(-0.2, 0.27, -0.02), [0, 0, 0.38]);
-  add(cone(0.12, 0.22, 8), earR, h(0.2, 0.27, -0.02), [0, 0, -0.38]);
-  add(cone(0.065, 0.14, 6), PINK, h(-0.195, 0.255, 0.035), [0, 0, 0.38]);
-  add(cone(0.065, 0.14, 6), PINK, h(0.195, 0.255, 0.035), [0, 0, -0.38]);
-  add(sph(0.1, 10, 8), pt === 'tux' ? fur2 : WHITE, h(0, -0.08, 0.215), [0, 0, 0], [1.35, 0.8, 0.6]);
-  add(sph(0.028, 8, 6), 0xff7fa0, h(0, -0.045, 0.285), [0, 0, 0], [1.2, 0.8, 0.8]);
+  // robe, mantle and cloak
+  add(facet(cyl(0.085, 0.2, 0.5, 8)), (y) => (y < -0.2 ? trim : y < -0.1 ? robeLo : robe), [0, 0.27, 0]);
+  add(sph(0.105, 10, 8), robe, [0, 0.53, 0], [0, 0, 0], [1.15, 0.8, 0.85]);
+  add(facet(cone(0.15, 0.14, 6)), mix(robe, 0xffffff, 0.22), [0, 0.57, 0]);
+  add(facet(cone(0.21, 0.46, 6)), robeLo, [0, 0.35, -0.08], [-0.12, 0, 0], [1, 1, 0.4]);
+  add(facet(new OctahedronGeometry(0.028)), trim, [0, 0.545, 0.105]);
+  add(facet(cyl(0.1, 0.105, 0.035, 8)), trim, [0, 0.36, 0]);
+  // sleeves, paws, feet, tail
   for (const s of [-1, 1]) {
-    add(sph(0.075, 12, 10), cat.eye, h(s * 0.125, 0.02, 0.232), [0, 0, 0], [1, 1.15, 0.6]);
-    add(sph(0.058, 12, 10), DARK, h(s * 0.125, 0.02, 0.252), [0, 0, 0], [1, 1.15, 0.6]);
-    add(sph(0.024, 8, 6), WHITE, h(s * 0.125 + 0.025, 0.05, 0.283));
-    add(sph(0.012, 6, 4), WHITE, h(s * 0.125 - 0.022, -0.012, 0.286));
-    add(sph(0.05, 8, 6), 0xffa8b8, h(s * 0.215, -0.07, 0.19), [0, 0, 0], [1, 0.6, 0.4]);
+    add(facet(cyl(0.035, 0.062, 0.25, 6)), robe, [s * 0.15, 0.44, 0.035], [-0.25, 0, s * 0.45]);
+    add(sph(0.036, 8, 6), paw, [s * 0.212, 0.335, 0.07]);
+    add(sph(0.04, 8, 6), paw, [s * 0.06, 0.03, 0.15], [0, 0, 0], [1, 0.6, 1.3]);
   }
+  add(cyl(0.018, 0.03, 0.38, 6), (y) => (y > 0.08 ? tip : fur), [0.15, 0.2, -0.2], [-0.5, 0, -0.9]);
+  // staff
+  add(cyl(0.013, 0.013, 0.95, 6), 0x3a2a1c, [0.235, 0.475, 0.09]);
+  add(new TorusGeometry(0.06, 0.012, 4, 12), trim, [0.235, 0.94, 0.09]);
+  add(facet(new OctahedronGeometry(0.055)), cat.eye, [0.235, 1.01, 0.09], [0, 0, 0], [0.75, 1.5, 0.75]);
+
+  // head: small, sharp ears, almond eyes
+  add(sph(0.165, 16, 12), (y, x) => headCol(y * 1.8, x * 1.8), hh(0, 0, 0), [0, 0, 0], [1.05, 0.95, 0.95]);
+  add(facet(cone(0.07, 0.2, 4)), earL, hh(-0.105, 0.17, -0.01), [0, 0, 0.3]);
+  add(facet(cone(0.07, 0.2, 4)), earR, hh(0.105, 0.17, -0.01), [0, 0, -0.3]);
+  add(cone(0.032, 0.12, 4), 0xa85a70, hh(-0.103, 0.16, 0.022), [0, 0, 0.3]);
+  add(cone(0.032, 0.12, 4), 0xa85a70, hh(0.103, 0.16, 0.022), [0, 0, -0.3]);
+  add(sph(0.055, 10, 8), pt === 'tux' ? fur2 : WHITE, hh(0, -0.055, 0.12), [0, 0, 0], [1.25, 0.75, 0.6]);
+  add(sph(0.016, 6, 4), 0x8a3a4a, hh(0, -0.035, 0.155), [0, 0, 0], [1.3, 0.8, 0.8]);
+  for (const s of [-1, 1]) {
+    add(sph(0.04, 10, 8), cat.eye, hh(s * 0.068, 0.012, 0.126), [0, 0, s * 0.3], [1.25, 0.8, 0.5]);
+    add(sph(0.022, 8, 6), DARK, hh(s * 0.068, 0.012, 0.14), [0, 0, 0], [0.5, 1.15, 0.5]);
+    add(sph(0.011, 6, 4), WHITE, hh(s * 0.068 + 0.016, 0.028, 0.15));
+    add(new BoxGeometry(0.105, 0.015, 0.02), DARK, hh(s * 0.072, 0.046, 0.132), [0, 0, s * 0.32]);
+  }
+  if (pt === 'spots') for (const [x, y, z] of [[-0.08, 0.13, 0.02], [0.09, 0.12, -0.02], [0.01, 0.15, -0.06]] as V3[]) add(sph(0.03, 8, 6), fur2, hh(x, y, z), [0, 0, 0], [1, 0.6, 1]);
 
   // legendary extras
   if (cat.id === 'sizzle') {
     for (const s of [-1, 1]) {
-      add(cone(0.3, 0.5, 3), 0xff7a3a, b(s * 0.3, 0.25, -0.16), [0.2, s * 0.5, s * -1.0], [1, 1, 0.12]);
-      add(cone(0.04, 0.14, 6), 0xffe08a, h(s * 0.09, 0.3, 0.05), [0.2, 0, s * -0.2]);
+      add(facet(cone(0.2, 0.42, 3)), 0xff6a2a, [s * 0.24, 0.56, -0.13], [0.2, s * 0.5, s * -1.0], [1, 1, 0.12]);
+      add(cone(0.022, 0.09, 5), 0xffe08a, hh(s * 0.05, 0.17, 0.03), [0.2, 0, s * -0.2]);
     }
   }
   if (cat.id === 'glimmer') {
-    add(cone(0.05, 0.3, 8), 0xffd84a, h(0, 0.38, 0.13), [0.35, 0, 0]);
-    [0xff8fc8, 0xb08cff, 0x7fd0ff, 0xff8fc8].forEach((col, k) => add(sph(0.085, 8, 6), col, h(0, 0.24 - k * 0.11, -0.2 - (k === 3 ? -0.04 : k * 0.03))));
+    add(cone(0.026, 0.17, 6), 0xffd84a, hh(0, 0.2, 0.07), [0.35, 0, 0]);
+    [0xb08cff, 0x7fd0ff, 0xb08cff, 0x7fd0ff].forEach((col, k) => add(facet(new OctahedronGeometry(0.05)), col, hh(0, 0.13 - k * 0.07, -0.13 - (k === 3 ? -0.02 : k * 0.015))));
   }
-  if (cat.id === 'avalanche') add(sph(0.1, 10, 8), WHITE, sit ? [0.33, 0.27, -0.1] : [0, 0.66, -0.52], [0, 0, 0], [1.1, 1.3, 1.1]);
+  if (cat.id === 'avalanche') add(new TorusGeometry(0.11, 0.04, 6, 12), WHITE, [0, 0.6, 0], [Math.PI / 2, 0, 0]);
   if (cat.id === 'nova') {
-    add(new OctahedronGeometry(0.07), 0xffe46a, h(0, 0.17, 0.25), [0, 0, 0], [1, 1, 0.4]);
-    for (const [x, y, z] of [[-0.42, 0.25, 0], [0.44, 0.1, 0.05], [0.3, 0.42, -0.1], [-0.3, -0.25, 0.2]] as V3[]) add(new OctahedronGeometry(0.045), 0xffe46a, h(x, y, z));
+    add(new OctahedronGeometry(0.04), 0xffe46a, hh(0, 0.1, 0.14), [0, 0, 0], [1, 1, 0.4]);
+    for (const [x, y, z] of [[-0.26, 0.14, 0], [0.27, 0.02, 0.03], [0.17, 0.26, -0.06], [-0.2, -0.16, 0.12]] as V3[]) add(new OctahedronGeometry(0.035), 0xffe46a, hh(x, y, z));
   }
+
+  // outfits are modelled against the old big-head layout, then fitted to the mage
+  const sit = true;
+  const H0: V3 = [0, 0.68, 0.05], B0: V3 = [0, 0.27, 0];
+  const h = (x: number, y: number, z: number): V3 => [H0[0] + x, H0[1] + y, H0[2] + z];
+  const b = (x: number, y: number, z: number): V3 => [B0[0] + x, B0[1] + y, B0[2] + z];
+  M = acc && BODY_WEAR.includes(acc) ? fit(B0, [0, 0.4, 0], 0.6) : fit(H0, H, 0.56);
 
   // outfit
   const neck: V3 = sit ? [0, 0.47, 0.03] : [0, 0.42, 0.17];
@@ -135,9 +147,9 @@ export function catGeometry(cat: CatDef, acc: string | null, pose: 'sit' | 'walk
   const waist: V3 = sit ? [Math.PI / 2, 0, 0] : [0, 0, 0];
   switch (acc) {
     case 'bow':
-      add(cone(0.09, 0.15, 8), 0xff4f8a, h(0.1, 0.27, 0.1), [0, 0, Math.PI / 2 + 0.3]);
-      add(cone(0.09, 0.15, 8), 0xff4f8a, h(0.27, 0.22, 0.1), [0, 0, -Math.PI / 2 + 0.3]);
-      add(sph(0.045, 8, 6), 0xffa8c8, h(0.185, 0.245, 0.11));
+      add(cone(0.09, 0.15, 8), 0xc8203c, h(0.1, 0.27, 0.1), [0, 0, Math.PI / 2 + 0.3]);
+      add(cone(0.09, 0.15, 8), 0xc8203c, h(0.27, 0.22, 0.1), [0, 0, -Math.PI / 2 + 0.3]);
+      add(sph(0.045, 8, 6), 0xe0b860, h(0.185, 0.245, 0.11));
       break;
     case 'scarf':
       add(new TorusGeometry(0.2, 0.06, 8, 16), 0xe8404a, neck, ring, [1, 1, 0.9]);
@@ -145,11 +157,11 @@ export function catGeometry(cat: CatDef, acc: string | null, pose: 'sit' | 'walk
       add(new BoxGeometry(0.1, 0.04, 0.045), WHITE, [neck[0] + 0.135, neck[1] - 0.2, neck[2] + 0.215], [0.2, 0, -0.15]);
       break;
     case 'flower':
-      for (let k = 0; k < 5; k++) add(sph(0.05, 8, 6), 0xff8fd0, h(-0.19 + Math.cos(k * 1.257) * 0.065, 0.24 + Math.sin(k * 1.257) * 0.065, 0.12), [0, 0, 0], [1, 1, 0.5]);
+      for (let k = 0; k < 5; k++) add(sph(0.05, 8, 6), 0xb8a0ff, h(-0.19 + Math.cos(k * 1.257) * 0.065, 0.24 + Math.sin(k * 1.257) * 0.065, 0.12), [0, 0, 0], [1, 1, 0.5]);
       add(sph(0.04, 8, 6), 0xffe04a, h(-0.19, 0.24, 0.14));
       break;
     case 'party':
-      add(cone(0.13, 0.32, 12), (y) => (Math.sin(y * 30) > 0 ? 0xff5c8a : 0x4ad0ff), h(0, 0.41, 0), [0, 0, 0.1]);
+      add(cone(0.13, 0.32, 12), (y) => (Math.sin(y * 30) > 0 ? 0x2a2a7a : 0xe0b860), h(0, 0.41, 0), [0, 0, 0.1]);
       add(sph(0.045, 8, 6), 0xffe04a, h(-0.017, 0.58, 0));
       break;
     case 'shades':
@@ -171,8 +183,8 @@ export function catGeometry(cat: CatDef, acc: string | null, pose: 'sit' | 'walk
       add(new TorusGeometry(sit ? 0.25 : 0.2, 0.025, 5, 14), 0x2a5fa8, sit ? b(0, 0.08, 0) : b(0, 0, 0), waist, sit ? [1, 1, 1] : [1, 1.1, 1]);
       break;
     case 'tutu':
-      add(cone(0.42, 0.13, 16), (y) => (y > 0 ? 0xff7fc0 : 0xffc8e4), sit ? b(0, -0.07, 0) : b(0, 0, -0.14), sit ? [0, 0, 0] : [-Math.PI / 2, 0, 0], sit ? 1 : 0.82);
-      add(new TorusGeometry(sit ? 0.235 : 0.2, 0.03, 5, 16), 0xff4f9a, sit ? b(0, -0.01, 0) : b(0, 0, -0.08), waist);
+      add(cone(0.42, 0.13, 16), (y) => (y > 0 ? 0x8a1c4a : 0xc83a6a), sit ? b(0, -0.07, 0) : b(0, 0, -0.14), sit ? [0, 0, 0] : [-Math.PI / 2, 0, 0], sit ? 1 : 0.82);
+      add(new TorusGeometry(sit ? 0.235 : 0.2, 0.03, 5, 16), 0xe0b860, sit ? b(0, -0.01, 0) : b(0, 0, -0.08), waist);
       break;
     case 'cape':
       add(cone(0.34, 0.5, 12, ), (y) => (y < -0.15 ? 0x6a2fc8 : 0x8a4fe8), sit ? [0, 0.24, -0.13] : [0, 0.36, -0.22], sit ? [-0.25, 0, 0] : [-1.1, 0, 0], [1, 1, 0.45]);
@@ -188,7 +200,7 @@ export function catGeometry(cat: CatDef, acc: string | null, pose: 'sit' | 'walk
       for (let k = 0; k < 5; k++) {
         const a = (k / 5) * Math.PI * 2;
         add(cone(0.045, 0.12, 4), 0xffd23f, h(Math.sin(a) * 0.14, 0.39, Math.cos(a) * 0.14));
-        add(sph(0.025, 6, 4), k % 2 ? 0x4ad0ff : 0xff5c8a, h(Math.sin(a) * 0.14, 0.455, Math.cos(a) * 0.14));
+        add(sph(0.025, 6, 4), k % 2 ? 0x4ad0ff : 0xe0264e, h(Math.sin(a) * 0.14, 0.455, Math.cos(a) * 0.14));
       }
       break;
     }

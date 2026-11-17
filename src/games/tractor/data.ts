@@ -1,4 +1,4 @@
-// Every tunable for Kitty Harvest: crops, upgrade curves, farms, plots, vehicles, buildings, animals, orders, bonuses.
+// Every tunable for Skyfield Saga: crops, upgrade curves, farms, plots, vehicles, buildings, animals, orders, bonuses.
 // Pure data and formulas with no imports, so the balance simulator (shots/tractor/balance.mjs) reads the same numbers.
 
 export type CropKind =
@@ -94,24 +94,26 @@ export interface Vehicle {
   power: number;
 }
 export const VEHICLES: Record<VehicleId, Vehicle> = {
-  tractor: { name: 'Little Red Tractor', blurb: 'The trusty first tractor.', farm: 0, cost: 0, speed: 1, load: 1, width: 1, power: 1 },
-  truck: { name: 'Ranch Truck', blurb: 'Fast, with a big bed. Narrow cutter.', farm: 1, cost: 12, speed: 1.25, load: 1.8, width: 0.85, power: 1.3 },
-  wagon: { name: 'Cat-Drawn Wagon', blurb: 'Two big cats pull it. Helper cats work twice as fast.', farm: 2, cost: 10, speed: 0.9, load: 2.2, width: 1.1, power: 1.6 },
-  harvester: { name: 'Green Harvester', blurb: 'A wide, strong cutter. A little slow.', farm: 3, cost: 10, speed: 0.92, load: 2.6, width: 1.35, power: 2.6 },
-  combine: { name: 'Sunny Combine', blurb: 'Huge cutter and a huge grain tank.', farm: 4, cost: 10, speed: 1, load: 3.6, width: 1.5, power: 4 },
-  snowcat: { name: 'Snowcat Harvester', blurb: 'Tracks grip any hill. Quick and strong.', farm: 5, cost: 10, speed: 1.2, load: 4.6, width: 1.45, power: 6.5 },
-  dragon: { name: 'Dragon Harvester', blurb: 'A friendly dragon that munches whole fields.', farm: 6, cost: 8, speed: 1.35, load: 6, width: 1.6, power: 10 },
+  tractor: { name: 'Crimson Rover', blurb: 'Your first machine. Light and reliable.', farm: 0, cost: 0, speed: 1, load: 1, width: 1, power: 1 },
+  truck: { name: 'Azure Hauler', blurb: 'Fast, with a deep bed. Narrow cutter.', farm: 1, cost: 12, speed: 1.25, load: 1.8, width: 0.85, power: 1.3 },
+  wagon: { name: 'Wind Skiff', blurb: 'Runs silent under sail. Your crew works twice as fast.', farm: 2, cost: 10, speed: 0.9, load: 2.2, width: 1.1, power: 1.6 },
+  harvester: { name: 'Jade Reaper', blurb: 'A wide, strong cutter. A little slow.', farm: 3, cost: 10, speed: 0.92, load: 2.6, width: 1.35, power: 2.6 },
+  combine: { name: 'Sunforge Combine', blurb: 'Huge cutter. Huge grain tank.', farm: 4, cost: 10, speed: 1, load: 3.6, width: 1.5, power: 4 },
+  snowcat: { name: 'Frostline Crawler', blurb: 'Tracks grip any hill. Quick and strong.', farm: 5, cost: 10, speed: 1.2, load: 4.6, width: 1.45, power: 6.5 },
+  dragon: { name: 'Skydrake', blurb: 'A drake ally. It strips whole fields in one pass.', farm: 6, cost: 8, speed: 1.35, load: 6, width: 1.6, power: 10 },
 };
 
-// ---------- Helper cats (owned for good; each has a job she can change) ----------
+// ---------- Field hands (owned for good; each has a job she can change) ----------
 
 export const HELPER_MAX = 6;
 export const helperCost = (owned: number) => nice(300 * Math.pow(9, owned));
 export const HELPER_SPEED = 3.4;
+/** Shown in the barn, in hiring order. */
+export const CREW_NAMES = ['Rook', 'Sable', 'Ivo', 'Wren', 'Thorn', 'Lyra'];
 export type Job = 'picker' | 'hauler' | 'seller';
 export const JOBS: Record<Job, { name: string; help: string }> = {
-  picker: { name: 'Picker', help: 'Picks crops near your tractor.' },
-  hauler: { name: 'Hauler', help: 'Carries a basket: +12% trailer room.' },
+  picker: { name: 'Picker', help: 'Harvests crops near your machine.' },
+  hauler: { name: 'Hauler', help: 'Carries a pack: +12% trailer room.' },
   seller: { name: 'Seller', help: 'Runs the stand: +5% coins on every sale.' },
 };
 export const HAULER_LOAD = 0.12;
@@ -125,7 +127,7 @@ export type BuildId = 'silo' | 'market' | 'windmill' | 'greenhouse' | 'pen';
 export const BUILDS: Record<BuildId, { name: string; help: string; per: number; mult: number }> = {
   silo: { name: 'Silo', help: '+25% trailer room on this farm per level.', per: 0.25, mult: 1 },
   market: { name: 'Market stand', help: '+12% coins for crops sold on this farm per level.', per: 0.12, mult: 1.6 },
-  windmill: { name: 'Windmill', help: 'Helper cats on this farm work 40% faster per level.', per: 0.4, mult: 0.7 },
+  windmill: { name: 'Windmill', help: 'Your crew on this farm works 40% faster per level.', per: 0.4, mult: 0.7 },
   greenhouse: { name: 'Greenhouse', help: 'Clean-sweep bonus for emptying a plot: +10% per level.', per: 0.1, mult: 1.2 },
   pen: { name: 'Animal pen', help: 'Room for 2 more animals per level.', per: 2, mult: 0.9 },
 };
@@ -189,16 +191,16 @@ export interface Farm {
   plots: Plot[];
 }
 
-const GREEN = { grassA: 0x8fd16a, grassB: 0x7cc458, soilA: 0xb98a5a, soilB: 0xa2744a, path: 0xdcc090, skyTop: 0x4aa3f0, skyLow: 0xcfeaff, sun: 0xfff0d6, water: 0x4fb8e8, rock: 0x7f8fa8, snowLine: 0.62 };
+const GREEN = { grassA: 0x7cc24e, grassB: 0x3f9440, soilA: 0xa87440, soilB: 0x885830, path: 0xe8c88c, skyTop: 0x1f6fe0, skyLow: 0xffe2b4, sun: 0xffdfa6, water: 0x2aa4e8, rock: 0x6878a8, snowLine: 0.62 };
 
 export const FARMS: Farm[] = [
   {
-    name: 'Sunny Plains Farm', region: 'Colorado plains', radius: 92, hills: 1.3, base: 60, cost: 0, orders: 8, orderBase: 45,
-    animal: 'chicken', animalName: 'Chicken', decor: ['scarecrow', 'flowers', 'bench', 'flag', 'catstatue', 'fountain'], trees: ['oak', 'pine', 'birch'],
+    name: 'Goldwind Plains', region: 'Colorado plains', radius: 92, hills: 1.3, base: 60, cost: 0, orders: 8, orderBase: 45,
+    animal: 'chicken', animalName: 'Pheasant', decor: ['scarecrow', 'flowers', 'bench', 'flag', 'catstatue', 'fountain'], trees: ['oak', 'pine', 'birch'],
     ponds: [[-44, -34, 6]], barn: 0xd9443f, look: GREEN,
     plots: [
       P('Wheat Strip', 'rect', 0, -36, 22, 18, ['wheat'], 'stripes', 0, { bales: 2 }),
-      P('Corn Corner', 'L', 36, -24, 26, 26, ['corn', 'wheat'], 'stripes', 0, { rocks: 3 }),
+      P('Corn Reach', 'L', 36, -24, 26, 26, ['corn', 'wheat'], 'stripes', 0, { rocks: 3 }),
       P('Sunflower Round', 'round', 42, 24, 26, 26, ['sunflower', 'corn'], 'rings', 8.3, { trees: 1 }),
       P('Pond Field', 'ring', -44, -34, 38, 38, ['wheat', 'corn'], 'patches', 25, { pond: 6 }),
       P('Long Acre', 'rect', -44, 26, 18, 42, ['sunflower', 'wheat'], 'stripes', 75, { fences: 2, bales: 3 }),
@@ -206,10 +208,10 @@ export const FARMS: Farm[] = [
     ],
   },
   {
-    name: 'Columbine Valley Ranch', region: 'Rocky Mountain valley', radius: 112, hills: 3.4, base: 1100, cost: 20, orders: 10, orderBase: 110,
+    name: 'Columbine Vale', region: 'Rocky Mountain valley', radius: 112, hills: 3.4, base: 1100, cost: 20, orders: 10, orderBase: 110,
     animal: 'alpaca', animalName: 'Alpaca', decor: ['flowers', 'lantern', 'bench', 'catstatue', 'flag', 'fountain'], trees: ['pine', 'pine', 'birch'],
     stream: { pts: [[-150, -58], [-70, -50], [-20, -62], [30, -52], [80, -64], [150, -50]], bridges: [0.36, 0.62], half: 3.2 },
-    ponds: [], barn: 0x9a5a3a, look: { ...GREEN, grassA: 0x86cc70, grassB: 0x6fb85e, skyTop: 0x3f95ea, rock: 0x76839c, snowLine: 0.5 },
+    ponds: [], barn: 0x9a5a3a, look: { ...GREEN, grassA: 0x68b858, grassB: 0x378c4a, skyTop: 0x1c5fd8, rock: 0x6470a0, snowLine: 0.5 },
     plots: [
       P('Valley Floor', 'rect', -32, -26, 28, 20, ['carrot', 'corn'], 'stripes', 0, { rocks: 2 }),
       P('Meadow Round', 'round', 34, -24, 26, 26, ['columbine', 'carrot'], 'rings', 0, { rocks: 3 }),
@@ -220,9 +222,9 @@ export const FARMS: Farm[] = [
     ],
   },
   {
-    name: 'Lakeside Orchard', region: 'Mountain lake', radius: 124, hills: 2.4, base: 31_000, cost: 20, orders: 10, orderBase: 150,
+    name: 'Mirror Lake Orchard', region: 'Mountain lake', radius: 124, hills: 2.4, base: 31_000, cost: 20, orders: 10, orderBase: 150,
     animal: 'duck', animalName: 'Duck', decor: ['bench', 'flowers', 'lantern', 'fountain', 'flag', 'catstatue'], trees: ['oak', 'birch', 'pine'],
-    ponds: [[0, -78, 30], [70, 40, 7]], barn: 0xf4ede2, look: { ...GREEN, grassA: 0x9ad672, grassB: 0x84c860, water: 0x3fa8e0 },
+    ponds: [[0, -78, 30], [70, 40, 7]], barn: 0xf4ede2, look: { ...GREEN, grassA: 0x86c850, grassB: 0x489c42, water: 0x2494e0 },
     plots: [
       P('Berry Rows', 'terrace', -34, -24, 28, 22, ['blueberry'], 'stripes', 0),
       P('Lavender Curve', 'round', 36, -22, 26, 24, ['lavender', 'blueberry'], 'rings', 0, { rocks: 2 }),
@@ -233,13 +235,13 @@ export const FARMS: Farm[] = [
     ],
   },
   {
-    name: 'Pumpkin Hollow', region: 'Autumn woods', radius: 128, hills: 3, base: 230_000, cost: 20, orders: 11, orderBase: 190,
-    animal: 'bunny', animalName: 'Bunny', decor: ['jack', 'scarecrow', 'lantern', 'bench', 'catstatue', 'fountain'], trees: ['autumn', 'autumn', 'oak', 'pine'],
+    name: 'Ember Hollow', region: 'Autumn woods', radius: 128, hills: 3, base: 230_000, cost: 20, orders: 11, orderBase: 190,
+    animal: 'bunny', animalName: 'Hare', decor: ['jack', 'scarecrow', 'lantern', 'bench', 'catstatue', 'fountain'], trees: ['autumn', 'autumn', 'oak', 'pine'],
     stream: { pts: [[-150, 48], [-80, 56], [-30, 46], [40, 58], [90, 44], [150, 54]], bridges: [0.3, 0.68], half: 3 },
     ponds: [[-70, -60, 8]], barn: 0x7a4a8a,
-    look: { ...GREEN, grassA: 0xc8c860, grassB: 0xb0a84a, soilA: 0x8a5a3a, soilB: 0x744a30, path: 0xd0a878, skyTop: 0xf0a060, skyLow: 0xffe6c0, sun: 0xffd9a0, rock: 0x8a7f90 },
+    look: { ...GREEN, grassA: 0xc4a83e, grassB: 0x8e7a2c, soilA: 0x86522e, soilB: 0x6c4024, path: 0xdaa870, skyTop: 0x6a3a9c, skyLow: 0xffc488, sun: 0xffc47a, rock: 0x6a5890 },
     plots: [
-      P('Pumpkin Patch', 'round', -34, -26, 28, 26, ['pumpkin', 'sunflower'], 'patches', 0, { bales: 3 }),
+      P('Pumpkin Ground', 'round', -34, -26, 28, 26, ['pumpkin', 'sunflower'], 'patches', 0, { bales: 3 }),
       P('Corn Maze', 'rect', 36, -26, 30, 26, ['corn', 'pumpkin'], 'checker', 0, { fences: 3 }),
       P('Mushroom Ring', 'ring', -70, -60, 42, 42, ['mushroom', 'pumpkin'], 'rings', 13, { pond: 8 }),
       P('Scarecrow Field', 'L', 68, -72, 40, 40, ['pumpkin', 'apple'], 'stripes', 30, { rocks: 4, trees: 3, bales: 3 }),
@@ -248,10 +250,10 @@ export const FARMS: Farm[] = [
     ],
   },
   {
-    name: 'Seashell Beach Farm', region: 'Sunny beach', radius: 134, hills: 1.6, base: 450_000, cost: 20, orders: 12, orderBase: 230,
+    name: 'Tidecrest Shore', region: 'Sunlit coast', radius: 134, hills: 1.6, base: 450_000, cost: 20, orders: 12, orderBase: 230,
     animal: 'turtle', animalName: 'Sea turtle', decor: ['sandcastle', 'flag', 'flowers', 'lantern', 'catstatue', 'fountain'], trees: ['palm', 'palm', 'oak'],
     ponds: [[-60, -20, 7], [50, -70, 9]], ocean: 62, barn: 0x4fc3d8,
-    look: { ...GREEN, grassA: 0xf2deaa, grassB: 0xe8d096, soilA: 0xd8b878, soilB: 0xc8a465, path: 0xf8ecc8, skyTop: 0x2f9af0, skyLow: 0xd8f4ff, water: 0x38c0e8, rock: 0x6fae7a, snowLine: 2 },
+    look: { ...GREEN, grassA: 0xf6da8c, grassB: 0xe6c06a, soilA: 0xd6b06a, soilB: 0xc09856, path: 0xfbeecb, skyTop: 0x1484f0, skyLow: 0xd4f4ff, sun: 0xfff0cc, water: 0x18bce8, rock: 0x4fa870, snowLine: 2 },
     plots: [
       P('Melon Dunes', 'blob', -30, -30, 30, 24, ['melon'], 'stripes', 0, { rocks: 2 }),
       P('Hibiscus Garden', 'round', 34, -22, 26, 26, ['hibiscus', 'melon'], 'rings', 0, { trees: 1 }),
@@ -262,11 +264,11 @@ export const FARMS: Farm[] = [
     ],
   },
   {
-    name: 'Snowy Peak Farm', region: 'Ski mountain', radius: 138, hills: 5, base: 5_200_000, cost: 20, orders: 12, orderBase: 270,
+    name: 'Frostpeak Terrace', region: 'High alpine', radius: 138, hills: 5, base: 5_200_000, cost: 20, orders: 12, orderBase: 270,
     animal: 'penguin', animalName: 'Penguin', decor: ['snowman', 'lantern', 'flag', 'bench', 'catstatue', 'gem'], trees: ['snowpine', 'snowpine', 'pine'],
     stream: { pts: [[-150, -40], [-60, -52], [0, -44], [70, -58], [150, -46]], bridges: [0.32, 0.6], half: 2.8 },
     ponds: [[60, 44, 9]], barn: 0x4a6fd8,
-    look: { grassA: 0xf4f8ff, grassB: 0xe2ecf8, soilA: 0xc8d8ea, soilB: 0xb0c4dc, path: 0xd8e4f2, skyTop: 0x5f9ff0, skyLow: 0xeaf4ff, sun: 0xfff4e6, water: 0x8fd8f4, rock: 0x8a98b8, snowLine: 0.25 },
+    look: { grassA: 0xf2f6ff, grassB: 0xd4e2f8, soilA: 0xbcd0ec, soilB: 0xa0b8dc, path: 0xd4e2f4, skyTop: 0x3a72e8, skyLow: 0xffe4dc, sun: 0xffe6cc, water: 0x78d0f4, rock: 0x7888b8, snowLine: 0.25 },
     plots: [
       P('Cabbage Bowl', 'round', -34, -22, 28, 24, ['cabbage'], 'stripes', 0, { rocks: 2 }),
       P('Frostberry Run', 'rect', 36, -22, 20, 30, ['frostberry', 'cabbage'], 'stripes', 0, { trees: 2 }),
@@ -277,18 +279,18 @@ export const FARMS: Farm[] = [
     ],
   },
   {
-    name: 'Dragon Meadow', region: 'Fantasy kingdom', radius: 144, hills: 3.6, base: 43_000_000, cost: 20, orders: 14, orderBase: 320,
-    animal: 'dragonet', animalName: 'Baby dragon', decor: ['dragonstatue', 'gem', 'lantern', 'fountain', 'catstatue', 'flowers'], trees: ['shroom', 'crystaltree', 'oak', 'shroom'],
+    name: 'Drakemoor', region: 'Sky realm', radius: 144, hills: 3.6, base: 43_000_000, cost: 20, orders: 14, orderBase: 320,
+    animal: 'dragonet', animalName: 'Drakeling', decor: ['dragonstatue', 'gem', 'lantern', 'fountain', 'catstatue', 'flowers'], trees: ['shroom', 'crystaltree', 'oak', 'shroom'],
     stream: { pts: [[-150, 60], [-70, 50], [-10, 62], [50, 50], [150, 64]], bridges: [0.34, 0.6], half: 3 },
     ponds: [[-64, -56, 10], [20, -110, 12]], barn: 0xb06ae8,
-    look: { grassA: 0x8fe0c0, grassB: 0x74d0c8, soilA: 0x7a5aa8, soilB: 0x684a96, path: 0xe8c8f0, skyTop: 0x7a5ae8, skyLow: 0xffd0ec, sun: 0xffe6f4, water: 0x6ae0f0, rock: 0x8a70c0, snowLine: 0.55 },
+    look: { grassA: 0x62dcae, grassB: 0x3cc0b4, soilA: 0x6c48a8, soilB: 0x583a92, path: 0xe6c2f2, skyTop: 0x4c30d0, skyLow: 0xffb4dc, sun: 0xffd6ee, water: 0x50dcf0, rock: 0x7a5cc0, snowLine: 0.55 },
     plots: [
       P('Moonbloom Glade', 'round', -34, -24, 28, 26, ['moonbloom'], 'rings', 0, { rocks: 2 }),
       P('Crystal Rows', 'terrace', 38, -26, 30, 26, ['crystal', 'moonbloom'], 'stripes', 0),
-      P('Wishing Pond Ring', 'ring', -64, -56, 46, 46, ['moonbloom', 'crystal'], 'patches', 11, { pond: 10 }),
+      P('Moonwell Ring', 'ring', -64, -56, 46, 46, ['moonbloom', 'crystal'], 'patches', 11, { pond: 10 }),
       P('Dragonfruit Terraces', 'L', 72, 8, 40, 46, ['dragonfruit', 'crystal'], 'checker', 29, { rocks: 5, trees: 3 }),
       P('Starfall Field', 'diamond', -66, 6, 44, 44, ['starflower', 'moonbloom'], 'rings', 69, { fences: 2, rocks: 4 }),
-      P('Rainbow Bank', 'blob', -30, 100, 60, 30, ['starflower', 'dragonfruit'], 'patches', 157, { rocks: 6, trees: 3 }),
+      P('Aurora Bank', 'blob', -30, 100, 60, 30, ['starflower', 'dragonfruit'], 'patches', 157, { rocks: 6, trees: 3 }),
       P('Castle Green', 'rect', 76, -84, 48, 48, ['starflower', 'dragonfruit', 'crystal', 'moonbloom'], 'checker', 343, { fences: 3, pond: 6, bales: 4 }),
     ],
   },

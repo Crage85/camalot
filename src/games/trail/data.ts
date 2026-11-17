@@ -17,19 +17,19 @@ export const FLAKE_COINS = 20;
 export const CATCH_COINS = 5;
 
 /** Jacket colours, one per arena slot. Index 0 is never used (slot ids start at 1). */
-export const PALETTE = [0xffffff, 0xff6fae, 0x3fcf9a, 0x4aa8ff, 0xffb02e, 0xa77bff, 0x9a6448, 0x22b8c8, 0x8fd14f];
-const COLOR_NAMES = ['', 'Pink', 'Mint', 'Sky', 'Sunny', 'Lilac', 'Cocoa', 'Teal', 'Lime'];
+export const PALETTE = [0xffffff, 0xf0346e, 0x18b888, 0x2f86f6, 0xff9a1a, 0x8a52f0, 0xb8603a, 0x10a8c4, 0x7cc820];
+const COLOR_NAMES = ['', 'Rose', 'Jade', 'Azure', 'Amber', 'Violet', 'Copper', 'Teal', 'Lime'];
 
 export type Kind = 'cat' | 'bunny' | 'bear' | 'fox' | 'penguin' | 'dragon';
 
 /** Each animal has one small always-on skill. */
 export const PERK: Record<Kind, { text: string; turn?: number; speed?: number; air?: number; powder?: boolean; ice?: boolean; startR?: number }> = {
-  cat: { text: 'Quick paws: turns sharper', turn: 1.12 },
-  bunny: { text: 'Big hops: jumps last longer', air: 1.6 },
-  bear: { text: 'Snow plow: deep powder does not slow', powder: true },
-  fox: { text: 'Swift: a little faster', speed: 1.04 },
-  penguin: { text: 'Ice dancer: no slipping on ice', ice: true },
-  dragon: { text: 'Big nest: larger home patch', startR: 1 },
+  cat: { text: 'Reflex: sharper turns', turn: 1.12 },
+  bunny: { text: 'Long air: jumps last longer', air: 1.6 },
+  bear: { text: 'Powder breaker: deep powder does not slow', powder: true },
+  fox: { text: 'Swift: slightly faster', speed: 1.04 },
+  penguin: { text: 'Ice edge: no slipping on ice', ice: true },
+  dragon: { text: 'Wide claim: larger home patch', startR: 1 },
 };
 
 export interface Skin {
@@ -46,12 +46,12 @@ export interface Skin {
 }
 
 const KINDS: { kind: Kind; name: string; id: string; colors: number[]; furs: number[]; cost: number }[] = [
-  { kind: 'cat', name: 'Kitty', id: 'kitty', colors: [1, 5, 7, 4, 3], furs: [0xfff3e6, 0x8a8a96, 0x34343c, 0xf2a25a, 0xffffff], cost: 0 },
-  { kind: 'bunny', name: 'Bunny', id: 'bunny', colors: [2, 1, 3, 5, 4], furs: [0xffffff, 0xf2e6d8, 0xb9a79a, 0xffd9e8, 0x8a7868], cost: 40 },
+  { kind: 'cat', name: 'Lynx', id: 'kitty', colors: [1, 5, 7, 4, 3], furs: [0xfff3e6, 0x8a8a96, 0x34343c, 0xf2a25a, 0xffffff], cost: 0 },
+  { kind: 'bunny', name: 'Hare', id: 'bunny', colors: [2, 1, 3, 5, 4], furs: [0xffffff, 0xf2e6d8, 0xb9a79a, 0xffd9e8, 0x8a7868], cost: 40 },
   { kind: 'bear', name: 'Bear', id: 'bear', colors: [3, 4, 8, 1, 7], furs: [0xc98d5a, 0xffffff, 0x5a4034, 0xf0d9a8, 0x34343c], cost: 80 },
   { kind: 'fox', name: 'Fox', id: 'fox', colors: [4, 7, 5, 2, 1], furs: [0xff9a4a, 0xf4f4fa, 0xc8553a, 0x8a8a96, 0xffc888], cost: 120 },
   { kind: 'penguin', name: 'Penguin', id: 'penguin', colors: [5, 1, 4, 2, 3], furs: [0x34384a, 0x2a4a7a, 0x4a3a5a, 0x2a2a30, 0x3a5a5a], cost: 160 },
-  { kind: 'dragon', name: 'Dragon', id: 'dragon', colors: [7, 5, 1, 8, 4], furs: [0x9fe8d8, 0xc8b0ff, 0xffb0c8, 0xb8e878, 0xffd070], cost: 0 },
+  { kind: 'dragon', name: 'Drake', id: 'dragon', colors: [7, 5, 1, 8, 4], furs: [0x9fe8d8, 0xc8b0ff, 0xffb0c8, 0xb8e878, 0xffd070], cost: 0 },
 ];
 const FLAKE_SKINS = [25, 60, 110, 170, 240, 320]; // the last colour of each animal is a snowflake prize
 
@@ -59,12 +59,12 @@ export const SKINS: Skin[] = [
   ...KINDS.flatMap((k, ki) =>
     k.colors.map((color, v): Skin => {
       const base = { id: v ? `${k.id}${v}` : k.id, name: `${COLOR_NAMES[color]} ${k.name}`, kind: k.kind, color, fur: k.furs[v], cost: 0 };
-      if (v === 0) return k.kind === 'dragon' ? { ...base, name: 'Snow Dragon', stars: STARS_FOR_DRAGON } : { ...base, cost: k.cost };
+      if (v === 0) return k.kind === 'dragon' ? { ...base, name: 'Frost Drake', stars: STARS_FOR_DRAGON } : { ...base, cost: k.cost };
       if (v === 4) return { ...base, flakes: FLAKE_SKINS[ki] };
       return { ...base, cost: 200 + v * 220 + ki * 90 };
     }),
   ),
-  { id: 'golddragon', name: 'Golden Dragon', kind: 'dragon', color: 4, fur: 0xffd24a, cost: 0, epic: true, gold: true },
+  { id: 'golddragon', name: 'Golden Drake', kind: 'dragon', color: 4, fur: 0xffd24a, cost: 0, epic: true, gold: true },
 ];
 
 export const BOT_KINDS: { kind: Kind; fur: number }[] = [
@@ -77,8 +77,8 @@ export const BOT_KINDS: { kind: Kind; fur: number }[] = [
 ];
 
 export const BOT_NAMES = [
-  'Pom Pom', 'Maple', 'Juniper', 'Biscuit', 'Snowdrop', 'Pip', 'Clover', 'Mochi',
-  'Waffles', 'Pebble', 'Sprout', 'Noodle', 'Fig', 'Bean', 'Marshmallow', 'Snowball',
+  'Kestrel', 'Maple', 'Juniper', 'Rook', 'Sable', 'Pike', 'Clover', 'Onyx',
+  'Wren', 'Flint', 'Sorrel', 'Nova', 'Fig', 'Ash', 'Tempest', 'Frost',
 ];
 
 // ---- Computer skier difficulty ----
@@ -111,24 +111,25 @@ export interface ThemeDef {
   sunPower: number;
   amb: number; // hemisphere light strength
   night?: boolean; // stars, lamps, glowing tracks
+  low?: boolean; // the sun sits low: long shadows and strong light shafts
   beach?: boolean; // boards, palms, sea
   aurora?: boolean;
 }
 
 export const THEMES: Record<Theme, ThemeDef> = {
-  snow: { top: 0x4f9fe8, sky: 0xcfe9ff, ground: 0xf2f6ff, outer: 0xdfe9f6, rock: 0x7f8aa0, peak: 0x8fa7c8, cap: 0xffffff, tree: 0x2f7f5a, sun: 0xfff4e0, sunPower: 2.4, amb: 1.5 },
-  pine: { top: 0x5a9ad8, sky: 0xd8ecf4, ground: 0xf0f6f6, outer: 0xdcebe8, rock: 0x6f7f80, peak: 0x6f9a98, cap: 0xf4ffff, tree: 0x1f6a4a, sun: 0xfff0d8, sunPower: 2.2, amb: 1.5 },
-  sunset: { top: 0x6a5ab8, sky: 0xffb38a, ground: 0xfff0ea, outer: 0xf2d6d6, rock: 0x8a6a7a, peak: 0x9a7aa8, cap: 0xffe4ec, tree: 0x3a6a5a, sun: 0xffb070, sunPower: 2.6, amb: 1.3 },
-  ice: { top: 0x3f8fd8, sky: 0xc8f0ff, ground: 0xeaf6ff, outer: 0xcfe6f6, rock: 0x6a8ab0, peak: 0x7fb0d8, cap: 0xffffff, tree: 0x2f7a6a, sun: 0xf0f8ff, sunPower: 2.3, amb: 1.6 },
-  night: { top: 0x0a1030, sky: 0x2a3a78, ground: 0x9fb4e8, outer: 0x6a7fc0, rock: 0x3a4670, peak: 0x34427a, cap: 0x9fb4e8, tree: 0x1a4a4a, sun: 0x9fb8ff, sunPower: 1.3, amb: 1.0, night: true },
-  beach: { top: 0x2f9fe8, sky: 0xaee6ff, ground: 0xf6e3b8, outer: 0x3fbfe0, rock: 0xb89a78, peak: 0x5aa86a, cap: 0x8fd48a, tree: 0x3fa85a, sun: 0xfff6d8, sunPower: 2.6, amb: 1.6, beach: true },
-  storm: { top: 0x7a8aa0, sky: 0xc4ccd8, ground: 0xe6ebf4, outer: 0xcfd6e2, rock: 0x646e80, peak: 0x8a94a8, cap: 0xe8ecf4, tree: 0x2a5a4a, sun: 0xdfe6f0, sunPower: 1.5, amb: 1.7 },
-  autumn: { top: 0x4a90d8, sky: 0xffe2b0, ground: 0xf8f4ec, outer: 0xeadfc8, rock: 0x8a7a6a, peak: 0xa8885a, cap: 0xfff8ec, tree: 0xe8a020, sun: 0xffe0a0, sunPower: 2.5, amb: 1.4 },
-  candy: { top: 0xff8fc8, sky: 0xffd6ec, ground: 0xfff4fa, outer: 0xffd8ea, rock: 0xc88ab0, peak: 0xd89ad0, cap: 0xffffff, tree: 0x4fc8a8, sun: 0xfff0f6, sunPower: 2.3, amb: 1.6 },
-  dragon: { top: 0x3a2a58, sky: 0xd87a6a, ground: 0xf0e4ea, outer: 0xb89aa8, rock: 0x4a3a50, peak: 0x5a4060, cap: 0xf0c8c0, tree: 0x3a4a5a, sun: 0xff9a6a, sunPower: 2.4, amb: 1.2 },
-  aurora: { top: 0x06142a, sky: 0x1a4a6a, ground: 0x9fd0e0, outer: 0x5a9ab0, rock: 0x2a4a60, peak: 0x2a5068, cap: 0xa8f0e0, tree: 0x1a5a50, sun: 0x9fffe0, sunPower: 1.3, amb: 1.0, night: true, aurora: true },
-  lagoon: { top: 0x101a48, sky: 0x4a3a88, ground: 0xb8a8c8, outer: 0x2a4a9a, rock: 0x5a4a70, peak: 0x3a4a80, cap: 0x6a7ab0, tree: 0x2a7a6a, sun: 0xc0b0ff, sunPower: 1.4, amb: 1.0, night: true, beach: true },
-  cloud: { top: 0x6ab0ff, sky: 0xfff0d0, ground: 0xfffaf4, outer: 0xfff4e4, rock: 0xd8c8e8, peak: 0xf0e0f8, cap: 0xffffff, tree: 0xff9ac8, sun: 0xfff4d0, sunPower: 2.6, amb: 1.6 },
+  snow: { top: 0x1a62d8, sky: 0xa6d4ff, ground: 0xf4f8ff, outer: 0xc4d8f4, rock: 0x566490, peak: 0x6486c8, cap: 0xffffff, tree: 0x1c5a50, sun: 0xfff0d0, sunPower: 2.4, amb: 1.5 },
+  pine: { top: 0x1f6ac0, sky: 0xb4e0ec, ground: 0xf0f8f8, outer: 0xc4dcdc, rock: 0x566c74, peak: 0x4a8490, cap: 0xf4ffff, tree: 0x124838, sun: 0xffecc8, sunPower: 2.2, amb: 1.5 },
+  sunset: { top: 0x34247e, sky: 0xff8e5c, ground: 0xffe6dc, outer: 0xd09ab8, rock: 0x64426e, peak: 0x74428e, cap: 0xffbca8, tree: 0x2c4a52, sun: 0xff9450, sunPower: 2.6, amb: 1.25, low: true },
+  ice: { top: 0x1660c4, sky: 0x9ee8ff, ground: 0xe8f6ff, outer: 0xb8dcf4, rock: 0x4c74a8, peak: 0x62a0d8, cap: 0xffffff, tree: 0x1e6660, sun: 0xf0f8ff, sunPower: 2.3, amb: 1.6 },
+  night: { top: 0x050824, sky: 0x222c74, ground: 0x8ca4ea, outer: 0x4a5cae, rock: 0x2e3866, peak: 0x283470, cap: 0x8ca4ea, tree: 0x143e46, sun: 0x9fb8ff, sunPower: 1.3, amb: 1.0, night: true },
+  beach: { top: 0x1a84e0, sky: 0xa0e2ff, ground: 0xf6dfae, outer: 0x1fa8d8, rock: 0xa8845e, peak: 0x3e9458, cap: 0x7ccc78, tree: 0x2a9a4c, sun: 0xfff2c8, sunPower: 2.6, amb: 1.6, beach: true },
+  storm: { top: 0x3c4868, sky: 0x8e9ab8, ground: 0xdce2f2, outer: 0xaeb8d0, rock: 0x4a5470, peak: 0x6a7694, cap: 0xdce2f2, tree: 0x1e4844, sun: 0xd4dcf0, sunPower: 1.5, amb: 1.6 },
+  autumn: { top: 0x2a74d0, sky: 0xffd898, ground: 0xfaf4e8, outer: 0xe4d0a8, rock: 0x7a6452, peak: 0x9a7444, cap: 0xfff4e0, tree: 0xe89410, sun: 0xffd890, sunPower: 2.5, amb: 1.4, low: true },
+  candy: { top: 0x7048d0, sky: 0xffa8d0, ground: 0xfff0f8, outer: 0xe8b0d4, rock: 0x8a5a92, peak: 0x9c66c0, cap: 0xffe8f6, tree: 0xe0528e, sun: 0xffd0e4, sunPower: 2.3, amb: 1.5, low: true },
+  dragon: { top: 0x2a1c4c, sky: 0xd4684e, ground: 0xf0e0e6, outer: 0xa07c90, rock: 0x3e2e48, peak: 0x4c3258, cap: 0xf0b8a8, tree: 0x2e3c4e, sun: 0xff8c54, sunPower: 2.4, amb: 1.2, low: true },
+  aurora: { top: 0x040e24, sky: 0x12405e, ground: 0x94c8de, outer: 0x3c7c98, rock: 0x224058, peak: 0x1e4460, cap: 0x9ceedc, tree: 0x124e48, sun: 0x9fffe0, sunPower: 1.3, amb: 1.0, night: true, aurora: true },
+  lagoon: { top: 0x0c1440, sky: 0x40307e, ground: 0xb4a2c6, outer: 0x1c3c90, rock: 0x4e3e66, peak: 0x2e3c74, cap: 0x5e6eaa, tree: 0x1e6c60, sun: 0xc0b0ff, sunPower: 1.4, amb: 1.0, night: true, beach: true },
+  cloud: { top: 0x2a74f0, sky: 0xffd8a0, ground: 0xfffaf2, outer: 0xffe8cc, rock: 0xb4a0d8, peak: 0xd8c0f0, cap: 0xffffff, tree: 0xc890f0, sun: 0xffe8b0, sunPower: 2.6, amb: 1.5, low: true },
 };
 
 export interface Mountain {
@@ -150,26 +151,26 @@ const M = (id: string, name: string, blurb: string, theme: Theme, weather: Weath
 
 const TIER_OF = [0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 5];
 export const MOUNTAINS: Mountain[] = [
-  M('peak', 'Snow Peak', 'Wide open bunny slopes.', 'snow', 'clear', 3, 0, 0, 0, 'Coach Whiskers', 'cat', 0x8a8a96),
-  M('meadow', 'Bunny Meadow', 'Soft snow and a few gentle jumps.', 'pine', 'clear', 3, 0, 1, 2, 'Thistle', 'bunny', 0xf2e6d8),
-  M('pine', 'Pine Hollow', 'Deep powder between the pines.', 'pine', 'snow', 4, 0, 4, 0, 'Old Hazel', 'bear', 0x5a4034),
-  M('sunset', 'Sunset Ridge', 'Golden hour on the ridge.', 'sunset', 'clear', 4, 0, 2, 2, 'Ember', 'fox', 0xc8553a),
-  M('bowl', 'Kitten Bowl', 'Jump ramps everywhere.', 'snow', 'clear', 5, 0, 2, 6, 'Captain Hop', 'bunny', 0xffd9e8),
-  M('lake', 'Frosty Lake', 'Slippery ice on the lake.', 'ice', 'snow', 5, 5, 0, 2, 'Waddles', 'penguin', 0x2a4a7a),
+  M('peak', 'Firstlight Peak', 'Wide open slopes. Learn your lines.', 'snow', 'clear', 3, 0, 0, 0, 'Captain Veyl', 'cat', 0x8a8a96),
+  M('meadow', 'Whitegrass Meadow', 'Soft snow and the first jumps.', 'pine', 'clear', 3, 0, 1, 2, 'Thistle', 'bunny', 0xf2e6d8),
+  M('pine', 'Pine Hollow', 'Deep powder between the pines.', 'pine', 'snow', 4, 0, 4, 0, 'Hazel', 'bear', 0x5a4034),
+  M('sunset', 'Alpenglow Ridge', 'The ridge burns gold at dusk.', 'sunset', 'clear', 4, 0, 2, 2, 'Ember', 'fox', 0xc8553a),
+  M('bowl', 'Lynx Bowl', 'Jump ramps everywhere.', 'snow', 'clear', 5, 0, 2, 6, 'Vesper', 'bunny', 0xffd9e8),
+  M('lake', 'Glass Lake', 'Black ice across the lake.', 'ice', 'snow', 5, 5, 0, 2, 'Admiral Rime', 'penguin', 0x2a4a7a),
   M('star', 'Starlight Run', 'Night skiing under the lamps.', 'night', 'clear', 5, 2, 2, 3, 'Midnight', 'cat', 0x34343c),
-  M('beach', 'Sunny Beach', 'Surf the warm sand.', 'beach', 'clear', 6, 0, 3, 3, 'Coco', 'bear', 0xf0d9a8),
+  M('beach', 'Sunbreak Shore', 'Board the warm sand.', 'beach', 'clear', 6, 0, 3, 3, 'Dune', 'bear', 0xf0d9a8),
   M('pass', 'Blizzard Pass', 'A snowstorm hides the far side.', 'storm', 'storm', 6, 3, 5, 2, 'Gale', 'fox', 0xf4f4fa),
-  M('falls', 'Frozen Falls', 'Blue ice under falling snow.', 'ice', 'storm', 6, 5, 1, 4, 'Icicle', 'cat', 0xffffff),
+  M('falls', 'Frozen Falls', 'Blue ice under falling snow.', 'ice', 'storm', 6, 5, 1, 4, 'Shard', 'cat', 0xffffff),
   M('aspen', 'Golden Aspens', 'Colorado gold in the fall.', 'autumn', 'clear', 6, 2, 3, 5, 'Marigold', 'bunny', 0xb9a79a),
   M('cove', 'Coral Cove', 'Warm sand by the reef.', 'beach', 'clear', 6, 0, 5, 5, 'Pearl', 'penguin', 0x4a3a5a),
-  M('moon', 'Moonbeam Glacier', 'Ice that glows in the dark.', 'night', 'snow', 6, 5, 2, 3, 'Luna', 'bunny', 0xffffff),
-  M('candy', 'Candy Summit', 'Pink snow and peppermint pines.', 'candy', 'snow', 6, 3, 4, 6, 'Sprinkles', 'cat', 0xffffff),
+  M('moon', 'Moonfall Glacier', 'Ice that glows in the dark.', 'night', 'snow', 6, 5, 2, 3, 'Luna', 'bunny', 0xffffff),
+  M('candy', 'Rosefrost Summit', 'Rose snow under a blossom dawn.', 'candy', 'snow', 6, 3, 4, 6, 'Sakura', 'cat', 0xffffff),
   M('ember', 'Emberglow Ridge', 'Red evening light on dark rock.', 'dragon', 'clear', 6, 2, 4, 6, 'Blaze', 'fox', 0xffc888),
   M('tooth', "Dragon's Tooth", 'Dragon weather: wind and snow.', 'dragon', 'storm', 6, 3, 4, 5, 'Cinder', 'dragon', 0xffb0c8),
   M('aurora', 'Aurora Crown', 'Northern lights over the crown.', 'aurora', 'clear', 6, 4, 3, 5, 'Borealis', 'dragon', 0xc8b0ff),
   M('lagoon', 'Moonlit Lagoon', 'Night surf with glowing tracks.', 'lagoon', 'clear', 6, 2, 4, 6, 'Tide', 'penguin', 0x3a5a5a),
   M('spire', 'Storm Spire', 'The wildest weather on the map.', 'storm', 'storm', 6, 2, 4, 6, 'Thunder', 'bear', 0x34343c),
-  M('cloud', 'Cloud Castle', 'The very top of the world.', 'cloud', 'snow', 7, 4, 4, 8, 'Queen Nimbus', 'dragon', 0xffd070),
+  M('cloud', 'Skyhold', 'Above the clouds. The last summit.', 'cloud', 'snow', 7, 4, 4, 8, 'Empress Nimbus', 'dragon', 0xffd070),
 ];
 
 MOUNTAINS.forEach((m, i) => (m.tier = TIER_OF[i]));
@@ -194,7 +195,7 @@ export function runsOf(m: number): RunDef[] {
   const side = 1 + Math.floor(m / 7);
   return [
     { name: 'Green run', goal: 'land', need: land, extra: { goal: 'catch', need: side }, champ: false },
-    { name: 'Tag run', goal: 'catch', need: catches, extra: { goal: 'land', need: land - 4 }, champ: false },
+    { name: 'Hunt run', goal: 'catch', need: catches, extra: { goal: 'land', need: land - 4 }, champ: false },
     { name: 'Landmark run', goal: 'marks', need: m < 3 ? 3 : 4, extra: { goal: 'catch', need: side }, champ: false },
     { name: 'Big loop run', goal: 'loop', need: +(2 + m * 0.1).toFixed(1), extra: { goal: 'land', need: land - 2 }, champ: false },
     { name: 'Blue run', goal: 'land', need: land + 4, extra: { goal: 'catch', need: side + 1 }, champ: false },
@@ -219,25 +220,25 @@ export const GEAR: { id: GearId; name: string; text: string; per: number }[] = [
   { id: 'wax', name: 'Ski wax', text: 'Faster skis: +2% speed per level', per: 0.02 },
   { id: 'edges', name: 'Sharp edges', text: 'Tighter turns: +6% per level', per: 0.06 },
   { id: 'patch', name: 'Base camp', text: 'Bigger home patch: +0.5 per level', per: 0.5 },
-  { id: 'scarf', name: 'Lucky scarf', text: 'More coins: +8% per level', per: 0.08 },
+  { id: 'scarf', name: 'Windscarf', text: 'More coins: +8% per level', per: 0.08 },
 ];
 export const GEAR_COST = [80, 180, 340, 560, 850];
 
 // ---- Lodge decorations (coins) ----
 
 export const LODGE: { id: string; name: string; cost: number }[] = [
-  { id: 'rug', name: 'Cozy rug', cost: 150 },
-  { id: 'fire', name: 'Fireplace', cost: 300 },
-  { id: 'bed', name: 'Cat bed', cost: 400 },
-  { id: 'lights', name: 'String lights', cost: 500 },
-  { id: 'cocoa', name: 'Cocoa table', cost: 600 },
+  { id: 'rug', name: 'Crest rug', cost: 150 },
+  { id: 'fire', name: 'Stone hearth', cost: 300 },
+  { id: 'bed', name: 'Lodge cat', cost: 400 },
+  { id: 'lights', name: 'Lantern string', cost: 500 },
+  { id: 'cocoa', name: 'Tea table', cost: 600 },
   { id: 'rack', name: 'Ski rack', cost: 700 },
-  { id: 'tree', name: 'Little pine', cost: 800 },
+  { id: 'tree', name: 'Winter pine', cost: 800 },
   { id: 'ball', name: 'Soccer ball', cost: 900 },
-  { id: 'disco', name: 'Dance ball', cost: 1050 },
+  { id: 'disco', name: 'Mirror orb', cost: 1050 },
   { id: 'shelf', name: 'Trophy shelf', cost: 1200 },
-  { id: 'egg', name: 'Dragon egg', cost: 1400 },
-  { id: 'snowman', name: 'Porch snowman', cost: 1600 },
+  { id: 'egg', name: 'Drake egg', cost: 1400 },
+  { id: 'snowman', name: 'Ice spire', cost: 1600 },
 ];
 
 // ---- Achievements: fixed goals, fixed coin rewards ----
@@ -250,16 +251,16 @@ const tiers = (id: string, name: string, text: string, stat: Achievement['stat']
   needs.map((need, k) => ({ id: id + (k + 1), name: `${name} ${'I'.repeat(k + 1)}`, text: text.replace('#', String(need)), stat, need, coins: coins[k] }));
 export const ACHIEVEMENTS: Achievement[] = [
   ...tiers('win', 'Trail blazer', 'Win # runs', 'wins', [1, 10, 50, 140], [20, 60, 150, 300]),
-  ...tiers('catch', 'Tag champ', 'Catch # skiers', 'catches', [5, 50, 200], [20, 80, 200]),
+  ...tiers('catch', 'Hunter', 'Catch # skiers', 'catches', [5, 50, 200], [20, 80, 200]),
   ...tiers('land', 'Land baron', 'Claim #% of land in total', 'land', [100, 1000, 5000], [20, 80, 200]),
   ...tiers('loop', 'Big loop', 'Claim #% in one loop', 'bigLoop', [5, 10, 20], [20, 60, 150]),
   ...tiers('jump', 'Air time', 'Hit # jumps', 'jumps', [10, 100], [30, 100]),
-  ...tiers('clean', 'No tumbles', 'Win # runs without a tumble', 'clean', [5, 30], [40, 150]),
+  ...tiers('clean', 'Clean line', 'Win # runs without a wipeout', 'clean', [5, 30], [40, 150]),
   ...tiers('champ', 'Champion', 'Beat # champions', 'champs', [1, 10, 20], [50, 150, 400]),
   ...tiers('flake', 'Snowflakes', 'Collect # snowflakes', 'flakes', [25, 120, 280, 420], [40, 120, 250, 500]),
   ...tiers('star', 'Scholar', 'Earn # question stars', 'stars', [3, 15, 40], [30, 80, 200]),
-  ...tiers('skin', 'Dress up', 'Own # skins', 'skins', [5, 15, 31], [30, 100, 300]),
-  ...tiers('lodge', 'Home sweet lodge', 'Place # lodge items', 'lodge', [4, 12], [50, 200]),
+  ...tiers('skin', 'Wardrobe', 'Own # skins', 'skins', [5, 15, 31], [30, 100, 300]),
+  ...tiers('lodge', 'Lodge keeper', 'Place # lodge items', 'lodge', [4, 12], [50, 200]),
 ];
 
 // ---- Save ----

@@ -1,7 +1,7 @@
 import type { MusicMood, MusicTrack } from '../contract';
 import { readLocal, writeLocal } from '../store';
 import { SONGS, type Section, type Theme } from './songs';
-import { DRUM, INST, mtof, tone, type DrumName, type InstName, type Mixer } from './synth';
+import { DRUM, INST, fxBus, mtof, tone, type DrumName, type InstName, type Mixer } from './synth';
 
 // The music engine. A song is compiled once per mood into a grid of events (32 bars x 16 steps);
 // a lookahead scheduler then hands each step to WebAudio with an exact start time.
@@ -9,13 +9,14 @@ import { DRUM, INST, mtof, tone, type DrumName, type InstName, type Mixer } from
 type Ctx = BaseAudioContext;
 type LoopMood = Exclude<MusicMood, 'win'>;
 type Ev =
-  | { inst: InstName; midi: number; len: number; vel: number }
-  | { drum: DrumName; vel: number };
+  | { inst: InstName; midi: number; len: number; vel: number; slide?: boolean }
+  | { drum: DrumName; vel: number; roll?: number; len?: number };
 type Grid = Ev[][]; // [bar * 16 + step] -> events
 
 export const STEPS = 16;
 export const FORM_BARS = 32;
 const TEMPO: Record<LoopMood, number> = { menu: 0.92, play: 1, intense: 1.1 };
+const MOOD_INDEX: Record<MusicMood, number> = { menu: 0, play: 1, intense: 2, win: 3 };
 
 /** MIDI note for a 0-based scale index (7 = one octave up). */
 function note(th: Theme, idx: number): number {
@@ -42,146 +43,205 @@ function parseBar(src: string): [number, number, number][] {
   return out;
 }
 
+/** A chord as MIDI notes: `bass` is the root in the bass octave, the rest are voiced around the key note. */
+interface Chord {
+  bass: number;
+  fifth: number; // semitones from the root to the chord's fifth
+  pad: number[]; // what the pad and chord instruments play
+  line: number[]; // the chord tones in rising order, for arps and ostinatos
+  pcs: number[]; // pitch classes, for the melody check
+}
+
+/** Chord token: degree, "+" (raise the third: a major V in a minor key), then 7, 9, a (add9), s (sus4) or u (sus2). */
+function parseChord(th: Theme, tok: string): Chord {
+  const m = /^([1-7])(\+?)([79asu]?)$/.exec(tok);
+  if (!m) throw new Error(`Bad chord "${tok}"`);
+  const root = Number(m[1]) - 1;
+  const base = th.key + th.scale[root];
+  const semi = (k: number) => note(th, root + k) - note(th, root);
+  const tri = [0, m[3] === 's' ? semi(3) : m[3] === 'u' ? semi(1) : semi(2) + (m[2] ? 1 : 0), semi(4)];
+  const sev = m[3] === '7' || m[3] === '9' ? semi(6) : null;
+  const nin = m[3] === '9' || m[3] === 'a' ? semi(8) : null;
+  const fold = (n: number, lo: number) => lo + ((((n - lo) % 12) + 12) % 12);
+  const lo = th.key - 5;
+  const up = (a: number, b: number) => a - b;
+  // Seventh chords leave the root to the bass (so a major 7th never rubs against it); the 9th sits on top.
+  const pad = (sev === null ? tri : [tri[1], tri[2], sev]).map((s) => fold(base + s, lo)).sort(up);
+  if (nin !== null) pad.push(fold(base + nin, th.key + 7));
+  const line = (sev === null ? tri : [...tri, sev]).map((s) => fold(base + s, lo)).sort(up);
+  const all = [...tri, ...(sev === null ? [] : [sev]), ...(nin === null ? [] : [nin])];
+  return { bass: base > 67 ? base - 12 : base, fifth: tri[2], pad, line, pcs: all.map((s) => (base + s) % 12) };
+}
+
 interface Bar {
-  chord: [number, number]; // chord root (0-based degree) for each half of the bar
+  chord: [Chord, Chord]; // one for each half of the bar
   mel: [number, number, number][];
 }
 
-export function parseSection(s: Section): Bar[] {
+function parseSection(th: Theme, s: Section): Bar[] {
   const chords = s.chords.trim().split(/\s+/);
   const mel = s.mel.split('|');
   if (chords.length !== 8 || mel.length !== 8) throw new Error('A section is 8 bars');
   return chords.map((c, i) => {
-    const [a, b = a] = c.split('/').map((x) => Number(x) - 1);
+    const [a, b = a] = c.split('/').map((x) => parseChord(th, x));
     return { chord: [a, b], mel: parseBar(mel[i]) };
   });
 }
 
-const pat = (s: string | undefined, step: number) => (s?.[step] === 'x' ? 1 : s?.[step] === 'o' ? 0.55 : 0);
+/**
+ * Checks a melody against its chords. A "strong" note starts on a beat or lasts a beat or more.
+ * `hit`: strong notes that are chord notes. `clash`: strong notes a semitone above a chord note (the ear hears a wrong note).
+ */
+export function checkSong(th: Theme): { strong: number; hit: number; clash: number } {
+  let strong = 0, hit = 0, clash = 0;
+  for (const m of ['menu', 'play', 'intense'] as const) compile(th, m); // throws on a bad pattern
+  compileSting(th);
+  for (const sec of [th.A, th.B])
+    for (const bar of parseSection(th, sec))
+      for (const [step, idx, len] of bar.mel) {
+        if (step % 4 && len < 4) continue;
+        strong++;
+        const pc = note(th, idx) % 12;
+        const pcs = bar.chord[step < 8 ? 0 : 1].pcs;
+        if (pcs.includes(pc)) hit++;
+        else if (pcs.some((p) => (pc - p + 12) % 12 === 1)) clash++;
+      }
+  return { strong, hit, clash };
+}
 
+const VEL: Record<string, number> = { x: 1, o: 0.55, r: 0.75, R: 0.75 };
+const ROLL: Record<string, number> = { r: 2, R: 3 };
+/** Length of the note at `step`: itself plus the "_" ties after it. */
+const held = (p: string, step: number) => {
+  let n = 1;
+  while (p[step + n] === '_') n++;
+  return n;
+};
+/** The n-th chord tone, counting up through the octaves. */
+const lineNote = (ch: Chord, n: number) => ch.line[n % ch.line.length] + 12 * Math.floor(n / ch.line.length);
+
+/**
+ * Arrangement of the 32 bars (A A B A):
+ * - menu: pad, soft chords or arp, long bass, the light kit, the tune on the second lead;
+ * - play: A1 the band; A2 adds the arp and a second lead; B opens with a 4-bar breakdown (no beat, long bass),
+ *   builds back with a reverse cymbal and a riser; the last A lands on an impact with everything in;
+ * - intense: everything, all the time, the busier patterns, and a riser into every section.
+ */
 function compile(th: Theme, mood: LoopMood): Grid {
-  const A = parseSection(th.A);
-  const B = parseSection(th.B);
+  const A = parseSection(th, th.A);
+  const B = parseSection(th, th.B);
   const form = [A, A, B, A];
   const grid: Grid = Array.from({ length: FORM_BARS * STEPS }, () => []);
   const [lead1, lead2] = th.lead;
-  const [compInst, compStyle] = th.comp;
-  const [bassInst, bassStyle] = th.bass;
-  const kit = th.drums[mood];
+  const [compInst, compMode, compPlay, compHot] = th.comp;
+  const [bassInst, bassPlay, bassHot] = th.bass;
   const soft = mood === 'menu';
   const hot = mood === 'intense';
+  const compPat = hot ? compHot ?? compPlay : compPlay;
+  const bassPat = hot ? bassHot ?? bassPlay : bassPlay;
+  for (const p of [compPat, bassPat, th.arp?.[1] ?? compPat]) if (p.length !== STEPS) throw new Error(`${th.title}: pattern "${p}" is not 16 long`);
+  for (const p of Object.values(th.drums[mood])) if (p.length % STEPS || p.length > 2 * STEPS) throw new Error(`${th.title}: drum pattern "${p}" is not 16 or 32 long`);
 
   for (let b = 0; b < FORM_BARS; b++) {
     const sec = b >> 3;
-    const bar = form[sec][b & 7];
+    const k = b & 7;
+    const bar = form[sec][k];
+    const brk = mood === 'play' && sec === 2 && k < 4; // the breakdown
     const at = (step: number) => grid[b * STEPS + step];
 
-    // Melody. The lead instrument changes each section so the tune comes back in a new colour.
     for (const [step, idx, len] of bar.mel) {
-      const accent = step % 4 === 0 ? 1 : 0.85;
       const midi = note(th, idx);
-      const one = (inst: InstName, vel: number, up = 0) => at(step).push({ inst, midi: note(th, idx + up), len, vel: vel * accent });
-      if (hot) {
-        one(lead1, 0.9);
-        one(lead2, 0.6);
-      } else if (sec === 0) one(lead1, soft ? 0.75 : 1);
-      else if (sec === 1) one(lead2, soft ? 0.8 : 1);
-      else if (sec === 2) {
-        one(soft ? lead2 : lead1, 0.85);
-        if (!soft) one(lead2, 0.55);
-      } else one(lead1, soft ? 0.75 : 0.95);
-      // Last A: the second lead sings a third above, quietly.
-      if (sec === 3 && !soft && midi < th.key + 14) one(lead2, 0.4, 2);
+      const one = (inst: InstName, vel: number) => at(step).push({ inst, midi, len, vel: vel * (step % 4 === 0 ? 1 : 0.88) });
+      if (soft) one(lead2, 0.7);
+      else if (hot) (one(lead1, 0.95), one(lead2, 0.55));
+      else if (sec === 2) one(lead2, 1);
+      else {
+        one(lead1, 1);
+        if (sec) one(lead2, sec === 3 ? 0.5 : 0.4);
+      }
     }
 
+    const split = bar.chord[1] !== bar.chord[0];
+    const kit = th.drums[soft || brk ? 'menu' : mood];
     for (let step = 0; step < STEPS; step++) {
-      const root = bar.chord[step < 8 ? 0 : 1];
-      const newChord = step === 0 || (step === 8 && bar.chord[1] !== bar.chord[0]);
-      // Triad folded into one middle octave so chords move smoothly.
-      const tri = [0, 2, 4].map((k) => {
-        let m = note(th, root + k);
-        while (m >= th.key + 7) m -= 12;
-        return m;
-      }).sort((x, y) => x - y);
-      let bassNote = th.key + th.scale[root];
-      if (bassNote > 67) bassNote -= 12;
+      const ch = bar.chord[step < 8 ? 0 : 1];
+      const newChord = step === 0 || (step === 8 && split);
+      const chordLen = split ? 8 : 16;
 
       // Pad: the chord held under everything.
-      if (newChord) {
-        const len = bar.chord[1] !== bar.chord[0] ? 8 : 16;
-        for (const m of tri) at(step).push({ inst: th.pad, midi: m, len, vel: soft ? 1 : 0.8 });
+      if (newChord) for (const m of ch.pad) at(step).push({ inst: th.pad, midi: m, len: chordLen, vel: soft || brk ? 1 : 0.8 });
+
+      // Comp: the rhythm instrument. chord = the voicing, power = root-fifth-octave, line = single chord tones.
+      const c = compPat[step];
+      if (compMode === 'line') {
+        if (c >= '0' && c <= '9') at(step).push({ inst: compInst, midi: lineNote(ch, Number(c)), len: held(compPat, step), vel: (soft ? 0.55 : 0.8) * (step % 4 ? 0.8 : 1) });
+      } else if (soft) {
+        if (compMode === 'chord' && newChord) for (const m of ch.pad) at(step).push({ inst: compInst, midi: m, len: 6, vel: 0.5 });
+      } else if (VEL[c] && !(brk && compMode === 'power')) {
+        const notes = compMode === 'power' ? [ch.bass - 12, ch.bass - 12 + ch.fifth, ch.bass] : ch.pad;
+        for (const m of notes) at(step).push({ inst: compInst, midi: m, len: held(compPat, step), vel: VEL[c] * (compMode === 'power' ? 0.8 : 0.7) });
       }
 
-      // Comp: the rhythm instrument.
-      const cv = soft ? 0.6 : 0.8;
-      const style = soft && compStyle !== 'broken' ? 'arp' : compStyle;
-      if (style === 'arp' && step % 2 === 0) {
-        const seq = [tri[0], tri[1], tri[2], tri[0] + 12, tri[2], tri[1], tri[2], tri[1]];
-        at(step).push({ inst: compInst, midi: seq[step / 2], len: 2, vel: cv * (step % 8 === 0 ? 1 : 0.75) });
-      } else if (style === 'off' && step % 4 === 2) {
-        for (const m of tri) at(step).push({ inst: compInst, midi: m + 12, len: 1, vel: cv * 0.6 });
-      } else if (style === 'calypso' && [3, 6, 11, 14].includes(step)) {
-        for (const m of tri) at(step).push({ inst: compInst, midi: m + 12, len: 2, vel: cv * 0.6 });
-      } else if (style === 'pulse' && step % 2 === 0) {
-        at(step).push({ inst: compInst, midi: tri[step % 4 ? 2 : 0], len: 1, vel: cv * 0.7 }, { inst: compInst, midi: tri[1] + 12, len: 1, vel: cv * 0.45 });
-      } else if (style === 'broken' && step % 4 === 0) {
-        at(step).push({ inst: compInst, midi: [tri[0], tri[2], tri[1], tri[2]][step / 4], len: 3, vel: cv });
-      } else if (style === 'chord' && step % 4 === 0) {
-        for (const m of tri) at(step).push({ inst: compInst, midi: m, len: 2, vel: cv * (step % 8 ? 0.45 : 0.6) });
+      // Arp: a quiet second line an octave up.
+      const a = th.arp?.[1][step];
+      if (th.arp && a && a >= '0' && a <= '9' && (soft || hot || sec > 0))
+        at(step).push({ inst: th.arp[0], midi: lineNote(ch, Number(a)) + 12, len: 2, vel: (hot ? 0.6 : 0.5) * (step % 4 ? 0.8 : 1) });
+
+      // Bass. Pattern: r root, R root an octave up, f fifth, S root sliding down from the octave (808 slide), _ tie.
+      if (soft || brk) {
+        if (newChord) at(step).push({ inst: bassInst, midi: ch.bass, len: chordLen - 1, vel: 0.8 });
+      } else {
+        const p = bassPat[step];
+        const off = p === 'r' || p === 'S' ? 0 : p === 'R' ? 12 : p === 'f' ? ch.fifth : -1;
+        if (off >= 0) at(step).push({ inst: bassInst, midi: ch.bass + off, len: held(bassPat, step), vel: step % 4 ? 0.85 : 1, slide: p === 'S' });
       }
-      // Intense adds a fast sparkle line on top.
-      if (hot) at(step).push({ inst: compInst, midi: tri[[0, 1, 2, 1][step % 4]] + 12, len: 1, vel: 0.35 });
 
-      // Bass.
-      const bs = soft ? 'long' : hot ? 'eight' : bassStyle;
-      const bass = (midi: number, len: number, vel = 1) => at(step).push({ inst: bassInst, midi, len, vel });
-      if (bs === 'long') {
-        if (step === 0 || step === 8) bass(bassNote, 7, soft ? 0.8 : 1);
-        else if (step === 14 && !soft) bass(bassNote + 7, 2, 0.7);
-      } else if (bs === 'root5') {
-        if (step === 0) bass(bassNote, 5);
-        else if (step === 8) bass(bassNote - 5, 5, 0.9);
-        else if (step === 14 && b % 2) bass(bassNote - 5, 2, 0.7);
-      } else if (bs === 'bounce') {
-        const k = [0, 3, 6, 8, 11, 14].indexOf(step);
-        if (k >= 0) bass(bassNote + [0, 0, 7, 0, 12, 7][k], 2, k === 0 || k === 3 ? 1 : 0.8);
-      } else if (bs === 'walk') {
-        // A note on every beat, stepping up the chord: root, third, fifth, sixth.
-        if (step % 4 === 0) bass(bassNote + note(th, root + [0, 2, 4, 5][step / 4]) - note(th, root), 3, step ? 0.85 : 1);
-      } else if (step % 2 === 0) bass(bassNote + (step % 4 ? 12 : 0), 2, step % 4 ? 0.7 : 1);
-
-      // Drums, with a fill in the last bar of each section and a crash on the next downbeat.
+      // Drums: x loud, o soft, r and R are 2- and 3-hit rolls. A 32-step pattern spans two bars.
       for (const d in kit) {
-        const v = pat(kit[d as DrumName], step);
-        if (v) at(step).push({ drum: d as DrumName, vel: v });
+        const p = kit[d as DrumName]!;
+        const ch2 = p[p.length === 2 * STEPS ? (b & 1) * STEPS + step : step];
+        if (VEL[ch2]) at(step).push({ drum: d as DrumName, vel: VEL[ch2], roll: ROLL[ch2] });
       }
       if (!soft) {
-        if ((b & 7) === 7 && step >= 10 && step !== 11) at(step).push({ drum: th.fill, vel: 0.5 + (step - 10) * 0.08 });
-        if ((b & 7) === 0 && step === 0) at(step).push({ drum: 'crash', vel: hot ? 0.7 : 0.45 });
+        // A fill and a riser lead into the next section; a crash (and an impact) open it.
+        if (k === 7 && step >= 10 && step !== 11) at(step).push({ drum: th.fill, vel: 0.5 + (step - 10) * 0.08 });
+        if (step === 0 && k === 7 && (hot || sec === 2)) at(0).push({ drum: 'riser', vel: 1, len: STEPS });
+        if (step === 8 && k === 3 && brk) at(8).push({ drum: 'rev', vel: 1, len: 8 });
+        if (step === 0 && k === 0) {
+          at(0).push({ drum: 'crash', vel: hot ? 0.7 : 0.45 });
+          if (hot || sec === 3) at(0).push({ drum: 'impact', vel: hot ? 0.8 : 1 });
+        }
       }
     }
   }
   return grid;
 }
 
-/** The win sting: a run up the key chord, then ii - V - I with a long last chord. Two bars. */
+/**
+ * The win sting, two bars: a rising three-note call, then bVI - bVII - I with the last chord major and held
+ * (the "victory" cadence of game soundtracks; it lands bright from any mode).
+ */
 function compileSting(th: Theme): Grid {
   const g: Grid = Array.from({ length: 2 * STEPS }, () => []);
   const [lead1, lead2] = th.lead;
-  [4, 7, 9, 11].forEach((idx, i) => g[i * 2].push({ inst: lead1, midi: note(th, idx), len: 2, vel: 0.9 }, { inst: lead2, midi: note(th, idx), len: 2, vel: 0.6 }));
-  for (let s = 0; s < 8; s++) g[s].push({ drum: 'snare', vel: 0.3 + s * 0.07 });
+  const k = th.key;
+  [[0, 7, 3], [3, 12, 3], [6, 14, 2]].forEach(([step, semi, len]) => g[step].push({ inst: lead1, midi: k + semi, len, vel: 0.9 }, { inst: lead2, midi: k + semi, len, vel: 0.6 }));
+  for (let s = 0; s < 8; s++) g[s].push({ drum: 'snare', vel: 0.25 + s * 0.07 });
   const hit = (step: number, root: number, top: number, len: number) => {
-    for (const k of [0, 2, 4]) g[step].push({ inst: th.comp[0], midi: note(th, root + k), len, vel: 0.9 }, { inst: th.pad, midi: note(th, root + k), len, vel: 1 });
-    g[step].push({ inst: lead1, midi: note(th, top), len, vel: 1 }, { inst: lead2, midi: note(th, top - 7), len, vel: 0.7 });
-    let bass = th.key + th.scale[root];
+    const ch = [0, 4, 7].map((s) => k - 5 + ((root + s + 5) % 12));
+    for (const m of ch) g[step].push({ inst: th.pad, midi: m, len, vel: 1 });
+    if (th.comp[1] !== 'power') for (const m of ch) g[step].push({ inst: th.comp[0], midi: m, len, vel: 0.8 });
+    let bass = k + root;
     if (bass > 67) bass -= 12;
+    if (th.comp[1] === 'power') for (const m of [bass - 12, bass - 5, bass]) g[step].push({ inst: th.comp[0], midi: m, len, vel: 0.8 });
+    g[step].push({ inst: lead1, midi: k + top, len, vel: 1 }, { inst: lead2, midi: k + top - 12, len, vel: 0.7 });
     g[step].push({ inst: th.bass[0], midi: bass, len, vel: 1 }, { drum: 'kick', vel: 1 });
   };
-  hit(8, 1, 10, 3);
-  hit(12, 4, 11, 3);
-  hit(16, 0, 14, 14);
-  g[16].push({ drum: 'crash', vel: 0.9 });
-  [18, 20, 22, 24].forEach((s, i) => g[s].push({ inst: 'bell', midi: note(th, [7, 9, 11, 14][i]), len: 2, vel: 0.5 }));
+  hit(8, 8, 15, 3);
+  hit(12, 10, 17, 3);
+  hit(16, 0, 19, 14);
+  g[16].push({ drum: 'crash', vel: 0.9 }, { drum: 'impact', vel: 0.8 });
+  [4, 7, 12, 14].forEach((semi, i) => g[18 + i * 2].push({ inst: th.arp?.[0] ?? 'crystal', midi: k + 12 + semi, len: 2, vel: 0.45 }));
   return g;
 }
 
@@ -189,14 +249,29 @@ function compileSting(th: Theme): Grid {
 export class Track {
   readonly theme: Theme;
   readonly bus: GainNode;
+  private send: GainNode; // the song's reverb send; follows the bus gain
+  private pump: GainNode | null = null; // sidechain: the kick dips everything routed through here
   private grids = new Map<string, Grid>();
   private buses = new Map<string, AudioNode>();
+  private mood: MusicMood | null = null;
 
   constructor(private ctx: Ctx, private mix: Mixer, readonly name: MusicTrack, readonly song = 0) {
-    this.theme = SONGS[name][song];
+    const th = (this.theme = SONGS[name][song]);
     this.bus = ctx.createGain();
-    this.bus.gain.value = this.theme.trim;
-    this.bus.connect(mix.music);
+    this.send = ctx.createGain();
+    this.send.connect(mix.reverb);
+    if (th.lowpass) {
+      // Lo-fi: the whole song through a gentle lowpass.
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = th.lowpass;
+      lp.Q.value = 0.5;
+      this.bus.connect(lp).connect(mix.music);
+    } else this.bus.connect(mix.music);
+    if (th.pump) {
+      this.pump = ctx.createGain();
+      this.pump.connect(this.bus);
+    }
   }
 
   stepDur(mood: LoopMood): number {
@@ -205,34 +280,57 @@ export class Track {
 
   /** Schedules one step of the loop (or of the sting) at time t. */
   step(mood: MusicMood, index: number, t: number): void {
+    const th = this.theme;
     let grid = this.grids.get(mood);
-    if (!grid) this.grids.set(mood, (grid = mood === 'win' ? compileSting(this.theme) : compile(this.theme, mood)));
+    if (!grid) this.grids.set(mood, (grid = mood === 'win' ? compileSting(th) : compile(th, mood)));
+    if (mood !== this.mood) {
+      // Each mood has its own loudness trim.
+      const trim = th.trim[MOOD_INDEX[mood]];
+      for (const g of [this.bus, this.send]) this.mood ? g.gain.setTargetAtTime(trim, t, 0.03) : g.gain.setValueAtTime(trim, 0);
+      this.mood = mood;
+    }
     const sd = this.stepDur(mood === 'win' ? 'play' : mood);
+    // Swing: `swing` delays the off-beat eighths (shuffle), `shuffle` delays every second sixteenth (lo-fi lilt).
     const p = index % 4;
-    const when = t + (p === 2 ? this.theme.swing : p ? this.theme.swing / 2 : 0) * sd;
+    const when = t + ((p === 2 ? th.swing ?? 0 : p ? (th.swing ?? 0) / 2 : 0) + (p % 2 ? th.shuffle ?? 0 : 0)) * sd;
     for (const e of grid[index]) {
-      if ('drum' in e) DRUM[e.drum](this.ctx, this.out('drums', 0.12, 0), when, e.vel);
-      else {
+      if ('drum' in e) {
+        const out = this.out('drums', 0.12, 0, false);
+        const n = e.roll ?? 1;
+        for (let j = 0; j < n; j++) DRUM[e.drum](this.ctx, out, when + (j * sd) / n, e.vel, (e.len ?? 0) * sd);
+        if (this.pump && (e.drum === 'kick' || e.drum === 'dkick')) {
+          this.pump.gain.setTargetAtTime(1 - th.pump! * e.vel, when, 0.004);
+          this.pump.gain.setTargetAtTime(1, when + 0.04, 0.08);
+        }
+      } else {
         const i = INST[e.inst];
-        tone(this.ctx, this.out(e.inst, i.rev, 'pan' in i ? i.pan : 0), i, when, mtof(e.midi), e.len * sd * 0.92, e.vel);
+        const ducked = e.inst === th.pad || e.inst === th.comp[0] || e.inst === th.bass[0];
+        tone(this.ctx, this.out(e.inst, i.rev, i.pan ?? 0, ducked, i.fx), i, when, mtof(e.midi), e.len * sd * 0.92, e.vel, { sd, slide: e.slide ? [12, sd * 1.5] : undefined });
       }
     }
   }
 
-  /** One bus per instrument: its place in the stereo field and its share of reverb. */
-  private out(key: string, rev: number, pan: number): AudioNode {
+  /** One bus per instrument: its effect, its place in the stereo field, and its share of reverb. */
+  private out(key: string, rev: number, pan: number, ducked: boolean, fx?: (typeof INST)[InstName]['fx']): AudioNode {
     let n = this.buses.get(key);
     if (!n) {
       const g = this.ctx.createGain();
+      let tail: AudioNode = g;
+      if (fx) {
+        const [a, b] = fxBus(this.ctx, fx);
+        g.connect(a);
+        tail = b;
+      }
+      const dest = (ducked && this.pump) || this.bus;
       if (pan) {
         const p = this.ctx.createStereoPanner();
         p.pan.value = pan;
-        g.connect(p).connect(this.bus);
-      } else g.connect(this.bus);
+        tail.connect(p).connect(dest);
+      } else tail.connect(dest);
       if (rev) {
         const send = this.ctx.createGain();
         send.gain.value = rev;
-        g.connect(send).connect(this.mix.reverb);
+        tail.connect(send).connect(this.send);
       }
       this.buses.set(key, (n = g));
     }
@@ -241,8 +339,8 @@ export class Track {
 
   /** Fades out and disconnects. With `ring`, the notes already playing ring out instead (a song change on the bar line). */
   release(t: number, ring = false): void {
-    if (!ring) this.bus.gain.setTargetAtTime(0, t, 0.12);
-    setTimeout(() => this.bus.disconnect(), ring ? 5000 : 1500);
+    if (!ring) for (const g of [this.bus, this.send]) g.gain.setTargetAtTime(0, t, 0.12);
+    setTimeout(() => (this.bus.disconnect(), this.send.disconnect()), ring ? 5000 : 1500);
   }
 }
 

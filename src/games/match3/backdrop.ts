@@ -33,6 +33,9 @@ export const LOOKS: WorldLook[] = [
   { sky: [0x241050, 0x7a3fb0, 0xffb0a0], ridges: [['peak', 0x8a6ac8, 0.1, 0.8], ['spire', 0x5a3f9a, -0.3, 0.45], ['hill', 0x3a2670, -0.7, 0.2]], prop: 'tower', propColor: 0xffd84a, mote: [0xffe9a0, 0.03, 0.022], sun: [0.0, 0.3, 0xffd0a0], tiles: [0x3a2670, 0x483088], frame: 0xffd84a, ground: [0xb89af0, 0x5a3f9a] },
 ];
 
+/** Deep, saturated version of a base colour: the dramatic-sky grade. */
+const deep = (h: number, k: number) => new Color(h).offsetHSL(0, 0.12, 0).multiplyScalar(k).getHex();
+
 const tri = (x: number) => Math.abs((((x % 2) + 2) % 2) - 1);
 function height(kind: Ridge, x: number, s: number): number {
   const hill = Math.sin(x * 2.1 + s) * 0.5 + Math.sin(x * 4.7 + s * 2) * 0.25 + 0.5;
@@ -56,7 +59,7 @@ function ridge(kind: Ridge, color: number, base: number, amp: number, s: number)
 }
 
 function prop(kind: Prop, c: number, x: number, y: number, s: number): BufferGeometry[] {
-  const P = (g: BufferGeometry, col: number, px: number, py: number, rz = 0) => part(g, col, [x + px * s, y + py * s, 0], [0, 0, rz], s);
+  const P = (g: BufferGeometry, col: number, px: number, py: number, rz = 0) => part(g, deep(col, 0.5), [x + px * s, y + py * s, 0], [0, 0, rz], s);
   const dark = new Color(c).multiplyScalar(0.7).getHex();
   const triG = (w: number, h: number) => { const t = new Shape(); t.moveTo(-w, 0); t.lineTo(w, 0); t.lineTo(0, h); return new ShapeGeometry(t); };
   switch (kind) {
@@ -81,6 +84,7 @@ export class Backdrop {
   private meshes: Mesh[] = [];
   private sun: Mesh;
   private motes: InstancedMesh;
+  private shafts: Mesh[] = [];
   private m = new Matrix4();
   private look = LOOKS[0];
   hi = true;
@@ -90,6 +94,11 @@ export class Backdrop {
     this.motes = new InstancedMesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: glow, transparent: true, blending: AdditiveBlending, depthWrite: false, fog: false }), MOTES);
     this.motes.frustumCulled = false;
     this.group.add(this.sun, this.motes);
+    for (let k = 0; k < 3; k++) { // light shafts through the sun (High only)
+      const m = new Mesh(this.sun.geometry, (this.sun.material as MeshBasicMaterial).clone());
+      this.shafts.push(m);
+      this.group.add(m);
+    }
     cam.add(this.group);
   }
 
@@ -99,10 +108,10 @@ export class Backdrop {
     const L = (this.look = LOOKS[k]);
     for (const m of this.meshes) { this.group.remove(m); m.geometry.dispose(); }
     this.meshes = [];
-    const [a, b, c] = L.sky.map((h) => new Color(h));
+    const [a, b, c] = L.sky.map((h, i) => new Color(deep(h, [0.34, 0.7, 1][i])));
     const layers: BufferGeometry[] = [part(new PlaneGeometry(12, 6, 1, 8), (y) => (y > 0 ? b.clone().lerp(a, y / 1.2) : c.clone().lerp(b, 1 + y / 1.2)).getHex())];
     L.ridges.forEach(([kind, color, base, amp], i) => {
-      const parts = [ridge(kind, color, base, amp, k * 3.1 + i * 1.7)];
+      const parts = [ridge(kind, deep(color, 0.62 - i * 0.15), base, amp, k * 3.1 + i * 1.7)];
       if (i === 1 && L.prop !== 'none') {
         for (let n = 0; n < 9; n++) {
           const x = -2.6 + n * 0.65 + Math.sin(n * 7.3 + k) * 0.2;
@@ -121,6 +130,12 @@ export class Backdrop {
     this.sun.position.set(L.sun[0], L.sun[1], 0.01);
     this.sun.scale.setScalar(1.5);
     (this.sun.material as MeshBasicMaterial).color.set(L.sun[2]).multiplyScalar(0.3);
+    this.shafts.forEach((m, i) => {
+      m.position.set(L.sun[0], L.sun[1], 0.012);
+      m.rotation.z = Math.atan2(-L.sun[1] - 0.6, -L.sun[0]) + Math.PI / 2 + (i - 1) * 0.42;
+      m.scale.set(0.3 + i * 0.12, 5, 1);
+      (m.material as MeshBasicMaterial).color.set(L.sun[2]).multiplyScalar(0.1);
+    });
     (this.motes.material as MeshBasicMaterial).color.set(L.mote[0]).multiplyScalar(1.1);
   }
 
@@ -129,6 +144,7 @@ export class Backdrop {
     const s = this.dist * Math.tan((this.cam.fov * Math.PI) / 360) * 1.75;
     this.group.position.set(0, 0, -this.dist);
     this.group.scale.set(s, s, s);
+    for (const m of this.shafts) m.visible = this.hi;
     const n = this.hi ? MOTES : 0;
     const [, vy, size] = this.look.mote;
     const still = reducedMotion();
