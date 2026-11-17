@@ -26,7 +26,23 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0e14; ove
 .hh-size { bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; }
 .hh-size b { font-size: 20px; white-space: nowrap; }
 .hh-bar { width: 160px; height: 14px; background: var(--cm-stage); box-shadow: inset 0 2px 0 #00000080; }
-.hh-bar i { display: block; height: 100%; width: 0; background: var(--cm-good); box-shadow: inset 0 3px 0 #ffffff55; }
+.hh-bar i { display: block; height: 100%; width: 0; background: var(--cm-good); box-shadow: inset 0 3px 0 #ffffff55; transition: width 0.2s ease-out; }
+
+/* size box: bounces and glows when a big swallow fills the bar */
+.hh-size.jump { animation: hh-jump 0.45s ease-out; }
+.hh-size.jump .hh-bar i { background: var(--cm-gold); }
+@keyframes hh-jump { 30% { transform: translateX(-50%) scale(1.14); filter: brightness(1.35); } }
+
+/* per-item score popups (positioned by game.ts each frame) */
+.hh-scores { inset: 0; overflow: hidden; }
+.hh-sc { position: absolute; left: 0; top: 0; white-space: nowrap; text-align: center; font: 700 15px/1.05 var(--cm-ui); color: #ffffffd0; text-shadow: 0 2px 0 #000b, 0 0 2px #000, 0 0 7px #0009; font-variant-numeric: tabular-nums; will-change: transform, opacity; }
+.hh-sc small { font-size: 0.7em; opacity: 0.85; }
+.hh-sc em { display: block; font-style: normal; font-size: 0.55em; letter-spacing: 0.04em; }
+.hh-sc.t1 { font-size: 19px; font-weight: 800; color: #fff; }
+.hh-sc.t2 { font-size: 25px; font-weight: 800; color: #ffe9a8; }
+.hh-sc.t3 { font-size: 32px; font-weight: 900; color: var(--cm-gold); }
+.hh-sc.t4 { font-size: 40px; font-weight: 900; color: var(--cm-gold); }
+.hh-sc.t5 { font-size: 52px; font-weight: 900; color: var(--cm-gold); text-shadow: 0 3px 0 #000c, 0 0 3px #000, 0 0 18px #ffb300aa; }
 
 
 .hh-pop { top: 84px; left: 50%; transform: translateX(-50%); font: 800 24px/1.2 var(--cm-ui); color: var(--cm-gold); white-space: nowrap; transition: opacity 0.25s; }

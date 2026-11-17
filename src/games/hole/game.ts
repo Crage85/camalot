@@ -46,6 +46,7 @@ export async function run(cm: Camalot) {
       <div class="hh-board cm-panel"></div>
       <button class="hh-pause cm-btn" aria-label="Pause">${ICON_PAUSE}${key('P')}</button>
       <div class="hh-fx"></div>
+      <div class="hh-scores"></div>
       <div class="hh-size cm-panel"><b>Size 1</b><div class="hh-bar"><i></i></div></div>
       <div class="hh-acts">
         <button class="hh-abil cm-btn" aria-label="Ability" hidden>${ICON_STAR}<span></span>${key('E')}</button>
@@ -85,6 +86,59 @@ export async function run(cm: Camalot) {
   const stopLoops = () => { wind?.stop(); waves?.stop(); wind = waves = null; };
 
   const pop = (text: string, secs = 1.2) => { popEl.textContent = text; popEl.hidden = false; popT = secs; };
+
+  // ---------- score popups: "+N" rising from the hole. One pooled layer of 10 nodes, nothing allocated per item. ----------
+  // Tiers by item size (half-diagonal): tiny, small, house, big, giant, landmark; bigger tiers are larger, bolder and
+  // gold, and big and up show the item's name. Unnamed items swallowed within MERGE seconds share one popup with a
+  // count ("+36 x6"). Every popup rises at the same speed, so a new one takes the lowest lane clear of the others;
+  // when every lane is busy it joins the newest popup instead.
+  const COMBO_AT = [10, 25, 50, 100];
+  const TIER_AT = [0.5, 1.5, 2.8, 4.5, 9], TIER_LIFE = [0.8, 1.0, 1.2, 1.5, 1.8, 2.4], MERGE = 0.4, NAMED = 3;
+  const LANE = 46, LANES = 4, RISE = 60; // px per lane, lanes above the hole, px per second
+  const scoresEl = $('.hh-scores');
+  const scorePops = Array.from({ length: 10 }, () => {
+    const el = document.createElement('div');
+    el.hidden = true;
+    scoresEl.append(el);
+    return { el, t: 9, life: 0, v: 0, n: 0, tier: 0, lane: 0, name: '', kind: '' };
+  });
+  const singular = (s: string) => s.replace(/ies$/, 'y').replace(/(ch|sh|x|o)es$/, '$1').replace(/s$/, '');
+  const itemName = (kind: string) => singular(world.kinds.get(kind)?.label ?? kind).replace(/(^|[\s-])\w/g, (c) => c.toUpperCase());
+  const popY = (s: (typeof scorePops)[number]) => s.lane * LANE + s.t * RISE;
+  function scorePop(v: number, diag: number, kind: string) {
+    const tier = TIER_AT.findIndex((d) => diag < d) < 0 ? TIER_AT.length : TIER_AT.findIndex((d) => diag < d);
+    const live = scorePops.filter((s) => !s.el.hidden);
+    let sp = tier < NAMED ? live.find((s) => !s.name && s.t < MERGE) : undefined;
+    const lane = sp ? -1 : Array.from({ length: LANES }, (_, i) => i).find((L) => live.every((s) => Math.abs(popY(s) - L * LANE) >= LANE)) ?? -1;
+    if (!sp && lane < 0) sp = live.reduce((a, b) => (b.t < a.t ? b : a)); // every lane busy: join the newest
+    if (sp) {
+      sp.v += v; sp.n++;
+      if (tier > sp.tier) sp.tier = tier;
+      if (sp.kind !== kind) sp.name = '';
+      sp.life = Math.max(sp.life, sp.t + 0.6);
+    } else {
+      sp = scorePops.reduce((a, b) => (b.t / b.life > a.t / a.life ? b : a)); // a free node, or the one nearest its end
+      Object.assign(sp, { t: 0, v, n: 1, tier, lane, life: TIER_LIFE[tier], kind, name: tier >= NAMED ? itemName(kind) : '' });
+    }
+    sp.el.className = `hh-sc t${sp.tier}`;
+    sp.el.innerHTML = `+${sp.v}${sp.n > 1 ? `<small> x${sp.n}</small>` : ''}${sp.name ? `<em>${esc(sp.name)}</em>` : ''}`;
+    sp.el.hidden = false;
+  }
+  function drawScorePops(dt: number, p: Hole) {
+    const c = world.toScreen(p.x, 0, p.z, root.clientWidth, root.clientHeight);
+    for (const s of scorePops) {
+      if (s.el.hidden) continue;
+      s.t += dt;
+      const k = s.t / s.life;
+      if (k >= 1) { s.el.hidden = true; continue; }
+      const grow = s.t < 0.12 ? 0.55 + (s.t / 0.12) * 0.45 : 1;
+      s.el.style.opacity = String(k < 0.65 ? 1 : (1 - k) / 0.35);
+      s.el.style.transform = `translate(${Math.round(c.x)}px, ${Math.round(c.y - 30 - popY(s))}px) translate(-50%, -50%) scale(${grow.toFixed(2)})`;
+    }
+  }
+  const clearScorePops = () => { for (const s of scorePops) { s.t = 9; s.el.hidden = true; } };
+  const sizeBox = $('.hh-size');
+  const sizeJump = () => { sizeBox.classList.remove('jump'); void sizeBox.offsetWidth; sizeBox.classList.add('jump'); hudT = 0; };
   const totalStars = () => Object.values(save.stars).reduce((a, b) => a + b, 0);
   const placeStars = (pi: number) => Array.from({ length: LEVELS_PER_PLACE }, (_, i) => save.stars[`${PLACES[pi]}-${i + 1}`] ?? 0).reduce((a, b) => a + b, 0);
   const placeOpen = (pi: number) => pi === 0 || (!!save.stars[`${PLACES[pi - 1]}-${LEVELS_PER_PLACE}`] && totalStars() >= starsToOpen(pi));
@@ -99,8 +153,13 @@ export async function run(cm: Camalot) {
       round.eaten[o.kind] = (round.eaten[o.kind] ?? 0) + 1;
       comboT = 1.0;
       combo++;
-      if (combo >= 5) { h.score += Math.min(20, combo); if (combo % 5 === 0) { pop(`Combo x${combo}`); sfx('cascade', 1 + Math.min(1, combo / 60)); } }
+      // Combo bonus goes into the item's own "+N"; the banner only marks milestones, so it never reads x1060.
+      const bonus = combo >= 5 ? Math.min(20, combo) : 0;
+      h.score += bonus;
+      if (combo >= 5 && combo % 5 === 0) { if (COMBO_AT.includes(combo)) pop(`Combo x${combo}!`); sfx('cascade', 1 + Math.min(1, combo / 60)); }
       bump('combo', combo, true);
+      scorePop(o.score * (h.rushT > 0 ? 2 : 1) + bonus, o.diag, o.kind);
+      if (o.diag >= TIER_AT[1] || o.diag > h.R * 0.4) sizeJump();
       if (o.boss) { round.bosses++; pop('LANDMARK SWALLOWED!', 2.5); sfx('explode'); sfx('cheer'); return; }
       const now = performance.now();
       if (now - lastGulp < 45) return;
@@ -192,7 +251,7 @@ export async function run(cm: Camalot) {
     startBonus = 0;
     timeUpOffered = false;
     combo = 0; comboT = 0; abilCd = 0; lastLevel = World.level(world.player!.R).level;
-    msgEl.hidden = true; popEl.hidden = true;
+    msgEl.hidden = true; popEl.hidden = true; clearScorePops();
     keys.clear(); stickState = null; stick.hidden = true;
     setScreen('');
     hud.hidden = false;
@@ -777,6 +836,7 @@ export async function run(cm: Camalot) {
     if (!p) return;
     popT -= dt;
     if (popT <= 0) popEl.hidden = true;
+    drawScorePops(dt, p);
     comboT -= dt;
     if (comboT <= 0) combo = 0;
     abilCd = Math.max(0, abilCd - dt);
@@ -850,7 +910,7 @@ export async function run(cm: Camalot) {
   // Dev-server test hook for the screenshot and balance harness (shots/hole); absent from the built game.
   if (import.meta.env.DEV) {
     (window as unknown as { __hole: unknown }).__hole = {
-      world, save, startFree, endRound, onTimeUp, showBrief, begin, showAdventure, showHome, showUpgrades, showSkins, showAlbum, showAwards, showFree, radiusFor, massFor, levelDef,
+      world, save, clearScorePops, startFree, endRound, onTimeUp, showBrief, begin, showAdventure, showHome, showUpgrades, showSkins, showAlbum, showAwards, showFree, radiusFor, massFor, levelDef,
       state: () => state, round: () => round, goalStars,
     };
   }
