@@ -29,7 +29,7 @@ Games in scope (genres the kids play): snake .io (Slither.io), crowd runner with
 
 ## Decisions
 
-Next number: D17
+Next number: D18
 
 **D1.** Name is Camalot: a family pun on Camelot. The hub game is a castle; each game is a room.
 **D2.** Retries, power-ups, revives, boosts, and currency come from answering school questions, never from money, ads, or streaks.
@@ -46,6 +46,7 @@ Next number: D17
 **D14.** Saves stay on each device (Craig 2026-11-16, Q13 B). No cloud sync; progress on the tablet and the laptop is separate.
 **D15.** Hosting: public GitHub repo `Crage85/camalot`, site on GitHub Pages from the `gh-pages` branch (Craig 2026-11-16, Q14 A). Commits use the GitHub noreply address, never a personal email.
 **D16.** Game names (CC's pick, Craig 2026-11-16, Q16): Wyrmrise (`wyrm`), Riftmaw (`hole`), Skyfield Saga (`tractor`), Spellpaw (`match3`), Neko Strike (`runner`), Frostclaim (`trail`). Game ids and saves are unchanged.
+**D17.** Music matches the anime fantasy look and the 8th-9th grade target (Craig 2026-11-16: the first tracks sounded "very small childish... like nursery rhymes"). Think anime and JRPG soundtracks, anime openings, lo-fi, EDM, epic orchestral: minor keys and modes, extended chords, syncopation, real drum grooves, synth bass, pads and leads. No music box, toy bells, whistle tunes, or sing-song melodies.
 **D10.** Small per-game rules (collision rules, costs, win conditions) are CC's call. Each one is listed in handoff.md for Craig to keep or change.
 
 ## Where things live
