@@ -150,7 +150,7 @@ export const TREASURES: Record<MapId, string[]> = {
   ski: ['Frozen Pinecone', 'Frostward Gauntlet', 'Golden Ski Pass', 'Storm Globe', 'Glacier Medal', 'Ice Diamond', 'Silver Sled Bell', 'First Snowflake', 'Summit Flag', 'Avalanche Trophy'],
   beach: ['Black Pearl', 'Message Bottle', 'Sand Dollar', 'Coral Comb', 'Sailor\'s Compass', 'Gold Trident', 'Siren Mirror', 'Sunset Shell', 'Captain\'s Whistle', 'Tide Crown'],
   desert: ['Sun Coin', 'Oasis Lily', 'Brass Lamp', 'Star Map', 'Sand Rose', 'Turquoise Ring', 'Silk Banner', 'Date Palm Seed', 'Mirage Gem', 'Sun Palace Key'],
-  cat: ['Golden Thread', 'Shrine Bell', 'Feather Talisman', 'Silver Fish', 'Silvervine Charm', 'Velvet Collar', 'Paw Seal', 'Moon Saucer', 'Whisker Blade', 'Ninth Life Gem'],
+  cat: ['Golden Thread', 'Shrine Bell', 'Feather Talisman', 'Silver Koi', 'Silvervine Charm', 'Onyx Fang', 'Clan Seal', 'Moonglass Mirror', 'Whisker Blade', 'Ninth Life Gem'],
   candy: ['Prism Shard', 'Amber Drop', 'Sugarglass Star', 'Mint Sigil', 'Caramel Key', 'Cherry Jewel', 'Glazed Rose', 'Toffee Crown', 'Crystal Moon', 'Everflame Candle'],
   park: ['Blue Columbine', 'Aspen Leaf of Gold', 'Ranger Badge', 'Trail Compass', 'Pyrite Nugget', 'River Stone Heart', 'Elk Whistle', 'Campfire Mug', 'Summit Register', 'Fourteener Pin'],
   dragon: ['Ember Scale', 'Dragon Tooth', 'Lava Pearl', 'Hoard Coin', 'Smoke Ring', 'Obsidian Mirror', 'Fire Opal', 'Hatchling Shell', 'Flame Lantern', 'Heart of the Volcano'],

@@ -14,7 +14,7 @@ export type PowKind = 'magnet' | 'speed' | 'grow' | 'clock' | 'rush' | 'treasure
 export type Ability = 'gulp' | 'giant' | 'freeze';
 export type Quality = 'high' | 'low';
 
-export const BOT_NAMES = ['Moonpaw', 'Bramble', 'Ashfang', 'Willowisp', 'Gloam', 'Vesper', 'Astra', 'Kaido', 'Thistle', 'Nimbus', 'Onyx', 'Riven', 'Sable', 'Juniper', 'Kestrel', 'Talon'];
+export const BOT_NAMES = ['Eclipse', 'Bramble', 'Ashfang', 'Willowisp', 'Gloam', 'Vesper', 'Astra', 'Kaido', 'Thistle', 'Nimbus', 'Onyx', 'Riven', 'Sable', 'Jinrai', 'Kestrel', 'Talon'];
 const BOT_STYLES: Style[] = ['muncher', 'hunter', 'explorer'];
 const BOT_COLORS = [0xffa94d, 0x3fd0d4, 0xffd54a];
 
@@ -631,14 +631,14 @@ export class World {
     const parks = Array.from({ length: 9 }, () => ({ x: (r() * 2 - 1) * half * 0.8, z: (r() * 2 - 1) * half * 0.8 }));
     mark(0, 3, 2.2); // keep the spawn spot clear
     const area = (half / 48) ** 2;
-    const defs = this.map.props.map((d) => ({ d, geo: build(d.parts) }));
-    defs.sort((a, b) => b.geo.boundingBox!.max.x - a.geo.boundingBox!.max.x);
+    // Footprint [minX, maxX, minZ, maxZ]: the prop's fixed box when it has one, else the art's own bounds.
+    const defs = this.map.props.map((d) => { const geo = build(d.parts), bb = geo.boundingBox!; return { d, geo, fp: d.box ?? [bb.min.x, bb.max.x, bb.min.z, bb.max.z] }; });
+    defs.sort((a, b) => b.fp[1] - a.fp[1]);
     this.totalMass = 0;
-    for (const { d, geo } of defs) {
-      const bb = geo.boundingBox!;
-      const hx0 = (bb.max.x - bb.min.x) / 2, hz0 = (bb.max.z - bb.min.z) / 2;
-      const cx0 = (bb.max.x + bb.min.x) / 2, cz0 = (bb.max.z + bb.min.z) / 2;
-      const h0 = bb.max.y, diag0 = Math.hypot(hx0, hz0);
+    for (const { d, geo, fp } of defs) {
+      const hx0 = (fp[1] - fp[0]) / 2, hz0 = (fp[3] - fp[2]) / 2;
+      const cx0 = (fp[1] + fp[0]) / 2, cz0 = (fp[3] + fp[2]) / 2;
+      const h0 = geo.boundingBox!.max.y, diag0 = Math.hypot(hx0, hz0);
       if (diag0 > (o.maxDiag ?? 99)) { geo.dispose(); continue; }
       const count = Math.max(1, Math.round(d.count * area * (diag0 < 1.5 ? TUNE.smallMore : 1)));
       const mesh = new THREE.InstancedMesh(geo, propMat, count);

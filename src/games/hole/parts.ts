@@ -222,6 +222,7 @@ export interface PropDef {
   place?: 'street' | 'road' | 'water' | 'landmark'; // houses line the streets, carts sit on them, boats float, landmarks stand apart
   row?: boolean; // placed in short straight rows (fences, umbrellas)
   near?: boolean; // placed near the bigger props (village clutter)
+  box?: [number, number, number, number]; // fixed footprint [minX, maxX, minZ, maxZ] for redrawn props: size, score and placement keep the old values
 }
 
 export type MapId = 'kingdom' | 'ski' | 'beach' | 'desert' | 'cat' | 'candy' | 'park' | 'dragon' | 'sky';
